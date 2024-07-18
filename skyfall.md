@@ -556,14 +556,14 @@ askyy@skyfall:~$ sudo /root/vault/vault-unseal -c /etc/vault-unseal.yaml -vd
 
 The debug option `-d` writes a `debug.log` file, but the file is written with `600` permissions and `root:root` ownership
 
-```
+```console
 askyy@skyfall:~$ ls -l
 total 8
 -rw------- 1 root root  590 Jul 18 14:57 debug.log
 -rw-r----- 1 root askyy  33 Jul 17 19:53 user.txt
 ```
 
-By right the `debug.log` should have a master token:
+By right, touching `debug.log` would force it to have `askyy:askyy` ownership, and the file should have a master token:
 
 ```console
 root@skyfall:~# cat /home/askyy/debug.log
@@ -579,6 +579,8 @@ root@skyfall:~# cat /home/askyy/debug.log
 2024/07/18 15:27:35 Checking seal status
 2024/07/18 15:27:35 Vault sealed: false
 ```
+
+Use master token to login as root:
 
 ```console
 root@kali:~# vault login
