@@ -48,6 +48,19 @@ Nmap done: 1 IP address (1 host up) scanned in 18.09 seconds
 |`-Pn`|Treat all hosts as online -- skip host discovery|
 |`-A`|Enable OS detection, version detection, script scanning, and traceroute|
 
+```console
+root@kali:~# curl -IL http://10.10.11.254/
+HTTP/1.1 200 OK
+Server: nginx/1.18.0 (Ubuntu)
+Date: Wed, 17 Jul 2024 13:06:09 GMT
+Content-Type: text/html
+Content-Length: 20631
+Last-Modified: Thu, 09 Nov 2023 20:44:23 GMT
+Connection: keep-alive
+ETag: "654d44a7-5097"
+Accept-Ranges: bytes
+```
+
 ![image](https://github.com/user-attachments/assets/7cef8c1e-adc0-4fde-8de2-1ccc7e7fd4e0)
 
 ### 1.2. Directory Brute Force `gobuster`
@@ -125,4 +138,134 @@ demo                    [Status: 302, Size: 217, Words: 23, Lines: 1, Duration: 
 |`-u`|Target URL|
 
 ### 1.4. Explore `demo.skyfall.htb`
+
+```console
+root@kali:~# sed -i '0,/localhost/a 10.10.11.254    demo.skyfall.htb' /etc/hosts
+
+root@kali:~# curl -ILH 'Host: demo.skyfall.htb' http://10.10.11.254/
+HTTP/1.1 302 FOUND
+Server: nginx/1.18.0 (Ubuntu)
+Date: Wed, 17 Jul 2024 13:11:09 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 217
+Connection: keep-alive
+Location: http://demo.skyfall.htb/login
+
+HTTP/1.1 200 OK
+Server: nginx/1.18.0 (Ubuntu)
+Date: Wed, 17 Jul 2024 13:11:09 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 3674
+Connection: keep-alive
+Vary: Cookie
+Set-Cookie: session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiOWJkMmQ5NGQ4ZDM5NTk5M2FjMDA0NjQ1NTkxOTE2ZTk2YjkwMTEyMyJ9.Zpio8A.bhD3rYYaYe8nxfexfiz8ZwR_N0s; HttpOnly; Path=/
+```
+
+![image](https://github.com/user-attachments/assets/c400d9dc-f32e-48bd-855d-0deb7b050620)
+
+Page found to be `MinIO` storage system
+
+![image](https://github.com/user-attachments/assets/230fa03f-21b4-4c8f-a12c-f986c03ea987)
+
+![image](https://github.com/user-attachments/assets/e84a73a0-ce70-4318-9c9a-a33ba827add6)
+
+Metrics page is forbidden:
+
+![image](https://github.com/user-attachments/assets/5cc94b54-b9d3-4761-8f32-cd65ce73d116)
+
+Accessing metrics with `%0A` (new-line):
+
+![image](https://github.com/user-attachments/assets/77e95bd9-a384-45fe-bb38-17d922558a1c)
+
+`MinIO` endpoint found at the end of the metrics page:
+
+![image](https://github.com/user-attachments/assets/51d75a3e-0c74-4a52-9b5f-f4be30e7b008)
+
+## 2. Initial Access
+
+### 2.1. Attempting to find exploits on exploit-db (no avail)
+
+```console
+root@kali:~# searchsploit minio
+------------------------------------------------------------------- ---------------------------------
+ Exploit Title                                                     |  Path
+------------------------------------------------------------------- ---------------------------------
+Drupal Module MiniorangeSAML 8.x-2.22 - Privilege escalation       | php/webapps/50361.txt
+Minio 2022-07-29T19-40-48Z - Path traversal                        | go/webapps/51734.py
+MinIO < 2024-01-31T20-20-33Z - Privilege Escalation                | go/remote/51976.txt
+------------------------------------------------------------------- ---------------------------------
+Shellcodes: No Results
+```
+
+#### 2.1.1. Testing `51976` (`CVE-2024-24747`)
+
+```console
+root@kali:~# searchsploit -m 51976
+  Exploit: MinIO < 2024-01-31T20-20-33Z - Privilege Escalation
+      URL: https://www.exploit-db.com/exploits/51976
+     Path: /usr/share/exploitdb/exploits/go/remote/51976.txt
+    Codes: CVE-2024-24747
+ Verified: False
+File Type: Python script, Unicode text, UTF-8 text executable, with very long lines (545)
+Copied to: /root/51976.txt
+
+root@kali:~# mv 51976.txt 51976.py
+```
+
+```console
+root@kali:~# python 51976.py
+Traceback (most recent call last):
+  File "/root/51976.py", line 19, in <module>
+    from minio.credentials import Credentials
+ModuleNotFoundError: No module named 'minio'
+
+root@kali:~# pip install minio
+Collecting minio
+  Downloading minio-7.2.7-py3-none-any.whl.metadata (6.4 kB)
+⋮
+Successfully installed argon2-cffi-23.1.0 argon2-cffi-bindings-21.2.0 minio-7.2.7 pycryptodome-3.20.0
+```
+
+Turns out `CVE-2024-24747` requires access/secret key pair to work
+
+```console
+root@kali:~# python 51976.py
+
+                           ____    ___   ____   _  _           ____   _  _    _____  _  _    _____
+  ___ __   __  ___        |___ \  / _ \ |___ \ | || |         |___ \ | || |  |___  || || |  |___  |
+ / __|\ \ / / / _ \ _____   __) || | | |  __) || || |_  _____   __) || || |_    / / | || |_    / /
+| (__  \ V / |  __/|_____| / __/ | |_| | / __/ |__   _||_____| / __/ |__   _|  / /  |__   _|  / /
+ \___|  \_/   \___|       |_____| \___/ |_____|   |_|         |_____|   |_|   /_/      |_|   /_/
+
+usage: 51976.py [-h] -H HOST -a ACCESSKEY -s SECRETKEY -c CONSOLE_PORT -p PORT [--https]
+51976.py: error: the following arguments are required: -H/--host, -a/--accesskey, -s/--secretkey, -c/--console_port, -p/--port
+```
+
+#### 2.1.2. Testing `51734` (`CVE-2022-35919`)
+
+```console
+root@kali:~# searchsploit -m 51734
+  Exploit: Minio 2022-07-29T19-40-48Z - Path traversal
+      URL: https://www.exploit-db.com/exploits/51734
+     Path: /usr/share/exploitdb/exploits/go/webapps/51734.py
+    Codes: CVE-2022-35919
+ Verified: False
+File Type: Python script, ASCII text executable
+Copied to: /root/51734.py
+
+root@kali:~# python 51734.py
+usage: 51734.py [-h] -u URL -a ACCESSKEY -s SECRETKEY
+51734.py: error: the following arguments are required: -u/--url, -a/--accesskey, -s/--secretkey
+```
+
+### 2.2. Searching for exploits online
+
+Googling for `minio exploits` return some interesting results
+
+- https://www.cvedetails.com/vulnerability-list/vendor_id-18671/Minio.html lists the `CVE-2024-24747` and `CVE-2022-35919` vulnerabilities found in exploit-db
+- It also lists 2 more `known exploited` vulnerabilities `CVE-2023-28434` and `CVE-2023-28432`
+- Between the 2, `CVE-2023-28432` looks promising with `public exploit` available
+
+![image](https://github.com/user-attachments/assets/6618aaf3-e5d1-4e14-b27a-81b121c9554a)
+
 
