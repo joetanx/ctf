@@ -119,3 +119,19 @@ HOP RTT       ADDRESS
 OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 111.82 seconds
 ```
+
+### 1.2. Exploring
+
+Add host records for easy navigation:
+
+```
+echo 10.10.11.24 ghost.htb DC01.ghost.htb core.ghost.htb federation.ghost.htb >> /etc/hosts
+```
+
+`https://core.ghost.htb:8443/login`:
+
+![image](https://github.com/user-attachments/assets/56541c72-13ef-4817-a799-b039cd843152)
+
+`https://federation.ghost.htb/`:
+
+![image](https://github.com/user-attachments/assets/12742a21-67fe-4694-a40b-b5a4fa13ed94)
