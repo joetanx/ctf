@@ -128,6 +128,35 @@ Add host records for easy navigation:
 echo 10.10.11.24 ghost.htb DC01.ghost.htb core.ghost.htb federation.ghost.htb >> /etc/hosts
 ```
 
+> [!Note]
+>
+> `ghost.htb`,  `DC01.ghost.htb` and `core.ghost.htb` are discovered from nmap scan above, `federation.ghost.htb` is found from exploring `core.ghost.htb` on `:8443` below
+
+#### 1.2.1. `443`
+
+`443` appears to be exposed, but not accessible
+
+![image](https://github.com/user-attachments/assets/696572d4-18ec-4639-a8d7-14d225ce30b8)
+
+```console
+root@kali:~# curl -v https://ghost.htb
+* Host ghost.htb:443 was resolved.
+* IPv6: (none)
+* IPv4: 10.10.11.24
+*   Trying 10.10.11.24:443...
+* Connected to ghost.htb (10.10.11.24) port 443
+* ALPN: curl offers h2,http/1.1
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+*  CAfile: /etc/ssl/certs/ca-certificates.crt
+*  CApath: /etc/ssl/certs
+* Recv failure: Connection reset by peer
+* OpenSSL SSL_connect: Connection reset by peer in connection to ghost.htb:443
+* Closing connection
+curl: (35) Recv failure: Connection reset by peer
+```
+
+#### 1.2.2. `8443`
+
 `https://core.ghost.htb:8443/login`:
 
 ![image](https://github.com/user-attachments/assets/56541c72-13ef-4817-a799-b039cd843152)
@@ -135,3 +164,19 @@ echo 10.10.11.24 ghost.htb DC01.ghost.htb core.ghost.htb federation.ghost.htb >>
 `https://federation.ghost.htb/`:
 
 ![image](https://github.com/user-attachments/assets/12742a21-67fe-4694-a40b-b5a4fa13ed94)
+
+#### 1.2.3. `8008`
+
+Root page appears to be some kind of blog:
+
+![image](https://github.com/user-attachments/assets/c944ad2d-ecdd-4de9-b11a-7502c77860e3)
+
+Viewing the page source reveals some kind of id:
+
+`<script src="/assets/built/source.js?v=718615e1f1"></script>`
+
+![image](https://github.com/user-attachments/assets/50cd2b41-3f4d-4062-b293-ef38bd465c14)
+
+`http-robots.txt` above found 5 disallowed entries, only `/ghost/` has a page, which is the ghost CMS login:
+
+![image](https://github.com/user-attachments/assets/6dd4c0b5-a6ae-4a30-ac13-d99c9b151b1e)
