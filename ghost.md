@@ -180,3 +180,109 @@ Viewing the page source reveals some kind of id:
 `http-robots.txt` above found 5 disallowed entries, only `/ghost/` has a page, which is the ghost CMS login:
 
 ![image](https://github.com/user-attachments/assets/6dd4c0b5-a6ae-4a30-ac13-d99c9b151b1e)
+
+### 1.3. Web enumeration
+
+#### 1.3.1. Enumerate for pages
+
+```console
+root@kali:~# gobuster dir -u http://ghost.htb:8008 -w /usr/share/seclists/Discovery/Web-Content/common.txt
+===============================================================
+Gobuster v3.6
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://ghost.htb:8008
+[+] Method:                  GET
+[+] Threads:                 10
+[+] Wordlist:                /usr/share/seclists/Discovery/Web-Content/common.txt
+[+] Negative Status codes:   404
+[+] User Agent:              gobuster/3.6
+[+] Timeout:                 10s
+===============================================================
+Starting gobuster in directory enumeration mode
+===============================================================
+
+Error: the server returns a status code that matches the provided options for non existing urls. http://ghost.htb:8008/dc05f551-9796-48d8-8ce4-b33ba6c4999c => 301 (Length: 0). To continue please exclude the status code or the length
+```
+
+
+```console
+root@kali:~# gobuster dir -u http://ghost.htb:8008 -b 301,404 -f -t 100 -w /usr/share/seclists/Discovery/Web-Content/common.txt
+===============================================================
+Gobuster v3.6
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://ghost.htb:8008
+[+] Method:                  GET
+[+] Threads:                 100
+[+] Wordlist:                /usr/share/seclists/Discovery/Web-Content/common.txt
+[+] Negative Status codes:   301,404
+[+] User Agent:              gobuster/3.6
+[+] Add Slash:               true
+[+] Timeout:                 10s
+===============================================================
+Starting gobuster in directory enumeration mode
+===============================================================
+/favicon.ico/         (Status: 200) [Size: 15406]
+/private/             (Status: 302) [Size: 39] [--> http://ghost.htb/]
+/rss/                 (Status: 200) [Size: 4041]
+/sitemap.xml/         (Status: 200) [Size: 507]
+/unsubscribe/         (Status: 400) [Size: 24]
+===============================================================
+Finished
+===============================================================
+```
+
+|   |   |
+|---|---|
+|`-b`|Negative status codes (will override status-codes if set). Can also handle ranges like 200,300-400,404. (default "404")|
+|`-f`|Append `/` to each request|
+|`-t`|Number of concurrent threads (default 10)|
+
+#### 1.3.2. Enumerate for domain
+
+The root page is already seen, let's get the response size for the root page so that it can be filtered away from the fuzzing result
+
+```console
+root@kali:~# curl -I http://ghost.htb:8008/
+HTTP/1.1 200 OK
+Server: nginx/1.18.0 (Ubuntu)
+Date: Tue, 20 Aug 2024 04:21:51 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 7676
+Connection: keep-alive
+X-Powered-By: Express
+Cache-Control: public, max-age=0
+ETag: W/"1dfc-Oi6Iz2/cGnJC0hpGTApYlnfl5gY"
+Vary: Accept-Encoding
+```
+
+```console
+root@kali:~# ffuf -w /usr/share/wordlists/seclists/Discovery/DNS/namelist.txt -u "http://ghost.htb:8008" -H "HOST:FUZZ.ghost.htb" -c -fs 7676
+
+        /'___\  /'___\           /'___\
+       /\ \__/ /\ \__/  __  __  /\ \__/
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/
+         \ \_\   \ \_\  \ \____/  \ \_\
+          \/_/    \/_/   \/___/    \/_/
+
+       v2.1.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://ghost.htb:8008
+ :: Wordlist         : FUZZ: /usr/share/wordlists/seclists/Discovery/DNS/namelist.txt
+ :: Header           : Host: FUZZ.ghost.htb
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+ :: Filter           : Response size: 7676
+________________________________________________
+
+gitea                   [Status: 200, Size: 13655, Words: 1050, Lines: 272, Duration: 239ms]
+intranet                [Status: 307, Size: 3968, Words: 52, Lines: 1, Duration: 712ms]
+:: Progress: [151265/151265] :: Job [1/1] :: 18 req/sec :: Duration: [1:23:25] :: Errors: 47 ::
+```
