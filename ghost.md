@@ -239,7 +239,7 @@ Finished
 |`-f`|Append `/` to each request|
 |`-t`|Number of concurrent threads (default 10)|
 
-#### 1.3.2. Enumerate for domain
+#### 1.3.2. Enumerate for domains
 
 The root page is already seen, let's get the response size for the root page so that it can be filtered away from the fuzzing result
 
@@ -286,3 +286,15 @@ gitea                   [Status: 200, Size: 13655, Words: 1050, Lines: 272, Dura
 intranet                [Status: 307, Size: 3968, Words: 52, Lines: 1, Duration: 712ms]
 :: Progress: [151265/151265] :: Job [1/1] :: 18 req/sec :: Duration: [1:23:25] :: Errors: 47 ::
 ```
+
+##### 1.3.2.1. Gitea
+
+![image](https://github.com/user-attachments/assets/cbcec9e3-fb09-4d87-962f-a678bd4167b3)
+
+![image](https://github.com/user-attachments/assets/444cbc2a-8b2d-4635-a19f-d7db54af7862)
+
+![image](https://github.com/user-attachments/assets/5947dd59-d54d-4303-95c1-49edb124de4a)
+
+##### 1.3.2.2. Intranet
+
+![image](https://github.com/user-attachments/assets/79f3c49d-ce45-4d07-9361-0b3521e5699f)
