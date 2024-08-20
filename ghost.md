@@ -122,16 +122,6 @@ Nmap done: 1 IP address (1 host up) scanned in 111.82 seconds
 
 ### 1.2. Exploring
 
-Add host records for easy navigation:
-
-```
-echo 10.10.11.24 ghost.htb DC01.ghost.htb core.ghost.htb federation.ghost.htb >> /etc/hosts
-```
-
-> [!Note]
->
-> `ghost.htb`,  `DC01.ghost.htb` and `core.ghost.htb` are discovered from nmap scan above, `federation.ghost.htb` is found from exploring `core.ghost.htb` on `:8443` below
-
 #### 1.2.1. `443`
 
 `443` appears to be exposed, but not accessible
@@ -289,12 +279,40 @@ intranet                [Status: 307, Size: 3968, Words: 52, Lines: 1, Duration:
 
 ##### 1.3.2.1. Gitea
 
+Nothing much here:
+
 ![image](https://github.com/user-attachments/assets/cbcec9e3-fb09-4d87-962f-a678bd4167b3)
 
 ![image](https://github.com/user-attachments/assets/444cbc2a-8b2d-4635-a19f-d7db54af7862)
+
+2 users found, but no other information:
 
 ![image](https://github.com/user-attachments/assets/5947dd59-d54d-4303-95c1-49edb124de4a)
 
 ##### 1.3.2.2. Intranet
 
 ![image](https://github.com/user-attachments/assets/79f3c49d-ce45-4d07-9361-0b3521e5699f)
+
+Attempt to login:
+
+![image](https://github.com/user-attachments/assets/d4b6b330-8298-4d70-aa15-327545ca7235)
+
+Analyze the form action with Burpsuite or just simply browser developer tools reveal that it submits a `POST` request with `multipart/form-data` content type:
+
+![image](https://github.com/user-attachments/assets/015dca4f-2abf-46e8-9ecb-ed26c420a638)
+
+The submitted username and secret is submitted as `1_ldap-username` and `1_ldap-secret` keys, which suggests that LDAP authentication is used:
+
+![image](https://github.com/user-attachments/assets/86145e93-02c3-49e2-a9ef-c17f37e72fdc)
+
+> [!Tip]
+>
+> Browser developer tools provides a `view parsed` function that makes looking at form data easier:
+> 
+> ![image](https://github.com/user-attachments/assets/4d0318b4-465a-4565-a5c2-b079d26109a4)
+
+Test for LDAP injection by using `*` for both username and secret:
+
+https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/LDAP%20Injection/README.md
+
+![image](https://github.com/user-attachments/assets/3db318f7-e0b2-40f1-814a-65b47ab1bf52)
