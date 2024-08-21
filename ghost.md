@@ -517,4 +517,27 @@ curl -s "http://ghost.htb:8008/ghost/api/content/posts/?extra=../../../../proc/s
 
 `DEV_INTRANET_KEY` = `!@yqr!X2kxmQ.@Xe`
 
-## 6. Going back to intranet with the discovered API key
+## 6. Revisiting intranet with the discovered API key
+
+### 6.1. Connecting the clues
+
+1. A dev API exists at: `http://intranet.ghost.htb/api-dev`
+
+![image](https://github.com/user-attachments/assets/cff8813e-a515-4df2-9d4b-d08cc333f5b1)
+
+2. The API authentication code is discovered at `intranet/backend/src/api/dev.rs`, and shows that the `DEV_INTRANET_KEY` key should be used with `POST` header parameter `X-DEV-INTRANET-KEY`
+
+![image](https://github.com/user-attachments/assets/cfe42bfc-4166-4a2a-8561-74a030b212a7)
+
+3. Recall that the `README` for `blog` repo mentioned that _connection to the intranet_ would allow _URLs from posts will be scanned by the intranet_, the scanning code is discovered at `intranet/backend/src/api/dev/scan.rs`
+
+![image](https://github.com/user-attachments/assets/57123b1f-3ad4-4fad-908e-674bfdf69bb3)
+
+4. The critical part of the scanning code is where it calls `bash -c` with the URL input without sanitization, this should present a possibility for code execution
+
+```rs
+    let result = Command::new("bash")
+        .arg("-c")
+        .arg(format!("intranet_url_check {}", data.url))
+        .output();
+```
