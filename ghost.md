@@ -967,3 +967,24 @@ exec "$@"
 ```
 
 </details>
+
+Kerberos ticket found at `/tmp/krb5cc_50`:
+
+```console
+florence.ramirez@LINUX-DEV-WS01:~$ env
+env
+SHELL=/bin/bash
+KRB5CCNAME=FILE:/tmp/krb5cc_50
+PWD=/home/GHOST/florence.ramirez
+LOGNAME=florence.ramirez
+MOTD_SHOWN=pam
+HOME=/home/GHOST/florence.ramirez
+SSH_CONNECTION=172.18.0.3 53590 172.18.0.2 22
+USER=florence.ramirez
+SHLVL=2
+LC_CTYPE=C.UTF-8
+SSH_CLIENT=172.18.0.3 53590 22
+PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
+_=/usr/bin/env
+OLDPWD=/tmp
+```
