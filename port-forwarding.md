@@ -157,7 +157,7 @@ chisel client <server> [R:[server-port]:[target-address]:[target-port]]
 chisel client 192.168.2.61:8080 R:13306:10.0.2.91:3306 R:13389:10.0.2.91:3389
 ```
 
-### 2.3.2. Reverse SOCKS proxy
+#### 2.3.2. Reverse SOCKS proxy
 
 ##### Syntax
 
