@@ -25,7 +25,7 @@ ssh -L [bind_address:]port:host:hostport [user@]hostname
 
 ##### Example
 
-![image](images/ssh-forward-static.png)
+![image](/images/ssh-forward-static.png)
 
 ```sh
 ssh -L 0.0.0.0:13306:10.0.2.91:3306 -L 0.0.0.0:13389:10.0.2.91:3389 user@10.0.1.81
@@ -41,7 +41,7 @@ ssh -D [bind_address:]port [user@]hostname
 
 ##### Example
 
-![image](images/ssh-forward-dynamic.png)
+![image](/images/ssh-forward-dynamic.png)
 
 ```sh
 ssh -D 0.0.0.0:1080 user@10.0.1.81
@@ -72,7 +72,7 @@ ssh -R [bind_address:]port:host:hostport [user@]hostname
 
 ##### Example
 
-![image](images/ssh-reverse-static.png)
+![image](/images/ssh-reverse-static.png)
 
 ```sh
 ssh -R 0.0.0.0:13306:10.0.2.91:3306 -R 0.0.0.0:13389:10.0.2.91:3389 user@192.168.2.61
@@ -88,7 +88,7 @@ ssh -R [bind_addr:]port [user@]hostname
 
 ##### Example
 
-![image](images/ssh-reverse-dynamic.png)
+![image](/images/ssh-reverse-dynamic.png)
 
 ```sh
 Example: ssh -R 0.0.0.0:1080 user@192.168.2.61
@@ -151,7 +151,7 @@ chisel client <server> [R:[server-port]:[target-address]:[target-port]]
 
 ##### Example
 
-![image](images/chisel-reverse.png)
+![image](/images/chisel-reverse.png)
 
 ```sh
 chisel client 192.168.2.61:8080 R:13306:10.0.2.91:3306 R:13389:10.0.2.91:3389
@@ -167,7 +167,7 @@ chisel client <server> R:socks
 
 ##### Example
 
-![image](images/chisel-reverse-socks.png)
+![image](/images/chisel-reverse-socks.png)
 
 ```sh
 chisel client 192.168.2.61:8080 R:0.0.0.0:socks
