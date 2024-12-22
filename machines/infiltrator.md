@@ -240,7 +240,9 @@ Some names are found on the site, enclosed in `<h4>` tags in the html code:
 
 ![image](https://github.com/user-attachments/assets/af363b97-7fd6-490e-be43-818cf37285f1)
 
-### 2.3. Parsing and extracting names
+### 2.3. Extract names from site and generate possible usernames
+
+#### 2.3.1. Parsing and extracting names
 
 Let's parse the html for `xpath`: `//div/div/h4`
 
@@ -282,7 +284,9 @@ cat << EOF > raw.txt
 EOF
 ```
 
-Clean up the format to leave only names in `names.txt`
+#### 2.3.2. Generate possible usernames using `awk`
+
+##### 2.3.2.1. Parse `raw.txt` to get names only and output to `names.txt`
 
 ```sh
 awk -F'>|<' '{print substr($3,5)}' raw.txt > names.txt
@@ -297,7 +301,7 @@ awk -F'>|<' '{print substr($3,5)}' raw.txt > names.txt
 
 </details>
 
-### 2.4. Generate possible usernames
+##### 2.3.2.2. Generate possible usernames
 
 ```sh
 awk ' 
@@ -330,14 +334,23 @@ The `awk` command generates four different username formats for each line in `na
 
 **Generating Email Variations**:
 
-- `print first "." last "@company.com"`: first name joined with last name by a dot (`.`) e.g. `david.anderson@company.com`.
-- `print first "_" last "@company.com"`: first name joined with last name by an underscore (`_`) e.g. `david_anderson@company.com`.
-- `print substr(first, 1, 1) "." last "@company.com"`: first letter of first name (`substr(first, 1, 1)`) joined with last name by a dot (`.`) e.g. `d.anderson@company.com`.
-- `print substr(first, 1, 1) "_" last "@company.com"`: first letter of first name (`substr(first, 1, 1)`) joined with last name by an underscore (`_`) e.g. `d_anderson@company.com`.
+| Command | Explanation |
+|---|---|
+|`print first "." last "@infiltrator.htb"`|firstName.lastName@ first name joined with last name by a dot (`.`) e.g. `david.anderson@infiltrator.htb`|
+|`print first "_" last "@infiltrator.htb"`|first name joined with last name by an underscore (`_`) e.g. `david_anderson@infiltrator.htb`|
+|`print substr(first, 1, 1) "." last "@infiltrator.htb"`|first letter of first name (`substr(first, 1, 1)`) joined with last name by a dot (`.`) e.g. `d.anderson@infiltrator.htb`|
+|`print substr(first, 1, 1) "_" last "@infiltrator.htb"`|first letter of first name (`substr(first, 1, 1)`) joined with last name by an underscore (`_`) e.g. `d_anderson@infiltrator.htb`|
 
 </details>
 
-Output:
+> [!Tip]
+>
+> The syntax for [`substr`](https://www.gnu.org/software/gawk/manual/html_node/String-Functions.html#index-substr_0028_0029-function) is `substr(string, start [, length ])`
+> - `string`: the string object to operate on
+> - `start`: the nth character to start from
+> - `length` _[optional]_: the length of characters to get; gets until the end of string if not present
+
+##### 2.3.2.3. Output:
 
 ```console
 root@kali:~# cat usernames.txt
