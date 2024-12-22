@@ -1,3 +1,4 @@
+
 ![image](https://github.com/user-attachments/assets/7e7c8fd4-b822-4465-b770-4dbf2e2923a7)
 
 ## 1. Recon
@@ -85,4 +86,154 @@ HOP RTT     ADDRESS
 
 OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 95.32 seconds
+```
+
+The target machine appears to be a domain controller, let's add the hosts records to Kali:
+
+```sh
+cat << EOF >> /etc/hosts
+10.10.11.31 infiltrator.htb
+10.10.11.31 dc01.infiltrator.htb
+EOF
+```
+
+## 2. Exploring
+
+### 2.1. `80`
+
+![image](https://github.com/user-attachments/assets/52414a74-6fa4-4332-8f07-5d017347b690)
+
+Some names are found on the site, enclosed in `<h4>` tags in the html code:
+
+![image](https://github.com/user-attachments/assets/af363b97-7fd6-490e-be43-818cf37285f1)
+
+### 2.2. Parsing and extracting names
+
+Let's parse the html for `xpath`: `//div/div/h4`
+
+> [!Note]
+>
+> The `-` instructs `xmllint` to take the input from `stdin`, which is piped from the `curl` command
+>
+> `xmllint` would complain about parsing errors at some part of the html document, `2> /dev/null` discards the errors to have a cleaner output
+
+```console
+root@kali:~# curl -s http://infiltrator.htb | xmllint --html --xpath //div/div/h4 - 2> /dev/null
+<h4>Top Notch</h4>
+<h4>Robust</h4>
+<h4>Reliable</h4>
+<h4>Up-to-date</h4>
+<h4>Initial Work</h4>
+<h4>Master Planning</h4>
+<h4>Smooth Execution</h4>
+<h4>.01 David Anderson</h4>
+<h4>.02 Olivia Martinez</h4>
+<h4>.03 Kevin Turner</h4>
+<h4>.04 Amanda Walker</h4>
+<h4>.05 Marcus Harris</h4>
+<h4>.06 Lauren Clark</h4>
+<h4>.07 Ethan Rodriguez</h4>
+```
+
+Place the relevant portion into `raw.txt`:
+
+```sh
+cat << EOF > raw.txt
+<h4>.01 David Anderson</h4>
+<h4>.02 Olivia Martinez</h4>
+<h4>.03 Kevin Turner</h4>
+<h4>.04 Amanda Walker</h4>
+<h4>.05 Marcus Harris</h4>
+<h4>.06 Lauren Clark</h4>
+<h4>.07 Ethan Rodriguez</h4>
+EOF
+```
+
+Clean up the format to leave only names in `names.txt`
+
+```sh
+awk -F'>|<' '{print substr($3,5)}' raw.txt > names.txt
+```
+
+<details><summary><code>awk</code> command explanation</summary>
+
+- `-F'>|<'`: Sets the **field separator** to split each line into fields using the characters `>` OR `<` as delimiters
+- `{print substr($3,5)}`: action for `awk` to perform on each line:
+  - `$3`: third field of the line, e.g. `<h4>.01 David Anderson</h4>` becomes `.01 David Anderson`
+  - `substr($3,5)`: extracts a substring starting at the 5th character of `$3` (i.e. removes the numeric prefix `.01 `, `.02 `, etc.), leaving just the name like `David Anderson`
+
+</details>
+
+### 2.3. Generate possible usernames
+
+```sh
+awk ' 
+  {
+    name = $0
+    split(name, parts, " ")
+    first = tolower(parts[1])
+    last = tolower(parts[2])
+    print first "." last "@infiltrator.htb" 
+    print first "_" last "@infiltrator.htb"
+    print substr(first, 1, 1) "." last "@infiltrator.htb"
+    print substr(first, 1, 1) "_" last "@infiltrator.htb"
+  }
+' names.txt > usernames.txt
+```
+
+<details><summary><code>awk</code> command explanation</summary>
+
+The `awk` command generates four different username formats for each line in `name.txt` and outputs them to `usernames.txt`.
+
+**Preparing names format**:
+
+- `{...}`: the code inside the curly braces defines the actions `awk` will perform on each line of the input (`name.txt`)
+  - `name = $0`: `$0` in `awk` refers to the entire record (line), this is assigned to the variable `name`
+  - `split(name, parts, " ")`: divides the `name` string into parts by spaces (`" "`); the result is stored in the array `parts`
+    - `parts[1]` holds the first name (e.g. `David`)
+    - `parts[2]` holds the last name (e.g. `Anderson`)
+  - `first = tolower(parts[1])`: converts the first name (`parts[1]`) to lowercase
+  - `last = tolower(parts[2])`: converts the last name (`parts[2]`) to lowercase
+
+**Generating Email Variations**:
+
+- `print first "." last "@company.com"`: first name joined with last name by a dot (`.`) e.g. `david.anderson@company.com`.
+- `print first "_" last "@company.com"`: first name joined with last name by an underscore (`_`) e.g. `david_anderson@company.com`.
+- `print substr(first, 1, 1) "." last "@company.com"`: first letter of first name (`substr(first, 1, 1)`) joined with last name by a dot (`.`) e.g. `d.anderson@company.com`.
+- `print substr(first, 1, 1) "_" last "@company.com"`: first letter of first name (`substr(first, 1, 1)`) joined with last name by an underscore (`_`) e.g. `d_anderson@company.com`.
+
+</details>
+
+Output:
+
+```console
+root@kali:~# cat usernames.txt
+david.anderson@infiltrator.htb
+david_anderson@infiltrator.htb
+d.anderson@infiltrator.htb
+d_anderson@infiltrator.htb
+olivia.martinez@infiltrator.htb
+olivia_martinez@infiltrator.htb
+o.martinez@infiltrator.htb
+o_martinez@infiltrator.htb
+kevin.turner@infiltrator.htb
+kevin_turner@infiltrator.htb
+k.turner@infiltrator.htb
+k_turner@infiltrator.htb
+amanda.walker@infiltrator.htb
+amanda_walker@infiltrator.htb
+a.walker@infiltrator.htb
+a_walker@infiltrator.htb
+marcus.harris@infiltrator.htb
+marcus_harris@infiltrator.htb
+m.harris@infiltrator.htb
+m_harris@infiltrator.htb
+lauren.clark@infiltrator.htb
+lauren_clark@infiltrator.htb
+l.clark@infiltrator.htb
+l_clark@infiltrator.htb
+ethan.rodriguez@infiltrator.htb
+ethan_rodriguez@infiltrator.htb
+e.rodriguez@infiltrator.htb
+e_rodriguez@infiltrator.htb
 ```
