@@ -1455,6 +1455,8 @@ Description : The Print Spooler service is disabled.
 ┃ need to have rights to create files in a PATH folder.        ┃
 ┃ Further analysis is required.                                ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
 </details>
 
 Interesting software found: `Output Messenger`
