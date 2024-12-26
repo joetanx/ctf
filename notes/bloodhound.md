@@ -121,8 +121,33 @@ Select the zip package from `bloodhound.py`:
 
 ![image](https://github.com/user-attachments/assets/3b8721d0-4bc7-4353-8e3c-b3973565d7cd)
 
+### 2.3. Clearing sessions and database
+
+The database stores all bloodbound packages uploaded
+
+To start anew with a fresh workbench, use the `Clear Sessions` and `Clear Database` functions under `Database Info`
+
+![image](https://github.com/user-attachments/assets/07a8c265-d9e6-42ef-953f-b965543e40fd)
 
 ## 3. Interesting BloodHound queries
+
+> [!Tip]
+>
+> ### Node labels
+>
+> Pressing `Ctrl` toggles showing and hiding node labels, this can be useful to see all the node labels
+>
+> ![image](https://github.com/user-attachments/assets/8271412f-92d6-40f2-b091-e4a9297c87f4)
+> 
+> ![image](https://github.com/user-attachments/assets/2c9af113-163e-4828-ac17-8438b3b90cac)
+>
+> If there are too many nodes to show label, showing node labels can hit the node label threshold
+>
+> ![image](https://github.com/user-attachments/assets/398c4970-9f2a-4b17-8070-92188039bb64)
+>
+> This can be adjusted in settings:
+>
+> ![image](https://github.com/user-attachments/assets/80a873f5-a0dc-4e95-82f5-6e21deb68183)
 
 ### 3.1. Find all Domain Admins
 
@@ -136,7 +161,7 @@ Select the zip package from `bloodhound.py`:
 
 There are no AS-REP roastable users. Hence, no data returned from query.
 
-![image](https://github.com/user-attachments/assets/ee1fcdc9-2ead-46a1-8678-c87ba14d4adf)
+![image](https://github.com/user-attachments/assets/31c98a3b-c8f4-4ea6-9252-eb2e47d8381b)
 
 ### 3.4. Find Principals with DCSync Rights
 
@@ -145,3 +170,55 @@ There are no AS-REP roastable users. Hence, no data returned from query.
 ### 3.5. List all Kerberoastable Accounts
 
 ![image](https://github.com/user-attachments/assets/4a2a1f35-140c-4c5d-a08e-89f0231d3132)
+
+## 4. Investigating account access examples
+
+### 4.1. Example 1: account is a Domain Admin
+
+Search for the account:
+
+![image](https://github.com/user-attachments/assets/1d941a5c-2c9c-44bc-9927-a71281544d81)
+
+Select the node and select `Reachable High Value Targets`
+
+![image](https://github.com/user-attachments/assets/c610ad11-f34a-4eb0-ab48-173c57c7f709)
+
+When the account is a Domain Admin, the graph is straightforward since it's just a member of the `Domain Admins` group
+
+![image](https://github.com/user-attachments/assets/1ab3fac1-ef70-48a4-9305-293d40c88b61)
+
+### 4.2. Example 2: account is not directly privileged, but is part of a chain of permissions
+
+Search for the account:
+
+![image](https://github.com/user-attachments/assets/ad5cdd66-4e94-4b8d-be13-ada5f249ae66)
+
+Select the node and select `Reachable High Value Targets`
+
+![image](https://github.com/user-attachments/assets/faf7cfb7-de08-4b20-ad62-83eec9d46d73)
+
+The account `d.anderson` in this example is not privileged, but is part of a chain of permissions to gaining PSRemote access to the domain controller
+
+![image](https://github.com/user-attachments/assets/93ebb8ac-5122-44bb-a24d-f7d2cac60183)
+
+> [!Tip]
+>
+> Hover on an edge and right-click to get explanation on the edge
+>
+> ![image](https://github.com/user-attachments/assets/629da73e-0bb5-4aca-9046-bb0199c65d76)
+
+GenericAll:
+
+![image](https://github.com/user-attachments/assets/becb4844-1db5-4c64-ad4d-36aa3072af3c)
+
+AddSelf:
+
+![image](https://github.com/user-attachments/assets/b1a359cb-24c9-47ba-8fec-aef1cb3c1224)
+
+ForceChangePassword:
+
+![image](https://github.com/user-attachments/assets/98661911-ea50-48ca-8397-cfa9eee94c40)
+
+CanPSRemote:
+
+![image](https://github.com/user-attachments/assets/9928a04e-c286-49bf-85e2-213925a2daea)
