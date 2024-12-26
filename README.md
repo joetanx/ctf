@@ -693,18 +693,20 @@ Likely used for scenario to upload a file from target:
 Prepare server on Kali:
 
 ```sh
-curl -LO https://github.com/jpillora/chisel/releases/download/v1.8.1/chisel_1.8.1_linux_amd64.gz
-gzip -d chisel_1.8.1_linux_amd64.gz
-mv chisel_1.8.1_linux_amd64 chisel
+VERSION=$(curl -sI https://github.com/jpillora/chisel/releases/latest | grep location: | cut -d / -f 8 | tr -d '\r' | tr -d 'v')
+curl -sLO https://github.com/jpillora/chisel/releases/downloadv$VERSION/chisel_${VERSION}_linux_amd64.gz
+gzip -d chisel_${VERSION}_linux_amd64.gz
+mv chisel_${VERSION}_linux_amd64 chisel
 chmod +x chisel
 ```
 
 Prepare client binaries for Windows target to download
 
 ```sh
-curl -LO https://github.com/jpillora/chisel/releases/download/v1.8.1/chisel_1.8.1_windows_amd64.gz
-gzip -d chisel_1.8.1_windows_amd64.gz
-mv chisel_1.8.1_windows_amd64 /var/www/html/chisel.exe
+VERSION=$(curl -sI https://github.com/jpillora/chisel/releases/latest | grep location: | cut -d / -f 8 | tr -d '\r' | tr -d 'v')
+curl -sLO https://github.com/jpillora/chisel/releases/download/v$VERSION/chisel_${VERSION}_windows_amd64.gz
+gzip -d chisel_${VERSION}_windows_amd64.gz
+mv chisel_${VERSION}_windows_amd64 /var/www/html/chisel.exe
 ```
 
 Download client binaries on Windows target
