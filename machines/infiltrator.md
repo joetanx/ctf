@@ -1167,3 +1167,65 @@ Access is denied.*Evil-WinRM* PS C:\Users\M.harris\Documents>
 ```
 
 </details>
+
+Nothing much found except for `Output Messenger` in `PATH` and `INSTALLED SOFTWARE`
+
+```
+Path=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\Output Messenger Server\Plugins\Output\apache2\bin\;C:\Program Files\Output Messenger Server\Plugins\Output\php\;C:\Program Files\Output Messenger Server\Plugins\Output\mysql\bin\;C:\Users\M.harris\AppData\Local\Microsoft\WindowsApps
+⋮
+ [+] INSTALLED SOFTWARE
+⋮
+    InstallLocation    REG_SZ    C:\Program Files\Output Messenger Server\
+    InstallLocation    REG_SZ    C:\Program Files\Output Messenger\
+    InstallLocation    REG_SZ    C:\Program Files\VMware\VMware Tools\
+```
+
+Search for `*OutputMessenger*` reveals a config file:
+
+```cmd
+*Evil-WinRM* PS C:\Users\M.harris\Documents> Get-ChildItem -Path C:\ -Filter *OutputMessenger* -Recurse -ErrorAction SilentlyContinue -Force
+
+
+    Directory: C:\Program Files\Output Messenger
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----       10/23/2023   1:41 PM        6826240 OutputMessenger.exe
+-a----       12/19/2022  11:07 AM           1788 OutputMessenger.exe.config
+⋮
+```
+
+Contents of `OutputMessenger.exe.config` 
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <configSections>
+    <section name="entityFramework" type="System.Data.Entity.Internal.ConfigFile.EntityFrameworkSection, EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" requirePermission="false"/>
+  </configSections>
+  <runtime>
+    <legacyCorruptedStateExceptionsPolicy enabled="false"/>
+  </runtime>
+  <startup useLegacyV2RuntimeActivationPolicy="true">
+    <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.0"/>
+  </startup>
+  <system.data>
+    <DbProviderFactories>
+      <clear/>
+      <remove invariant="System.Data.SQLite"/>
+      <add name="SQLite Data Provider" invariant="System.Data.SQLite" description="Data Provider for SQLite" type="System.Data.SQLite.SQLiteFactory, System.Data.SQLite"/>
+      <remove invariant="System.Data.SQLite.EF6"/>
+      <add name="SQLite Data Provider (Entity Framework 6)" invariant="System.Data.SQLite.EF6" description=".NET Framework Data Provider for SQLite (Entity Framework 6)" type="System.Data.SQLite.EF6.SQLiteProviderFactory, System.Data.SQLite.EF6"/>
+    </DbProviderFactories>
+  </system.data>
+  <entityFramework>
+    <defaultConnectionFactory type="System.Data.Entity.Infrastructure.SqlConnectionFactory, EntityFramework"/>
+    <providers>
+      <provider invariantName="System.Data.SqlClient" type="System.Data.Entity.SqlServer.SqlProviderServices, EntityFramework.SqlServer"/>
+      <provider invariantName="System.Data.SQLite" type="System.Data.SQLite.EF6.SQLiteProviderServices, System.Data.SQLite.EF6"/>
+      <provider invariantName="System.Data.SQLite.EF6" type="System.Data.SQLite.EF6.SQLiteProviderServices, System.Data.SQLite.EF6" />
+    </providers>
+  </entityFramework>
+</configuration>
+```
