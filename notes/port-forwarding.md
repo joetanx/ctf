@@ -220,4 +220,4 @@ proxychains -q nmap -Pn -sT -A 10.0.2.0/24
 > 1. ProxyChains only work for TCP traffic, i.e. ICMP (ping, traceroute) and SYN (-sS) scans will not work over ProxyChains
 > 2. nmap uses `-sS` by default, so the `-sT` option to use TCP Connect() scan is required
 > 3. Use `-O -sV -sC` instead of `-A` to omit running traceroute
-> 4. nmap scan may be crawlingly slow over ProxyChains, try to use the pivot box to scan instead
+> 4. nmap scan would be quite slow over ProxyChains, use `-F` to limit the port range to top 100 ports or try to use the pivot box to scan instead
