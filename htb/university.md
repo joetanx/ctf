@@ -69,3 +69,27 @@ cat << EOF >> /etc/hosts
 10.10.11.39 university.htb0
 EOF
 ```
+
+## 2. Exploring
+
+### 2.1. `80`
+
+![image](https://github.com/user-attachments/assets/c54bf4a1-72f9-4ee4-b924-34f3856fe4d5)
+
+User login to the site accepts password and signed certificate methods, and there are `Student` and `Professor` account types for registration
+
+![image](https://github.com/user-attachments/assets/61c6deb6-8e94-4589-9df9-079518404561)
+
+![image](https://github.com/user-attachments/assets/f191adcf-2642-4f8d-9c7b-077186c911bc)
+
+`Professor` registration requires review and approval
+
+![image](https://github.com/user-attachments/assets/4d898275-f86d-4486-81fc-6a70f6329564)
+
+Let's register for a `Student` account
+
+![image](https://github.com/user-attachments/assets/a357d888-67cc-4e84-8f88-1a89388fdea0)
+
+The registered `Student` account is immediately usable for login
+
+![image](https://github.com/user-attachments/assets/2e6b4626-b602-4087-b1d4-f968de386b81)
