@@ -49,7 +49,7 @@ Ref: <https://manpages.debian.org/bullseye/nmap/nmap.1.en.html>
 |Initial network sweep|`nmap -sn $TARGET_RANGE`|
 |TCP|`nmap -p- -A $TARGET_IP`|
 |TCP Aggresive Scan|`nmap -A --max-scan-delay 0 --max-retries 3 --defeat-rst-ratelimit $TARGET`|
-|TCP Connect Scan over proxychains|`proxychains -q nmap -Pn -sT -A $TARGET_IP`|
+|TCP Connect Scan over proxychains|`proxychains -q nmap -Pn -sT -O -sV -sC -F $TARGET_IP`|
 |UDP|`nmap -sU -A --top-ports 100 $TARGET_IP`|
 |Port scan with netcat|`nc -nvz $TARGET_IP $PORT`|
 
@@ -757,7 +757,7 @@ proxychains curl http://$TARGET_INTERNAL_NETWORK/
 > 1. ProxyChains only work for TCP traffic, i.e. ICMP (ping, traceroute) and SYN (-sS) scans will not work over ProxyChains
 > 2. nmap uses `-sS` by default, so the `-sT` option to use TCP Connect() scan is required
 > 3. Use `-O -sV -sC` instead of `-A` to omit running traceroute
-> 4. nmap scan may be crawlingly slow, try to use the pivot box to scan instead
+> 4. nmap scan would be quite slow over ProxyChains, use `-F` to limit the port range to top 100 ports or try to use the pivot box to scan instead
 
 ## 7. Linux privilege escalation
 
