@@ -215,3 +215,100 @@ User claims unknown.
 
 Kerberos support for Dynamic Access Control on this device has been disabled.
 ```
+
+### 2.3. Looking around
+
+Using `Get-ChildItem` + `-Recurse` reveals database backup files at `C:\Web\DB Backups` with a backup script `C:\Web\DB Backups\db-backup-automator.ps1` that contains password for `wao`: `WebAO1337`
+
+```pwsh
+PS C:\Web\University> Get-ChildItem -Path C:\Web -Recurse
+
+
+    Directory: C:\Web
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----        2/25/2024   4:53 PM                DB Backups
+d-----        2/12/2024   4:54 PM                nginx-1.24.0
+d-----       12/27/2024   5:01 AM                University
+
+
+    Directory: C:\Web\DB Backups
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        1/25/2023  12:03 AM          24215 DB-Backup-2023-01-25.zip
+-a----        2/25/2023  12:03 AM          24215 DB-Backup-2023-02-25.zip
+-a----        3/25/2023  12:03 AM          24215 DB-Backup-2023-03-25.zip
+-a----        4/25/2023  12:04 AM          24215 DB-Backup-2023-04-25.zip
+-a----        5/25/2023  12:04 AM          24215 DB-Backup-2023-05-25.zip
+-a----        6/25/2023  12:04 AM          24215 DB-Backup-2023-06-25.zip
+-a----        7/25/2023  12:04 AM          24215 DB-Backup-2023-07-25.zip
+-a----        8/25/2023  12:04 AM          24215 DB-Backup-2023-08-25.zip
+-a----        9/25/2023  12:05 AM          24215 DB-Backup-2023-09-25.zip
+-a----       10/25/2023  12:05 AM          24215 DB-Backup-2023-10-25.zip
+-a----       11/25/2023  12:05 AM          24215 DB-Backup-2023-11-25.zip
+-a----       12/25/2023  12:05 AM          24215 DB-Backup-2023-12-25.zip
+-a----        1/25/2024  12:06 AM          24215 DB-Backup-2024-01-25.zip
+-a----        2/25/2024  12:06 AM          24215 DB-Backup-2024-02-25.zip
+-a----        3/25/2024  12:07 AM          24215 DB-Backup-2024-03-25.zip
+-a----        4/25/2024  12:07 AM          24215 DB-Backup-2024-04-25.zip
+-a----       10/14/2024   9:35 AM            386 db-backup-automator.ps1
+
+
+    Directory: C:\Web\nginx-1.24.0
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----        2/12/2024   5:47 PM                conf
+d-----        2/12/2024   3:46 PM                contrib
+d-----        2/12/2024   3:46 PM                docs
+d-----        2/12/2024   3:46 PM                html
+d-----        2/17/2024   3:06 AM                logs
+d-----        2/12/2024   4:45 PM                temp
+-a----        4/11/2023   8:29 AM        3811328 nginx.exe
+-a----         3/3/2024   4:10 AM         111067 off
+-a----        2/15/2024  12:36 AM             46 start.bat
+
+⋮
+
+    Directory: C:\Web\University
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----        2/15/2024   8:13 AM                CA
+d-----        2/19/2024   3:54 PM                static
+d-----       10/15/2024  11:42 AM                University
+-a----       12/27/2024   5:01 AM         245760 db.sqlite3
+-a----       12/27/2024   5:01 AM           5459 JfMLsX.html
+-a----       12/27/2024   5:01 AM              0 JfMLsX.pdf
+-a----        12/3/2023   4:28 AM            666 manage.py
+-a----       12/27/2024   5:00 AM            533 reverse.ps1
+-a----        2/15/2024  12:51 AM            133 start-server.bat
+
+
+    Directory: C:\Web\University\CA
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        2/15/2024   5:51 AM           1399 rootCA.crt
+-a----        2/15/2024   5:48 AM           1704 rootCA.key
+-a----        2/25/2024   5:41 PM             42 rootCA.srl
+
+⋮
+
+PS C:\Web\University> type "C:\Web\DB Backups\db-backup-automator.ps1"
+$sourcePath = "C:\Web\University\db.sqlite3"
+$destinationPath = "C:\Web\DB Backups\"
+$7zExePath = "C:\Program Files\7-Zip\7z.exe"
+
+$zipFileName = "DB-Backup-$(Get-Date -Format 'yyyy-MM-dd').zip"
+$zipFilePath = Join-Path -Path $destinationPath -ChildPath $zipFileName
+$7zCommand = "& `"$7zExePath`" a `"$zipFilePath`" `"$sourcePath`" -p'WebAO1337'"
+Invoke-Expression -Command $7zCommand
+```
