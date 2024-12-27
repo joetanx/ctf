@@ -145,7 +145,7 @@ Edit the PoC code to this:
 
 Put into the Bio editor, submit, then select profile export (it is the html to pdf generator that would execute the command)
 
-![image](https://github.com/user-attachments/assets/5722b636-eb5f-45bc-86e2-dd0ad6190902)
+![image](https://github.com/user-attachments/assets/50a1aa58-9945-4db2-a1fe-208b2d04e0b0)
 
 Next, edit the PoC code to this:
 
@@ -161,7 +161,7 @@ Next, edit the PoC code to this:
 
 Put into the Bio editor, submit, then select profile export (it is the html to pdf generator that would execute the command)
 
-![image](https://github.com/user-attachments/assets/8188d6bf-6224-4bda-a645-8c8c1fce7009)
+![image](https://github.com/user-attachments/assets/59d24bed-ca36-4fdf-b3f5-ed1246da4534)
 
 Reverse shell hooked as `university\wao` account
 
