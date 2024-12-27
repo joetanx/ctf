@@ -1769,3 +1769,22 @@ Nmap done: 1 IP address (1 host up) scanned in 245.83 seconds
 ![image](https://github.com/user-attachments/assets/df497c92-71ab-4dfa-90fa-65ebf52e3a87)
 
 Nothing much found other than some idle banter among the devs
+
+`14125` is the [web API](https://support.outputmessenger.com/authentication-api/) for Output Messenger, doesn't seem to have anything here
+
+```console
+root@kali:~# curl http://localhost:14125/
+{"Message":"No HTTP resource was found that matches the request URI 'http://localhost:14125/'.","MessageDetail":"No route data was found for this request."}
+root@kali:~# curl http://localhost:14125/api/users
+{"Message":"Request is missing authorization token."}
+```
+
+`14126` is the [Apache web Server](https://support.outputmessenger.com/configuring-server-using-server-manager/) for Output Messenger, doesn't seem to have anything here either
+
+![image](https://github.com/user-attachments/assets/700b400d-969d-4895-8984-e36055d718a4)
+
+![image](https://github.com/user-attachments/assets/a7499dcf-5a96-4e7c-b2ae-e69935109138)
+
+One thing noticed here is that the "Not Found" for a non-existent URL is different from the "Not Found" in the `/output/` page above
+
+![image](https://github.com/user-attachments/assets/63194c7f-ed81-44da-84bc-22d399dfd786)
