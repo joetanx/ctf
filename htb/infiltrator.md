@@ -1,3 +1,8 @@
+> [!Note]
+>
+> |User|Root|
+> |---|---|
+> |✅|❌|
 
 ![image](https://github.com/user-attachments/assets/7e7c8fd4-b822-4465-b770-4dbf2e2923a7)
 
