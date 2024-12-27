@@ -748,11 +748,16 @@ socks5  $KALI 1080
 </details>
 
 ```sh
-proxychains -q nmap -Pn -sT-A $TARGET_INTERNAL_NETWORK
+proxychains -q nmap -Pn -sT -O -sV -sC $TARGET_INTERNAL_NETWORK
 proxychains curl http://$TARGET_INTERNAL_NETWORK/
 ```
 
-☝️ ProxyChains only work for TCP traffic, i.e. ICMP and SYN scans will not work over Proxy Chains; nmap scan will actually be crawlingly slow, try to use the pivot box to scan instead
+> [!Tip]
+>
+> 1. ProxyChains only work for TCP traffic, i.e. ICMP (ping, traceroute) and SYN (-sS) scans will not work over ProxyChains
+> 2. nmap uses `-sS` by default, so the `-sT` option to use TCP Connect() scan is required
+> 3. Use `-O -sV -sC` instead of `-A` to omit running traceroute
+> 4. nmap scan may be crawlingly slow, try to use the pivot box to scan instead
 
 ## 7. Linux privilege escalation
 
