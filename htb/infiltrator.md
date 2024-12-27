@@ -1496,11 +1496,11 @@ LDAP        10.10.11.31     389    DC01             Guest                       
 LDAP        10.10.11.31     389    DC01             krbtgt                        2023-12-04 17:36:16 1       Key Distribution Center Service Account
 LDAP        10.10.11.31     389    DC01             D.anderson                    2023-12-04 18:56:02 0
 LDAP        10.10.11.31     389    DC01             L.clark                       2023-12-04 19:04:24 0
-LDAP        10.10.11.31     389    DC01             M.harris                      2024-12-26 13:21:41 0
+LDAP        10.10.11.31     389    DC01             M.harris                      2024-12-27 01:27:07 0
 LDAP        10.10.11.31     389    DC01             O.martinez                    2024-02-25 15:41:03 0
 LDAP        10.10.11.31     389    DC01             A.walker                      2023-12-05 22:06:28 1
-LDAP        10.10.11.31     389    DC01             K.turner                      2024-02-25 15:40:35 3       MessengerApp@Pass!
-LDAP        10.10.11.31     389    DC01             E.rodriguez                   2024-12-26 13:21:41 0
+LDAP        10.10.11.31     389    DC01             K.turner                      2024-02-25 15:40:35 1       MessengerApp@Pass!
+LDAP        10.10.11.31     389    DC01             E.rodriguez                   2024-12-27 01:26:52 0
 LDAP        10.10.11.31     389    DC01             winrm_svc                     2024-08-02 22:42:45 0
 LDAP        10.10.11.31     389    DC01             lan_managment                 2024-08-02 22:42:46 0
 ```
