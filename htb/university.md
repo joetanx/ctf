@@ -1,5 +1,4 @@
-![image](https://github.com/user-attachments/assets/5071d392-3003-4d93-acbf-7d88bb02b318)
-
+![image](https://github.com/user-attachments/assets/9d5ed6d1-39f1-4b0c-a85c-b3e794e4048c)
 
 ## 1. Recon
 
