@@ -2,9 +2,17 @@
 
 #### 1.1. Ping sweep
 
+Linux:
+
 ```sh
 export SUBNET=192.168.1
 for i in $(seq 254); do ping $SUBNET.$i -c1 -W1 & done | grep from
+```
+
+Windows:
+
+```cmd
+for /L %i in (1,1,255) do @ping -n 1 -w 1 192.168.1.%i > nul && echo 192.168.1.%i is up.
 ```
 
 #### 1.2. Port scan
