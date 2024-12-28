@@ -608,9 +608,7 @@ chown www-data:www-data /var/www/html/uploads
 
 ☝️ apache2 runs as `www-data` user, it needs write permission on the uploads directory for uploads to succeed
 
-Create the `/var/www/html/upload.php` page with below code:
-
-https://github.com/joetanx/oscp/blob/cfcea9a2cdff302ad9c6792c885795a3c38cf5eb/upload.php#L1-L23
+Download [`upload.php`](https://github.com/joetanx/ctf/blob/main/upload.php): `curl -sLo /var/www/html/upload.php https://github.com/joetanx/ctf/raw/refs/heads/main/upload.php`
 
 ☝️ The name for the upload parameter is named as default of `file` to accommodate the PowerShell `UploadFile` method of `System.Net.WebClient` which will `POST` the file to this name
 
