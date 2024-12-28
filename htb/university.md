@@ -740,7 +740,9 @@ drwxrwxr-x 9 wao wao 4096 Sep 14 03:55 ..
 ⋮
 ```
 
-## 5. Getting access to the university site
+## 5. Going back to the university site
+
+### 5.1. Getting access to the university site
 
 What is found so far:
 - The university site accepts certificate-based authentication
@@ -794,8 +796,67 @@ The access of a professor has 3 more functions in the dashboard:
 
 ![image](https://github.com/user-attachments/assets/f714bb04-734c-46c2-b18b-4f8e825baab1)
 
+### 5.2. Generate GPG key
+
 GPG is used to encrypt uploaded lectures and there's a hint suggesting that uploading a file may be interesting
 
 > Please note that providing an invalid gpg file will prevent us from verifying the uploaded lectures in the feature and will cause errors...
 
 ![image](https://github.com/user-attachments/assets/962a9aec-7153-4e6b-9990-f148aa242cd1)
+
+Generate a GPG key
+
+```
+root@kali:~# gpg --gen-key
+gpg (GnuPG) 2.2.45; Copyright (C) 2024 g10 Code GmbH
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+gpg: directory '/root/.gnupg' created
+gpg: keybox '/root/.gnupg/pubring.kbx' created
+Note: Use "gpg --full-generate-key" for a full featured key generation dialog.
+
+GnuPG needs to construct a user ID to identify your key.
+
+Real name: george
+Email address: george@university.htb
+You selected this USER-ID:
+    "george <george@university.htb>"
+
+Change (N)ame, (E)mail, or (O)kay/(Q)uit? O
+We need to generate a lot of random bytes. It is a good idea to perform
+some other action (type on the keyboard, move the mouse, utilize the
+disks) during the prime generation; this gives the random number
+generator a better chance to gain enough entropy.
+We need to generate a lot of random bytes. It is a good idea to perform
+some other action (type on the keyboard, move the mouse, utilize the
+disks) during the prime generation; this gives the random number
+generator a better chance to gain enough entropy.
+gpg: /root/.gnupg/trustdb.gpg: trustdb created
+gpg: directory '/root/.gnupg/openpgp-revocs.d' created
+gpg: revocation certificate stored as '/root/.gnupg/openpgp-revocs.d/7259C99F7B382E8FDCAB2E128385A74213589E22.rev'
+public and secret key created and signed.
+
+pub   rsa3072 2024-12-28 [SC] [expires: 2027-12-28]
+      7259C99F7B382E8FDCAB2E128385A74213589E22
+uid                      george <george@university.htb>
+sub   rsa3072 2024-12-28 [E] [expires: 2027-12-28]
+
+
+root@kali:~# gpg --export -a george > george.asc
+```
+
+![image](https://github.com/user-attachments/assets/b07d48dd-b049-44f6-befb-e1c47f8d1cb2)
+
+![image](https://github.com/user-attachments/assets/43d3c850-5cfb-45ad-a15b-f80c22b423a5)
+
+### 5.3. Upload lecture file
+
+Selecting `Manage My Courses` shows the list of courses under the account:
+
+![image](https://github.com/user-attachments/assets/85e87026-4f22-4822-ad52-dbe8b3a77c45)
+
+Selecting `Learn More` on a course leads to `Add a new lecture`:
+
+![image](https://github.com/user-attachments/assets/ac459d37-1271-4a09-b54b-a030e13bfe12)
+
