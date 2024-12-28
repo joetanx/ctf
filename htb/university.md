@@ -356,6 +356,11 @@ db.sqlite3 uploaded.<html>
 root@kali:~# sqlite3 /var/www/html/uploads/db.sqlite3
 SQLite version 3.46.1 2024-08-13 09:16:08
 Enter ".help" for usage hints.
+```
+
+The users are found in the `University_customuser` table, but the pbkdf2 hashes doesn't seem to be crackable, let's move on for now
+
+```sh
 sqlite> .tables
 University_course           auth_group
 University_course_students  auth_group_permissions
@@ -365,14 +370,24 @@ University_lecture          django_content_type
 University_professor        django_migrations
 University_student          django_session
 University_student_courses
+sqlite> .headers ON
+sqlite> .mode column
 sqlite> SELECT * FROM University_customuser;
-2|pbkdf2_sha256$600000$igb7CzR3ivxQT4urvx0lWw$dAfkiIa438POS8K8s2dRNLy2BKZv7jxDnVuXqbZ61+s=|2024-02-26 01:47:32.992418|george|george|lantern|||1|0|0|0|Canada West - Vancouver|2024-02-19 23:23:16.293609|static/assets/images/users_profiles/2.png|Professor|george@university.htb
-3|pbkdf2_sha256$600000$i8XRGybY2ASqA3kEuTW4XH$SwK7A52nA1KOnuniKifqWzrjiIyOnrZu7sf+Zvq44qc=|2024-02-20 01:06:28.437570|carol|Carol|Helgen|||1|0|0|0|USA - Washington|2024-02-19 23:25:14.919010|static/assets/images/users_profiles/3.jpg|Professor|carol@science.com
-4|pbkdf2_sha256$600000$Bg8pRHaZsbGpLwirrZPvvn$7CtXYJhBDrGhiCvjma7X/AOKRWZS2SP0H6PAXvT96Vw=|2024-02-20 00:59:29.687668|Nour|Nour|Qasso|||1|0|0|0|Germany - Frankfurt|2024-02-19 23:27:04.700197|static/assets/images/users_profiles/4.jpg|Professor|nour.qasso@gmail.com
-5|pbkdf2_sha256$600000$VzP8VVjEQgQw6HvYAftmCl$s9k3UC/e2++hhQDF2KzhunOaAqxbi4rugRb42dC6qr0=|2024-02-20 00:37:55.455163|martin.rose|Martin|Rose|||1|0|0|0|US West - Los Angeles|2024-02-19 23:28:49.293710|static/assets/images/users_profiles/5.jpg|Professor|martin.rose@hotmail.com
-6|pbkdf2_sha256$600000$1s48WhgRDulQ6FsNgnXjot$SZ4piS9Ryf4mgIj0prEjN+F0pGEDtNti3b9WaQfAeTk=|2024-09-16 12:43:05.500724|nya|Nya|Laracrof||static/assets/uploads/CSRs/6_mnY36oU.csr|1|0|0|0|UK - London|2024-02-19 23:31:30.168489|static/assets/images/users_profiles/6.jpg|Professor|nya.laracrof@skype.com
-7|pbkdf2_sha256$600000$70XtdR4HrHHignt7EHiOpT$RP9/4PKHmbtCBq0FOPqyppQKjXntM89vc7jGyjk/zAk=|2024-02-26 01:42:16.677697|Steven.U|Steven|Universe|<h3>The First student in this university!</h3>|static/assets/uploads/CSRs/7.csr|1|0|0|0|Italy - Milan|2024-02-25 23:08:44.508623|static/assets/images/users_profiles/7.jpeg|Student|steven@yahoo.com
+id  password                                                                                  last_login                  username     first_name  last_name  bio                                             csr                                       is_active  is_staff  is_superuser  failed_login_attempts  address                  joined_at                   image                                       user_type  email                  
+--  ----------------------------------------------------------------------------------------  --------------------------  -----------  ----------  ---------  ----------------------------------------------  ----------------------------------------  ---------  --------  ------------  ---------------------  -----------------------  --------------------------  ------------------------------------------  ---------  -----------------------
+2   pbkdf2_sha256$600000$igb7CzR3ivxQT4urvx0lWw$dAfkiIa438POS8K8s2dRNLy2BKZv7jxDnVuXqbZ61+s=  2024-02-26 01:47:32.992418  george       george      lantern                                                                                              1          0         0             0                      Canada West - Vancouver  2024-02-19 23:23:16.293609  static/assets/images/users_profiles/2.png   Professor  george@university.htb  
+3   pbkdf2_sha256$600000$i8XRGybY2ASqA3kEuTW4XH$SwK7A52nA1KOnuniKifqWzrjiIyOnrZu7sf+Zvq44qc=  2024-02-20 01:06:28.437570  carol        Carol       Helgen                                                                                               1          0         0             0                      USA - Washington         2024-02-19 23:25:14.919010  static/assets/images/users_profiles/3.jpg   Professor  carol@science.com      
+4   pbkdf2_sha256$600000$Bg8pRHaZsbGpLwirrZPvvn$7CtXYJhBDrGhiCvjma7X/AOKRWZS2SP0H6PAXvT96Vw=  2024-02-20 00:59:29.687668  Nour         Nour        Qasso                                                                                                1          0         0             0                      Germany - Frankfurt      2024-02-19 23:27:04.700197  static/assets/images/users_profiles/4.jpg   Professor  nour.qasso@gmail.com   
+5   pbkdf2_sha256$600000$VzP8VVjEQgQw6HvYAftmCl$s9k3UC/e2++hhQDF2KzhunOaAqxbi4rugRb42dC6qr0=  2024-02-20 00:37:55.455163  martin.rose  Martin      Rose                                                                                                 1          0         0             0                      US West - Los Angeles    2024-02-19 23:28:49.293710  static/assets/images/users_profiles/5.jpg   Professor  martin.rose@hotmail.com
+6   pbkdf2_sha256$600000$1s48WhgRDulQ6FsNgnXjot$SZ4piS9Ryf4mgIj0prEjN+F0pGEDtNti3b9WaQfAeTk=  2024-09-16 12:43:05.500724  nya          Nya         Laracrof                                                   static/assets/uploads/CSRs/6_mnY36oU.csr  1          0         0             0                      UK - London              2024-02-19 23:31:30.168489  static/assets/images/users_profiles/6.jpg   Professor  nya.laracrof@skype.com 
+7   pbkdf2_sha256$600000$70XtdR4HrHHignt7EHiOpT$RP9/4PKHmbtCBq0FOPqyppQKjXntM89vc7jGyjk/zAk=  2024-02-26 01:42:16.677697  Steven.U     Steven      Universe   <h3>The First student in this university!</h3>  static/assets/uploads/CSRs/7.csr          1          0         0             0                      Italy - Milan            2024-02-25 23:08:44.508623  static/assets/images/users_profiles/7.jpeg  Student    steven@yahoo.com       
 ```
+
+> [!Tip]
+>
+> sqlite doesn't automatically format the `SELECT` results
+> - `.headers ON` includes the column names in the result display
+> - `.mode column` formats the width to make the output more human readable
 
 ## 3. Exploring with found credentials
 
