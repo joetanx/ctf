@@ -410,7 +410,7 @@ Example (Microsoft SQL): [DJ](https://github.com/joetanx/oscp/blob/main/pwk-lab/
 
 ## 4. Shells
 
-### 4.1. Listener
+### 4.1. Listeners
 
 #### Netcat
 
