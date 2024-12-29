@@ -859,7 +859,7 @@ Used in: [svcorp](https://github.com/joetanx/oscp/blob/main/pwk-lab/svcorp.md#13
 Prepare Kali:
 
 ```sh
-curl -Lo /var/www/html/PowerView.ps1 https://github.com/PowerShellMafia/PowerSploit/raw/master/Recon/PowerView.ps1
+curl -sLo /var/www/html/PowerView.ps1 https://github.com/PowerShellMafia/PowerSploit/raw/master/Recon/PowerView.ps1
 ```
 
 Import on target:
@@ -924,7 +924,7 @@ Invoke-AllChecks
 Prepare Kali:
 
 ```sh
-curl -Lo /var/www/html/PrivescCheck.ps1 https://github.com/itm4n/PrivescCheck/raw/master/PrivescCheck.ps1
+curl -sLo /var/www/html/PrivescCheck.ps1 https://github.com/itm4n/PrivescCheck/raw/master/PrivescCheck.ps1
 ```
 
 Import on target:
