@@ -72,7 +72,7 @@ The target machine appears to be a domain controller, let's add the hosts record
 ```sh
 cat << EOF >> /etc/hosts
 10.10.11.39 university.htb
-10.10.11.39 university.htb0
+10.10.11.39 dc.university.htb
 EOF
 ```
 
