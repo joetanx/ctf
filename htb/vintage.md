@@ -333,3 +333,46 @@ WARNING: Could not resolve: FS01.vintage.htb: The DNS query name does not exist:
 INFO: Done in 00M 01S
 INFO: Compressing output into 20241231093547_bloodhound.zip
 ```
+
+Find all Domain Admins: `L.Bianchi_adm` found to be a member
+
+![image](https://github.com/user-attachments/assets/509d5d3a-7072-41ff-a59c-b42ce751cb0d)
+
+Shortest Paths to Uncontrainted Delegation Systems:
+
+![image](https://github.com/user-attachments/assets/a164019e-1f0c-4b6a-b053-57a82a38bfd4)
+
+## 3. Investigating `FS01.vintage.htb`
+
+`FS01.vintage.htb` is mentioned in the BloodHound query, it seems to be a domain computer, but not recorded in the domain DNS
+
+`FS01` is a member of `PRE-WINDOWS 2000 COMPATIBLE ACCESS` group - this can be useful
+
+![image](https://github.com/user-attachments/assets/96d0342b-f145-453b-9ef8-ec7fb864af39)
+
+Checking the `Group Delegated Object Control` under `Node Info` for `FS01`:
+- `FS01` is a member of `Domain Computers` group
+- `Domain Computers` group has `ReadGMSAPassword` rights to the `GMSA01$` GMSA account
+
+![image](https://github.com/user-attachments/assets/15393e57-9a89-4654-bc56-778b1d33c7e0)
+
+GMSA was supposedly a way to secure service account passwords, it may ironically be the way in for this case
+
+![image](https://github.com/user-attachments/assets/98841e3f-b19b-4209-b01b-8468efbe7ba5)
+
+Checking the `First Degree Object Control` under `Node Info` for `GMSA01$`:
+- `GMSA01$` has `AddSelf` and `GenericWrite` rights to `ServiceManagers`
+
+![image](https://github.com/user-attachments/assets/ff8f1cc9-8e7e-4d33-927c-a997fe3c0cf2)
+
+AddSelf:
+
+![image](https://github.com/user-attachments/assets/cd76ac26-3241-47e8-9f8b-ea2391b70929)
+
+GenericWrite:
+
+![image](https://github.com/user-attachments/assets/49149ccc-d3c3-4cd8-8aa9-4f0992729b3f)
+
+Lastly, `ServiceManagers` has `GenericAll` rights to its 3 member: `svc_ark`, `svc_ldap` and `svc_sql`
+
+![image](https://github.com/user-attachments/assets/2b5e517c-027e-4063-aa42-be454c28c9cc)
