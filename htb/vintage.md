@@ -312,17 +312,6 @@ SMB         dc01.vintage.htb 445    dc01             1141: VINTAGE\L.Bianchi_adm
 Generating bloodhound packages
 
 ```console
-root@kali:~# netexec ldap dc01.vintage.htb -d vintage.htb -u P.Rosa -k --use-kcache --bloodhound --collection All --dns-server 10.10.11.45
-LDAP        dc01.vintage.htb 389    dc01.vintage.htb [*]  x64 (name:dc01.vintage.htb) (domain:vintage.htb) (signing:True) (SMBv1:False)
-LDAP        dc01.vintage.htb 389    dc01.vintage.htb [+] vintage.htb\P.Rosa from ccache
-LDAP        dc01.vintage.htb 389    dc01.vintage.htb Resolved collection methods: container, group, psremote, dcom, objectprops, session, trusts, rdp, localadmin, acl
-LDAP        dc01.vintage.htb 389    dc01.vintage.htb Using kerberos auth without ccache, getting TGT
-LDAP        dc01.vintage.htb 389    dc01.vintage.htb Using kerberos auth from ccache
-LDAP        dc01.vintage.htb 389    dc01.vintage.htb Done in 00M 01S
-LDAP        dc01.vintage.htb 389    dc01.vintage.htb Compressing output into /root/.nxc/logs/dc01.vintage.htb_dc01.vintage.htb_2024-12-30_101430_bloodhound.zip
-```
-
-```console
 root@kali:~# bloodhound-python -d vintage.htb -u P.Rosa -p Rosaisbest123 -ns 10.10.11.45 -c all --dns-tcp --zip
 INFO: Found AD domain: vintage.htb
 INFO: Getting TGT for user
@@ -342,5 +331,5 @@ INFO: Querying computer: FS01.vintage.htb
 INFO: Querying computer: dc01.vintage.htb
 WARNING: Could not resolve: FS01.vintage.htb: The DNS query name does not exist: FS01.vintage.htb.
 INFO: Done in 00M 01S
-INFO: Compressing output into 20241229164901_bloodhound.zip
+INFO: Compressing output into 20241231093547_bloodhound.zip
 ```
