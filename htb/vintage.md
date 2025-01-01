@@ -691,6 +691,8 @@ Kerberos support for Dynamic Access Control on this device has been disabled.
 Get the `user.txt`
 
 ```pwsh
+PS C:\Users\C.Neri\Documents> hostname
+dc01
 PS C:\Users\C.Neri\Documents> type ..\Desktop\user.txt
 8a6d2f23df458774f9168aa764aaa2e6
 ```
