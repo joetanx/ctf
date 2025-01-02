@@ -554,31 +554,31 @@ contract Database {
         document.getElementById("user-messages").innerHTML += data
           .map((msg) => {
             return `<div class="msg left-msg">
-				<div class="msg-img" style="background-image: url(/assets/other.svg)">
-				</div>
+        <div class="msg-img" style="background-image: url(/assets/other.svg)">
+        </div>
 
-				<div class="msg-bubble">
-					<div class="msg-info">
-						<div class="msg-info-name">${msg.sender}</div>
-					</div>
+        <div class="msg-bubble">
+          <div class="msg-info">
+            <div class="msg-info-name">${msg.sender}</div>
+          </div>
 
-					<div class="msg-text">
-						${escapeHtml(msg.content)}
-					</div>
-				</div>
-			</div>`;
+          <div class="msg-text">
+            ${escapeHtml(msg.content)}
+          </div>
+        </div>
+      </div>`;
           })
           .join("");
       } else {
         document.getElementById(
           "user-messages"
         ).innerHTML += `<div class="msg left-msg">
-				<div class="msg-bubble">
-					<div class="msg-text">
-						There were no messages found for the user ${username}
-					</div>
-				</div>
-			</div>`;
+        <div class="msg-bubble">
+          <div class="msg-text">
+            There were no messages found for the user ${username}
+          </div>
+        </div>
+      </div>`;
       }
     })();
 
@@ -645,47 +645,50 @@ contract Database {
 The following API endpoints are identified from the javascript:
 
 - `/api/login`:
-	```js
-	fetch('/api/login', {
-	  method: 'POST',
-	  headers: {
-	    'Content-Type': 'application/json'
-	  }
-	  body: JSON.stringify({
-	    username: e.target.username.value,
-	    password: e.target.password.value
-	  })
-	});
-	```
+  ```js
+  fetch('/api/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+    body: JSON.stringify({
+      username: e.target.username.value,
+      password: e.target.password.value
+    })
+  });
+  ```
 
 - `/api/info`:
-	```js
-	fetch("/api/info", {
-	  method: "GET",
-	  headers: {
-	    "Content-Type": "application/json"
-	});
-	```
+  ```js
+  fetch("/api/info", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json"
+  });
+  ```
 
 - `/api/get_user_messages?username=${username}`:
-	```js
-	fetch(`/api/get_user_messages?username=${username}`, {
-	  method: "GET",
-	  headers: {
-	    "Content-Type": "application/json"
-	  }
-	});
-	```
+  ```js
+  fetch(`/api/get_user_messages?username=${username}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json"
+    }
+  });
+  ```
 
 - `/api/report_user`:
-	```js
-	fetch(`${location.origin}/api/report_user`, {
-	  method: "POST",
-	  headers: {
-	    "Content-Type": "application/json"
-	  }
-	});
-	```
+  ```js
+  fetch(`${location.origin}/api/report_user`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+      body: JSON.stringify({
+        username: username
+      })
+  });
+  ```
 
 #### 2.3.3. Exploring the application API endpoints
 
@@ -695,6 +698,32 @@ Trying to login the API endpoint
 root@kali:~# curl -s -H 'Content-Type: application/json' -d '{"username": "test", "password": "test"}' http://blockblock.htb/api/login | jq
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNTgxOTQzMSwianRpIjoiNTc1MTA3NWItZWIyMi00YTM0LTkxNWMtMzYxMDliYTIwMWIxIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlc3QiLCJuYmYiOjE3MzU4MTk0MzEsImV4cCI6MTczNjQyNDIzMX0.EPQ_kqo_EU2oDJwLBOKd5xUfJkbn4Lpwtpexg513nHg"
+}
+```
+
+To put the token as environment variable `$token`:
+
+```sh
+token=$(curl -s -H 'Content-Type: application/json' -d '{"username": "test", "password": "test"}' http://blockblock.htb/api/login | jq -r .'token')
+```
+
+Trying the `/api/info` endpoint with token:
+
+```sh
+root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" http://blockblock.htb/api/info | jq
+{
+  "role": "user",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNTgyMTc0MywianRpIjoiM2YyNmU5MGEtMzAxOS00MWY1LTkxZDctNWJhYWMyZjg3OGZkIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlc3QiLCJuYmYiOjE3MzU4MjE3NDMsImV4cCI6MTczNjQyNjU0M30.WfeTuG4Ni04GncQnmgemHrtQeKUIHx2xLoAzgf9_s5I",
+  "username": "test"
+}
+```
+
+Trying the `/api/get_user_messages?username=${username}` endpoint with token:
+
+```sh
+root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" http://blockblock.htb/api/get_user_messages?username=test | jq
+{
+  "msg": "Unauthorized"
 }
 ```
 
