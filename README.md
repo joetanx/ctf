@@ -38,6 +38,8 @@ Ref: <https://manpages.debian.org/bullseye/nmap/nmap.1.en.html>
 |`-A`|Enables OS detection `-O`, version scanning `-sV`, script scanning `-sC` and traceroute `--traceroute`|
 |`-T<0-5>`|Set timing template (higher is faster) <paranoid (0), sneaky (1), polite (2), normal (3), aggressive (4), insane (5)>|
 |`-v`|Increase verbosity level (up to level 10)|
+|`--min-rate <time>`|Directly control the scanning rate, Nmap will try send packets as fast as or faster than the specified minimum|
+|`--max-rate <time>`|Directly control the scanning rate, limits a scan's sending rate to the specified maximum|
 |`--max-scan-delay <time>`|Adjust delay between probes|
 |`--max-retries <numtries>`|Specify the maximum number of port scan probe retransmissions, default 10|
 |`--defeat-rst-ratelimit`|Ignore RST (reset) packets rate limits|
@@ -47,6 +49,7 @@ Ref: <https://manpages.debian.org/bullseye/nmap/nmap.1.en.html>
 |Scan|Command|
 |---|---|
 |Initial network sweep|`nmap -sn $TARGET_RANGE`|
+|Port sweep: quickly identify open ports first,<br>then run targeted `-sC` or `-A` scan later|`nmap -p- --min-rate 100000 -Pn $TARGET_RANGE`|
 |TCP|`nmap -p- -A $TARGET_IP`|
 |TCP Aggresive Scan|`nmap -A --max-scan-delay 0 --max-retries 3 --defeat-rst-ratelimit $TARGET`|
 |TCP Connect Scan over proxychains|`proxychains -q nmap -Pn -sT -O -sV -sC -F $TARGET_IP`|
