@@ -183,7 +183,9 @@ Profile (`1735802729` is the timestamp in epoc time):
 
 ![image](https://github.com/user-attachments/assets/903bdd86-8c45-492c-824d-2c07340780c6)
 
-http://blockblock.htb/api/contract_source:
+#### 2.1.1. Contract source code
+
+Python contract source code is found at: http://blockblock.htb/api/contract_source
 
 ```json
 {
@@ -194,7 +196,7 @@ http://blockblock.htb/api/contract_source:
 
 Clearing up the content with `echo -e '<paste-content>' | sed 's/\\//'`:
 
-`Chat.sol`:
+<details><summary><code>Chat.sol</code></summary>
 
 ```python
 // SPDX-License-Identifier: UNLICENSED
@@ -339,7 +341,9 @@ contract Chat {
 }
 ```
 
-`Database.sol`:
+</details>
+
+<details><summary><code>Database.sol</code></summary>
 
 ```python
 // SPDX-License-Identifier: GPL-3.0
@@ -462,7 +466,58 @@ contract Database {
 }
 ```
 
-There are 2 javascript found when inspecting the page source:
+</details>
+
+#### 2.1.2. Chat application source code
+
+<details><summary>There are a few javascript found when inspecting the page source</summary>
+
+`/login`:
+
+```js
+<script>
+    let section = document.querySelector('section');
+    (async () => {
+
+        let sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        let spanCount = Math.ceil(window.innerHeight + section.offsetHeight / 4);
+        for (let i = 0; i < spanCount; i++) {
+            sleep(
+                Math.random() * 2000
+            ).then(() => {
+                let span = document.createElement('span');
+                section.appendChild(span);
+
+            })
+        }
+    })()
+
+    // add event listener to the form
+    document.querySelector('form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        // let formData = new FormData(e.target);
+        let response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: e.target.username.value,
+                password: e.target.password.value
+            })
+        });
+        let result = await response.json();
+        if (response.ok) {
+            window.location.href = '/chat';
+        } else {
+            document.querySelector('.error-message').innerText = result.msg;
+        }
+    });
+
+</script>
+```
+
+`/chat`:
 
 ```js
 <script>
@@ -563,6 +618,7 @@ There are 2 javascript found when inspecting the page source:
     document.querySelector(".report-btn").addEventListener("click", reportUser);
   </script>
 ```
+`/chat` and `/profile`:
 
 ```js
 <script>
@@ -585,6 +641,49 @@ There are 2 javascript found when inspecting the page source:
 
     </script>
 ```
+
+</details>
+
+The following api endpoints are identified from the javascript:
+- `/api/login`:
+	```js
+	fetch('/api/login', {
+	  method: 'POST',
+	  headers: {
+	    'Content-Type': 'application/json'
+	  }
+	  body: JSON.stringify({
+	    username: e.target.username.value,
+	    password: e.target.password.value
+	  })
+	});
+	```
+- `/api/info`:
+	```js
+	fetch("/api/info", {
+	  method: "GET",
+	  headers: {
+	    "Content-Type": "application/json"
+	});
+	```
+- `/api/get_user_messages?username=${username}`:
+	```js
+	fetch(`/api/get_user_messages?username=${username}`, {
+	  method: "GET",
+	  headers: {
+	    "Content-Type": "application/json"
+	  }
+	});
+	```
+- `/api/report_user`:
+	```js
+	fetch(`${location.origin}/api/report_user`, {
+	  method: "POST",
+	  headers: {
+	    "Content-Type": "application/json"
+	  }
+	});
+	```
 
 ### 2.2. `8545`
 
