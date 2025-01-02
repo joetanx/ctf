@@ -462,6 +462,130 @@ contract Database {
 }
 ```
 
+There are 2 javascript found when inspecting the page source:
+
+```js
+<script>
+    fetch("/api/info", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    }).then((response) => {
+      if (response.status != 200) {
+        window.location.href = "/login";
+      }
+    });
+
+    let urlParams = new URLSearchParams(window.location.search);
+
+    let usreMessages = document.getElementById("user-messages");
+    let usreMessagesSection = document.getElementById("user-messages-section");
+    usreMessagesSection.style.display = "none";
+
+    (async () => {
+      let username = urlParams.get("username");
+      if (username == null) {
+        return;
+      }
+      usreMessagesSection.style.display = "block";
+      let res = await fetch(`/api/get_user_messages?username=${username}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!res.headers.get("content-type").includes("text/html")) {
+        let data = await res.json();
+        document.getElementById("user-messages").innerHTML += data
+          .map((msg) => {
+            return `<div class="msg left-msg">
+				<div class="msg-img" style="background-image: url(/assets/other.svg)">
+				</div>
+
+				<div class="msg-bubble">
+					<div class="msg-info">
+						<div class="msg-info-name">${msg.sender}</div>
+					</div>
+
+					<div class="msg-text">
+						${escapeHtml(msg.content)}
+					</div>
+				</div>
+			</div>`;
+          })
+          .join("");
+      } else {
+        document.getElementById(
+          "user-messages"
+        ).innerHTML += `<div class="msg left-msg">
+				<div class="msg-bubble">
+					<div class="msg-text">
+						There were no messages found for the user ${username}
+					</div>
+				</div>
+			</div>`;
+      }
+    })();
+
+    (async () => {
+      const response = await fetch("/api/info", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (response.status === 401) {
+        window.location.href = "/login";
+      }
+    })();
+
+    async function reportUser() {
+      let username = prompt(`Username to report`);
+      if (username != null) {
+        alert(
+          "Thank you for reporting the user, Our moderators will take action as soon as possible."
+        );
+      }
+      let res = await fetch(`${location.origin}/api/report_user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: username
+        })
+      });
+    }
+
+    document.querySelector(".report-btn").addEventListener("click", reportUser);
+  </script>
+```
+
+```js
+<script>
+        // check if logged in
+
+        fetch('/api/info', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (response.status != 200) {
+                document.getElementById('login-status').innerHTML = "<a href='/login'>Login</a>"
+
+            }
+            else {
+                document.getElementById('login-status').innerHTML = "<a href='/logout'>Logout</a>"
+            }
+        });
+
+    </script>
+```
+
 ### 2.2. `8545`
 
 ```console
