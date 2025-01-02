@@ -1107,3 +1107,20 @@ C:\>dir /s C:\*root.txt
 C:\>type C:\Users\Administrator\Desktop\root.txt
 9a41664eceb2b3deb9e359844df06a68
 ```
+
+## 5. Summary
+
+```mermaid
+flowchart TD
+  A("P.Rosa (User)") -->|AD Discovery| B("FS01$ (Computer)")
+  B --> B1[[pre2k exploit]] --> B
+  B -->|ReadGMSAPassword| C("GMSA01$ (GMSA)")
+  C -->|AddSelf| D("ServiceManagers (Group)")
+  D -->|Set DONT_REQ_PREAUTH| E("svc_sql (User)")
+  E --> E1[[AS-REP Roast]] --> E
+  E -->|Password Spray| F("C.Neri (User)")
+  F --> F1[user.txt]
+  F -->|DPAPI secrets| G("C.Neri_adm (User)")
+  G -->|S4U2self| H("L.Bianchi_adm (User)")
+  H --> H1[root.txt]
+```
