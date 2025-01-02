@@ -179,6 +179,10 @@ Chat:
 
 ![image](https://github.com/user-attachments/assets/c8836b89-2678-4c9b-b5c4-40f8464397b2)
 
+Profile (`1735802729` is the timestamp in epoc time):
+
+![image](https://github.com/user-attachments/assets/903bdd86-8c45-492c-824d-2c07340780c6)
+
 http://blockblock.htb/api/contract_source:
 
 ```json
@@ -188,7 +192,7 @@ http://blockblock.htb/api/contract_source:
 }
 ```
 
-Clearing up the content with `echo -e '<paste-content>'`:
+Clearing up the content with `echo -e '<paste-content>' | sed 's/\\//'`:
 
 `Chat.sol`:
 
@@ -196,7 +200,7 @@ Clearing up the content with `echo -e '<paste-content>'`:
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-// import \"./Database.sol\";
+// import "./Database.sol\";
 
 interface IDatabase {
     function accountExist(
@@ -228,14 +232,14 @@ contract Chat {
 
     modifier onlyOwner() {
         if (msg.sender != owner) {
-            revert(\"Only owner can call this function\");
+            revert("Only owner can call this function\");
         }
         _;
     }
 
     modifier onlyExistingUser(string calldata username) {
         if (!database.accountExist(username)) {
-            revert(\"User does not exist\");
+            revert("User does not exist\");
         }
         _;
     }
@@ -254,7 +258,7 @@ contract Chat {
 
     function deleteUserMessages(string calldata user) public {
         if (msg.sender != address(database)) {
-            revert(\"Only database can call this function\");
+            revert("Only database can call this function\");
         }
         delete userMessages[user];
     }
@@ -290,8 +294,8 @@ contract Chat {
         uint256 start,
         uint256 end
     ) public view onlyOwner onlyExistingUser(user) returns (Message[] memory) {
-        require(start < end, \"Invalid range\");
-        require(end <= userMessages[user].length, \"End index out of bounds\");
+        require(start < end, "Invalid range\");
+        require(end <= userMessages[user].length, "End index out of bounds\");
 
         Message[] memory result = new Message[](end - start);
         for (uint256 i = start; i < end; i++) {
@@ -364,19 +368,19 @@ contract Database {
 
     modifier onlyOwner() {
         if (msg.sender != owner) {
-            revert(\"Only owner can call this function\");
+            revert("Only owner can call this function\");
         }
         _;
     }
     modifier onlyExistingUser(string memory username) {
         if (!users[username].exists) {
-            revert(\"User does not exist\");
+            revert("User does not exist\");
         }
         _;
     }
 
     constructor(string memory secondaryAdminUsername,string memory password) {
-        users[\"admin\"] = User(password, \"admin\", true);
+        users["admin\"] = User(password, \"admin\", true);
         owner = msg.sender;
         registerAccount(secondaryAdminUsername, password);
     }
@@ -399,7 +403,7 @@ contract Database {
 
     function setChatAddress(address _chat) public {
         if (address(chat) != address(0)) {
-            revert(\"Chat address already set\");
+            revert("Chat address already set\");
         }
 
         chat = IChat(_chat);
@@ -410,17 +414,17 @@ contract Database {
         string memory password
     ) public onlyOwner {
         if (
-            keccak256(bytes(users[username].password)) != keccak256(bytes(\"\"))
+            keccak256(bytes(users[username].password)) != keccak256(bytes("\"))
         ) {
-            revert(\"Username already exists\");
+            revert("Username already exists\");
         }
-        users[username] = User(password, \"user\", true);
+        users[username] = User(password, "user\", true);
         emit AccountRegistered(username);
     }
 
     function deleteAccount(string calldata username) public onlyOwner {
         if (!users[username].exists) {
-            revert(\"User does not exist\");
+            revert("User does not exist\");
         }
         delete users[username];
 
@@ -437,7 +441,7 @@ contract Database {
             keccak256(bytes(users[username].password)) !=
             keccak256(bytes(oldPassword))
         ) {
-            revert(\"Invalid password\");
+            revert("Invalid password\");
         }
 
         users[username].password = newPassword;
@@ -449,7 +453,7 @@ contract Database {
         string calldata role
     ) public onlyOwner onlyExistingUser(username) {
         if (!users[username].exists) {
-            revert(\"User does not exist\");
+            revert("User does not exist\");
         }
 
         users[username].role = role;
@@ -457,10 +461,6 @@ contract Database {
     }
 }
 ```
-
-Profile (`1735802729` is the timestamp in epoc time):
-
-![image](https://github.com/user-attachments/assets/903bdd86-8c45-492c-824d-2c07340780c6)
 
 ### 2.2. `8545`
 
