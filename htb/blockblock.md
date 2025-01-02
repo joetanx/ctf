@@ -142,9 +142,7 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 89.16 seconds
 ```
 
-## 2. Exploring
-
-### 2.1. `80`
+## 2. Exploring the web application at `80`
 
 Secure decentralized blockchain chat:
 
@@ -183,7 +181,7 @@ Profile (`1735802729` is the timestamp in epoc time):
 
 ![image](https://github.com/user-attachments/assets/903bdd86-8c45-492c-824d-2c07340780c6)
 
-#### 2.1.1. Contract source code
+### 2.1. Contract source code
 
 Python contract source code is found at: http://blockblock.htb/api/contract_source
 
@@ -468,7 +466,7 @@ contract Database {
 
 </details>
 
-#### 2.1.2. Chat application source code
+### 2.2. Chat application source code
 
 <details><summary>There are a few javascript found when inspecting the page source</summary>
 
@@ -644,7 +642,8 @@ contract Database {
 
 </details>
 
-The following api endpoints are identified from the javascript:
+The following API endpoints are identified from the javascript:
+
 - `/api/login`:
 	```js
 	fetch('/api/login', {
@@ -658,6 +657,7 @@ The following api endpoints are identified from the javascript:
 	  })
 	});
 	```
+
 - `/api/info`:
 	```js
 	fetch("/api/info", {
@@ -666,6 +666,7 @@ The following api endpoints are identified from the javascript:
 	    "Content-Type": "application/json"
 	});
 	```
+
 - `/api/get_user_messages?username=${username}`:
 	```js
 	fetch(`/api/get_user_messages?username=${username}`, {
@@ -675,6 +676,7 @@ The following api endpoints are identified from the javascript:
 	  }
 	});
 	```
+
 - `/api/report_user`:
 	```js
 	fetch(`${location.origin}/api/report_user`, {
@@ -685,7 +687,18 @@ The following api endpoints are identified from the javascript:
 	});
 	```
 
-### 2.2. `8545`
+#### 2.3.3. Exploring the application API endpoints
+
+Trying to login the API endpoint
+
+```console
+root@kali:~# curl -s -H 'Content-Type: application/json' -d '{"username": "test", "password": "test"}' http://blockblock.htb/api/login | jq
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNTgxOTQzMSwianRpIjoiNTc1MTA3NWItZWIyMi00YTM0LTkxNWMtMzYxMDliYTIwMWIxIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlc3QiLCJuYmYiOjE3MzU4MTk0MzEsImV4cCI6MTczNjQyNDIzMX0.EPQ_kqo_EU2oDJwLBOKd5xUfJkbn4Lpwtpexg513nHg"
+}
+```
+
+#### 2.3.x. Trying `8545`
 
 ```console
 root@kali:~# curl -v http://blockblock.htb:8545/
