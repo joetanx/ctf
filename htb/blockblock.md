@@ -910,7 +910,7 @@ Another script is found in the admin page source which reveals `/api/chat_addres
     </script>
 ```
 
-Querying the `/api/chat_addres` endpoint with the admin token returns a hexadecimal string:
+Querying the `/api/chat_address` endpoint with the admin token returns a hexadecimal string:
 
 ```console
 root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" http://blockblock.htb/api/chat_address
