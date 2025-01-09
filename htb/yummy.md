@@ -86,7 +86,9 @@ Finished
 
 ![image](https://github.com/user-attachments/assets/e43bb04c-9934-48ef-9fbb-ae4128ae0163)
 
-### 2.3. Testing for path traversal in the "save icalendar" function
+## 3. Webapp path traversal
+
+### 3.1. Testing for path traversal in the "save icalendar" function
 
 ![image](https://github.com/user-attachments/assets/507d880c-9d77-4ad5-8ab9-ccee8c68bcac)
 
@@ -158,9 +160,7 @@ _laurel:x:996:987::/var/log/laurel:/bin/false
 
 Interesting accounts: `dev`, `qa`
 
-### 2.4. Searching for other interesting files using path traversal
-
-#### 2.4.1. Caddy web server configuration
+### 3.2. Checking Caddy web server configuration
 
 Nothing much useful here
 
@@ -180,7 +180,7 @@ Nothing much useful here
 }
 ```
 
-#### 2.4.2. Crontab
+### 3.3. Checking crontab
 
 Application backup is scheduled to run `/data/scripts/app_backup.sh`
 
@@ -231,7 +231,7 @@ cd /var/www
 /usr/bin/zip -r backupapp.zip /opt/app
 ```
 
-#### 2.4.3. Exploring the backup file
+### 3.4. Exploring the backup file
 
 ![image](https://github.com/user-attachments/assets/e8c11025-a6a1-4725-b56e-5e9a68e66df1)
 
@@ -275,7 +275,7 @@ opt/app/templates/register.html:                    <input type="password" id="p
 opt/app/templates/register.html:                password: document.getElementById("password").value
 ```
 
-##### 2.4.3.1. Found: database connection credentials
+#### 3.4.1. Found: database connection credentials
 
 `opt/app/app.py`:
 
@@ -293,7 +293,7 @@ db_config = {
 ⋮
 ```
 
-##### 2.4.3.2. Found: JWT signature generation script
+#### 3.4.2. Found: JWT signature generation script
 
 `opt/app/config/signature.py`:
 
@@ -325,9 +325,9 @@ private_key = serialization.load_pem_private_key(
 public_key = private_key.public_key()
 ```
 
-### 2.5. Generating administrator JWT
+## 4. JWT Forgery
 
-#### 2.5.1. Analyze webapp JWT
+### 4.1. Analyze webapp JWT
 
 Getting JWT for the test account:
 
@@ -378,6 +378,8 @@ new_token = jwt.encode(data, private_key, algorithm="RS256")
 print(new_token)
 ```
 
+### 4.2. Forging administrator JWT
+
 ```console
 [root@localhost ~]# pip install PyJWT pycryptodome cryptography sympy
 Collecting PyJWT
@@ -414,3 +416,36 @@ Edit the token to replace it with the forged administrator token
 Access to `/admindashboard` acquired:
 
 ![image](https://github.com/user-attachments/assets/c8355a42-d8aa-42ce-860d-75cca876e4cf)
+
+## 5. SQL Injection
+
+The `app.route` for `admindashboard` in `opt/app/app.py` show that there is no sanitization on the server input:
+
+```py
+⋮
+@app.route('/admindashboard', methods=['GET', 'POST'])
+def admindashboard():
+        validation = validate_login()
+        if validation != "administrator":
+            return redirect(url_for('login'))
+
+        try:
+            connection = pymysql.connect(**db_config)
+            with connection.cursor() as cursor:
+                sql = "SELECT * from appointments"
+                cursor.execute(sql)
+                connection.commit()
+                appointments = cursor.fetchall()
+
+                search_query = request.args.get('s', '')
+
+                # added option to order the reservations
+                order_query = request.args.get('o', '')
+
+                sql = f"SELECT * FROM appointments WHERE appointment_email LIKE %s order by appointment_date {order_query}"
+                cursor.execute(sql, ('%' + search_query + '%',))
+                connection.commit()
+                appointments = cursor.fetchall()
+            connection.close()
+⋮
+```
