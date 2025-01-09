@@ -153,6 +153,7 @@ dirb:
 2. `/usr/share/dirb/wordlists/vulns/cgis.txt`
 3. `/usr/share/wordlists/dirb/big.txt`
 4. `/usr/share/wordlists/dirbuster/directory-list-lowercase-2.3-medium.txt`
+5. `/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt`
 
 [SecLists](https://github.com/danielmiessler/SecLists/tree/master/Discovery/Web-Content) (`/usr/share/seclists/Discovery/Web-Content/`):
 
