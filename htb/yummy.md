@@ -83,3 +83,130 @@ Finished
 ![image](https://github.com/user-attachments/assets/e43bb04c-9934-48ef-9fbb-ae4128ae0163)
 
 ![image](https://github.com/user-attachments/assets/507d880c-9d77-4ad5-8ab9-ccee8c68bcac)
+
+![image](https://github.com/user-attachments/assets/29366386-2b0e-462f-94ed-19c7ad0b04c7)
+
+![image](https://github.com/user-attachments/assets/a3bed0fc-1ea9-428a-9b43-7fa010b9de12)
+
+![image](https://github.com/user-attachments/assets/08464918-b0f0-4a46-a487-dc1141214f24)
+
+Response header:
+
+```
+HTTP/1.1 200 OK
+Cache-Control: no-cache
+Content-Disposition: attachment; filename=passwd
+Content-Length: 2033
+Content-Type: application/octet-stream
+Date: Thu, 09 Jan 2025 06:04:55 GMT
+Etag: "1727686952.3123646-2033-950406498"
+Last-Modified: Mon, 30 Sep 2024 09:02:32 GMT
+Server: Caddy
+```
+
+`/etc/passwd`:
+
+```
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+_apt:x:42:65534::/nonexistent:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+systemd-network:x:998:998:systemd Network Management:/:/usr/sbin/nologin
+systemd-timesync:x:997:997:systemd Time Synchronization:/:/usr/sbin/nologin
+dhcpcd:x:100:65534:DHCP Client Daemon,,,:/usr/lib/dhcpcd:/bin/false
+messagebus:x:101:102::/nonexistent:/usr/sbin/nologin
+systemd-resolve:x:992:992:systemd Resolver:/:/usr/sbin/nologin
+pollinate:x:102:1::/var/cache/pollinate:/bin/false
+polkitd:x:991:991:User for polkitd:/:/usr/sbin/nologin
+syslog:x:103:104::/nonexistent:/usr/sbin/nologin
+uuidd:x:104:105::/run/uuidd:/usr/sbin/nologin
+tcpdump:x:105:107::/nonexistent:/usr/sbin/nologin
+tss:x:106:108:TPM software stack,,,:/var/lib/tpm:/bin/false
+landscape:x:107:109::/var/lib/landscape:/usr/sbin/nologin
+fwupd-refresh:x:989:989:Firmware update daemon:/var/lib/fwupd:/usr/sbin/nologin
+usbmux:x:108:46:usbmux daemon,,,:/var/lib/usbmux:/usr/sbin/nologin
+sshd:x:109:65534::/run/sshd:/usr/sbin/nologin
+dev:x:1000:1000:dev:/home/dev:/bin/bash
+mysql:x:110:110:MySQL Server,,,:/nonexistent:/bin/false
+caddy:x:999:988:Caddy web server:/var/lib/caddy:/usr/sbin/nologin
+postfix:x:111:112::/var/spool/postfix:/usr/sbin/nologin
+qa:x:1001:1001::/home/qa:/bin/bash
+_laurel:x:996:987::/var/log/laurel:/bin/false
+```
+
+![image](https://github.com/user-attachments/assets/ccbca404-72d8-49b3-adaa-ba09f451dca9)
+
+`/etc/caddy/Caddyfile`:
+
+```
+:80 {
+    @ip {
+        header_regexp Host ^(\d{1,3}\.){3}\d{1,3}$
+    }
+    redir @ip http://yummy.htb{uri}
+    reverse_proxy 127.0.0.1:3000 {
+    header_down -Server  
+    }
+}
+```
+
+![image](https://github.com/user-attachments/assets/5a9554a9-bc1b-444f-8491-8caa5a3788bc)
+
+`/etc/crontab`:
+
+```
+# /etc/crontab: system-wide crontab
+# Unlike any other crontab you don't have to run the `crontab'
+# command to install the new version when you edit this file
+# and files in /etc/cron.d. These files also have username fields,
+# that none of the other crontabs do.
+
+SHELL=/bin/sh
+# You can also override PATH, but by default, newer versions inherit it from the environment
+#PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * user-name command to be executed
+17 *	* * *	root	cd / && run-parts --report /etc/cron.hourly
+25 6	* * *	root	test -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.daily; }
+47 6	* * 7	root	test -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.weekly; }
+52 6	1 * *	root	test -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.monthly; }
+#
+*/1 * * * * www-data /bin/bash /data/scripts/app_backup.sh
+*/15 * * * * mysql /bin/bash /data/scripts/table_cleanup.sh
+* * * * * mysql /bin/bash /data/scripts/dbmonitor.sh
+```
+
+![image](https://github.com/user-attachments/assets/27cb445c-b6ea-4999-b23b-69afc500d9d9)
+
+`/data/scripts/app_backup.sh`:
+
+```
+#!/bin/bash
+
+cd /var/www
+/usr/bin/rm backupapp.zip
+/usr/bin/zip -r backupapp.zip /opt/app
+```
+
+![image](https://github.com/user-attachments/assets/e8c11025-a6a1-4725-b56e-5e9a68e66df1)
