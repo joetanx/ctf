@@ -42,3 +42,44 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 6.76 seconds
 ```
+
+2. Exploring the web application at `80`
+
+```console
+root@kali:~# gobuster dir -u http://10.10.11.36:80 -b 403,404 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+===============================================================
+Gobuster v3.6
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://10.10.11.36:80
+[+] Method:                  GET
+[+] Threads:                 10
+[+] Wordlist:                /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+[+] Negative Status codes:   403,404
+[+] User Agent:              gobuster/3.6
+[+] Timeout:                 10s
+===============================================================
+Starting gobuster in directory enumeration mode
+===============================================================
+/login                (Status: 200) [Size: 6893]
+/register             (Status: 200) [Size: 7816]
+/book                 (Status: 200) [Size: 39296]
+/logout               (Status: 302) [Size: 199] [--> /login]
+/dashboard            (Status: 302) [Size: 199] [--> /login]
+Progress: 220560 / 220561 (100.00%)
+===============================================================
+Finished
+===============================================================
+```
+
+![image](https://github.com/user-attachments/assets/ca141cd8-2f6c-4051-9cde-dcc5a990f6b1)
+
+![image](https://github.com/user-attachments/assets/51b237e5-48df-4bdf-bcb9-ee0476f0605a)
+
+![image](https://github.com/user-attachments/assets/8fa606d5-68ff-493f-b28c-37863ea6d57b)
+
+![image](https://github.com/user-attachments/assets/4a96db95-360a-4112-9be6-0067bd259c67)
+
+![image](https://github.com/user-attachments/assets/e43bb04c-9934-48ef-9fbb-ae4128ae0163)
+
+![image](https://github.com/user-attachments/assets/507d880c-9d77-4ad5-8ab9-ccee8c68bcac)
