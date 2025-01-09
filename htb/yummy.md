@@ -43,7 +43,9 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 6.76 seconds
 ```
 
-2. Exploring the web application at `80`
+## 2. Exploring the web application at `80`
+
+### 2.1. Enumerating the web application
 
 ```console
 root@kali:~# gobuster dir -u http://10.10.11.36:80 -b 403,404 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
@@ -72,6 +74,8 @@ Finished
 ===============================================================
 ```
 
+### 2.2. Browsing and looking around in the web application
+
 ![image](https://github.com/user-attachments/assets/ca141cd8-2f6c-4051-9cde-dcc5a990f6b1)
 
 ![image](https://github.com/user-attachments/assets/51b237e5-48df-4bdf-bcb9-ee0476f0605a)
@@ -82,11 +86,15 @@ Finished
 
 ![image](https://github.com/user-attachments/assets/e43bb04c-9934-48ef-9fbb-ae4128ae0163)
 
+### 2.3. Testing for path traversal in the "save icalendar" function
+
 ![image](https://github.com/user-attachments/assets/507d880c-9d77-4ad5-8ab9-ccee8c68bcac)
 
 ![image](https://github.com/user-attachments/assets/29366386-2b0e-462f-94ed-19c7ad0b04c7)
 
 ![image](https://github.com/user-attachments/assets/a3bed0fc-1ea9-428a-9b43-7fa010b9de12)
+
+The path traversal works, able to read `etc/passwd`:
 
 ![image](https://github.com/user-attachments/assets/08464918-b0f0-4a46-a487-dc1141214f24)
 
@@ -148,6 +156,14 @@ qa:x:1001:1001::/home/qa:/bin/bash
 _laurel:x:996:987::/var/log/laurel:/bin/false
 ```
 
+Interesting accounts: `dev`, `qa`
+
+### 2.4. Searching for other interesting files using path traversal
+
+#### 2.4.1. Caddy web server configuration
+
+Nothing much useful here
+
 ![image](https://github.com/user-attachments/assets/ccbca404-72d8-49b3-adaa-ba09f451dca9)
 
 `/etc/caddy/Caddyfile`:
@@ -163,6 +179,10 @@ _laurel:x:996:987::/var/log/laurel:/bin/false
     }
 }
 ```
+
+#### 2.4.2. Crontab
+
+Application backup is scheduled to run `/data/scripts/app_backup.sh`
 
 ![image](https://github.com/user-attachments/assets/5a9554a9-bc1b-444f-8491-8caa5a3788bc)
 
@@ -199,6 +219,8 @@ SHELL=/bin/sh
 
 ![image](https://github.com/user-attachments/assets/27cb445c-b6ea-4999-b23b-69afc500d9d9)
 
+The application backup script just zips the entire `/opt/app` directory and saves to `/opt/app/backupapp.zip`:
+
 `/data/scripts/app_backup.sh`:
 
 ```
@@ -209,9 +231,9 @@ cd /var/www
 /usr/bin/zip -r backupapp.zip /opt/app
 ```
 
-![image](https://github.com/user-attachments/assets/e8c11025-a6a1-4725-b56e-5e9a68e66df1)
+#### 2.4.3. Exploring the backup file
 
-Looks like the `backupapp.zip` contains the entire `/opt/app` directory:
+![image](https://github.com/user-attachments/assets/e8c11025-a6a1-4725-b56e-5e9a68e66df1)
 
 ```console
 root@kali:~/opt/app# ls -l
