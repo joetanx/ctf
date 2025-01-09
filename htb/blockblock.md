@@ -1,3 +1,9 @@
+> [!Note]
+>
+> |User|Root|
+> |---|---|
+> |✅|✅|
+
 ![image](https://github.com/user-attachments/assets/bc1c14a9-1796-480a-98ec-41be868a080e)
 
 ## 1. Recon
@@ -1213,7 +1219,7 @@ connect to [10.10.14.44] from (UNKNOWN) [10.10.11.43] 54576
 uid=1001(paul) gid=1001(paul) groups=1001(paul)
 ```
 
-### 6.  Privilege Escalation
+## 6.  Privilege Escalation
 
 Listing `paul`'s `sudo` rights reveals he can run `/usr/bin/pacman` as `root` without password
 
@@ -1313,4 +1319,19 @@ uid=0(root) gid=0(root) groups=0(root)
 [root@blockblock /]# cd ~
 [root@blockblock ~]# cat root.txt
 2e6241771c4c2c54ae8970c35001ae17
+```
+
+## 5. Summary
+
+```mermaid
+flowchart TD
+  A(Blockchain chat webapp) -->|Inspect source| B(Discover API endpoints)
+  B -->|"Cross-site scripting (XSS)"| C("Reflected admin JWT (cookie)")
+  C -->|Inspect source| D(Discover Ethereum json-rpc)
+  D -->|Query Ethereum block| E(Encoded keira password found in block parameter)
+  E -->|Decode password and login| F(SSH session as keira)
+  F --> F1[user.txt]
+  F -->|Lateral movement via sudo execution| G(Reverse shell as paul)
+  G -->|Privilege escalation via sudo execution| H(Reverse shell as root)
+  H --> H1[root.txt]
 ```
