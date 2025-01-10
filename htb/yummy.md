@@ -188,7 +188,7 @@ Application backup is scheduled to run `/data/scripts/app_backup.sh`
 
 `/etc/crontab`:
 
-```
+```sh
 # /etc/crontab: system-wide crontab
 # Unlike any other crontab you don't have to run the `crontab'
 # command to install the new version when you edit this file
@@ -223,7 +223,7 @@ The application backup script just zips the entire `/opt/app` directory and save
 
 `/data/scripts/app_backup.sh`:
 
-```
+```sh
 #!/bin/bash
 
 cd /var/www
