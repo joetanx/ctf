@@ -611,7 +611,9 @@ uid=110(mysql) gid=110(mysql) groups=110(mysql)
 mysql@yummy:/var/spool/cron$
 ```
 
-## 6. Lateral movement to `www-data`
+## 6. Lateral movements
+
+### 6.1. Lateral movement to `www-data`
 
 Recall again on `/etc/crontab`, the `app_backup.sh` is run by `www-data` every minute as well, let's get it to run a reverse shell
 
@@ -670,7 +672,7 @@ uid=33(www-data) gid=33(www-data) groups=33(www-data)
 You have new mail in /var/mail/www-data
 ```
 
-## 7. Lateral movement to `qa`
+### 6.2. Lateral movement to `qa`
 
 Searching for `password` in files under `www-data`'s home directory at `/var/www` reveals there may be something interesting in `/var/www/app-qatesting/.hg/store/data/app.py.i`
 
@@ -830,9 +832,9 @@ qa@yummy:~$ cat user.txt
 14a7f43260d0074218437a9a6cf2a657
 ```
 
-## 8. Lateral movement to `dev`
+### 6.3. Lateral movement to `dev`
 
-### 8.1. Exploring hg SCM
+#### 6.3.1. Exploring hg SCM
 
 `qa` is able to run `/usr/bin/hg ` as `dev`
 
@@ -886,7 +888,7 @@ groups = qa, dev
 
 hgrc supports [hooks](https://wiki.mercurial-scm.org/Hook) to run commands after a `pull` is completed
 
-### 8.2. Lateral movement to `dev`
+#### 6.3.2. Lateral movement to `dev`
 
 Setup reverse shell script:
 
@@ -940,7 +942,7 @@ id
 uid=1000(dev) gid=1000(dev) groups=1000(dev)
 ```
 
-### 8.3 Privilege escalation
+## 7. Privilege escalation
 
 `dev` is able to run `rsync` as `root` without password, to copy all files from `/home/dev/app-production/` (except `.hg`) to `/opt/app/`
 
@@ -984,4 +986,19 @@ id
 uid=1000(dev) gid=1000(dev) euid=0(root) groups=1000(dev)
 cat /root/root.txt
 89a24b6f460495f156d88ffb0cf7a0ba
+```
+
+## 8. Summary
+
+```mermaid
+flowchart TD
+  A(Resersations webapp) -->|Path Traversal| B(App directory backup)
+  B -->|JWT generation script| C(Webapp as admin)
+  C -->|SQL Injection| D(Plant reverse shell)
+  D -->|Cron job execution| E(Reverse shell as www-data)
+  E -->|Password in binary| G(SSH login as qa)
+  G --> G1[user.txt]
+  G -->|Lateral movement via sudo execution| H(Reverse shell as dev)
+  H -->|Privilege escalation via sudo permission changes| I(Bash as root via SetUID)
+  I --> J[root.txt]
 ```
