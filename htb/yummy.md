@@ -962,9 +962,9 @@ Copy `bash` to `/home/dev/app-production/`
 cp /bin/bash /home/dev/app-production/bash
 ```
 
-Use **setuid** to enforces user ownership on `/home/dev/app-production/bash`. When it is set, the file will execute with the file owner's user ID, not the person running it.
-
-By setting this then subsquently running rsync to set the owner as root, `bash` will then be run as `root` no matter which use runs it
+Use **setuid** to enforces user ownership on `/home/dev/app-production/bash`
+- When it is set, the file will execute with the file owner's user ID, not the person running it.
+- By setting this then subsquently running rsync to set the owner as root, `bash` will then be run as `root` no matter which use runs it
 
 ```sh
 chmod u+s /home/dev/app-production/bash
