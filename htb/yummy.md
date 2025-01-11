@@ -776,3 +776,50 @@ EJ*������uY�0��+2ܩ-]%���(�(�/�`O
 Y
 �d�|�p$ JJKx8�D'<a��Z���byh�U�v�]�      
 ```
+
+Simply SSH in and get `user.txt`:
+
+```console
+root@kali:~# ssh qa@yummy.htb
+Warning: Permanently added 'yummy.htb' (ED25519) to the list of known hosts.
+qa@yummy.htb's password:
+Welcome to Ubuntu 24.04.1 LTS (GNU/Linux 6.8.0-31-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Sat Jan 11 08:10:25 AM UTC 2025
+
+  System load:  0.08              Processes:             259
+  Usage of /:   62.9% of 5.56GB   Users logged in:       0
+  Memory usage: 21%               IPv4 address for eth0: 10.10.11.36
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+10 updates can be applied immediately.
+10 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+
+qa@yummy:~$ hostname
+yummy
+qa@yummy:~$ cat user.txt
+14a7f43260d0074218437a9a6cf2a657
+```
