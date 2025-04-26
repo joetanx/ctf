@@ -42,22 +42,66 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 6.67 seconds
 ```
 
-## 2. Checking out `blog.bigbang.htb`
+## 2. Web enumeration
 
-### 2.1. Burp Suite
+### 2.1. Enumerate directories
 
-The blog is a WordPress blog
-
-![image](https://github.com/user-attachments/assets/e3a9bb14-c9bf-4e7a-9dbf-43d06304dcb4)
-
-![image](https://github.com/user-attachments/assets/3eb69d82-0750-428a-a6e3-6881a218be86)
-
-![image](https://github.com/user-attachments/assets/79a6722f-7845-4162-82e7-48895616e09e)
-
-### 2.2. WPScan
+`gobuster` discovers that the site is a WordPress blog
 
 ```console
-root@kali:~# wpscan --url 'http://blog.bigbang.htb'
+root@kali:~# gobuster dir -u http://blog.bigbang.htb/ -w /usr/share/seclists/Discovery/Web-Content/common.txt
+===============================================================
+Gobuster v3.6
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://blog.bigbang.htb/
+[+] Method:                  GET
+[+] Threads:                 10
+[+] Wordlist:                /usr/share/seclists/Discovery/Web-Content/common.txt
+[+] Negative Status codes:   404
+[+] User Agent:              gobuster/3.6
+[+] Timeout:                 10s
+===============================================================
+Starting gobuster in directory enumeration mode
+===============================================================
+/.htpasswd            (Status: 403) [Size: 281]
+/.htaccess            (Status: 403) [Size: 281]
+/.hta                 (Status: 403) [Size: 281]
+/index.php            (Status: 301) [Size: 0] [--> http://blog.bigbang.htb/]
+/server-status        (Status: 403) [Size: 281]
+/wp-admin             (Status: 301) [Size: 323] [--> http://blog.bigbang.htb/wp-admin/]
+/wp-content           (Status: 301) [Size: 325] [--> http://blog.bigbang.htb/wp-content/]
+/wp-includes          (Status: 301) [Size: 326] [--> http://blog.bigbang.htb/wp-includes/]
+Progress: 4744 / 4745 (99.98%)
+/xmlrpc.php           (Status: 405) [Size: 42]
+===============================================================
+Finished
+===============================================================
+```
+
+> [!Tip]
+>
+> The site is configured to redirect requests to http://blog.bigbang.htb
+>
+> Attempting to use gobuster against the IP address http://10.10.11.52 or hostname http://bigbang.htb would result in the below error:
+>
+> ```
+> Error: the server returns a status code that matches the provided options for non existing urls. http://bigbang.htb/776eaa9f-db72-4e35-a68c-7b72fe34da2c => 301 (Length: 345). To continue please exclude the status code or the length
+> ```
+
+### 2.2. Enumerate WordPress
+
+Use `WPScan` with below options:
+
+|Switch|Action|
+|---|---|
+|`u`|User IDs range. e.g: u1-5<br>Range separator to use: '-'<br>Value if no argument supplied: 1-10|
+|`ap`|All plugins|
+
+WPScan default switches: All Plugins (`ap`), Config Backups (`cb`)
+
+```console
+root@kali:~# wpscan --url http://blog.bigbang.htb --enumerate u,ap
 _______________________________________________________________
          __          _______   _____
          \ \        / /  __ \ / ____|
@@ -68,15 +112,12 @@ _______________________________________________________________
 
          WordPress Security Scanner by the WPScan Team
                          Version 3.8.28
-
+       Sponsored by Automattic - https://automattic.com/
        @_WPScan_, @ethicalhack3r, @erwan_lr, @firefart
 _______________________________________________________________
 
-[i] Updating the Database ...
-[i] Update completed.
-
 [+] URL: http://blog.bigbang.htb/ [10.10.11.52]
-[+] Started: Sat Apr 26 07:33:18 2025
+[+] Started: Sat Apr 26 14:28:37 2025
 
 Interesting Finding(s):
 
@@ -152,21 +193,32 @@ Interesting Finding(s):
  | Found By: Readme - Stable Tag (Aggressive Detection)
  |  - http://blog.bigbang.htb/wp-content/plugins/buddyforms/readme.txt
 
-[+] Enumerating Config Backups (via Passive and Aggressive Methods)
- Checking Config Backups - Time: 00:00:00 <=================================================================================================================================> (137 / 137) 100.00% Time: 00:00:00
+[+] Enumerating Users (via Passive and Aggressive Methods)
+ Brute Forcing Author IDs - Time: 00:00:00 <==================================================================================================================================> (10 / 10) 100.00% Time: 00:00:00
 
-[i] No Config Backups Found.
+[i] User(s) Identified:
+
+[+] root
+ | Found By: Author Posts - Display Name (Passive Detection)
+ | Confirmed By:
+ |  Rss Generator (Passive Detection)
+ |  Author Id Brute Forcing - Author Pattern (Aggressive Detection)
+ |  Login Error Messages (Aggressive Detection)
+
+[+] shawking
+ | Found By: Author Id Brute Forcing - Author Pattern (Aggressive Detection)
+ | Confirmed By: Login Error Messages (Aggressive Detection)
 
 [!] No WPScan API Token given, as a result vulnerability data has not been output.
 [!] You can get a free API token with 25 daily requests by registering at https://wpscan.com/register
 
-[+] Finished: Sat Apr 26 07:33:22 2025
-[+] Requests Done: 187
-[+] Cached Requests: 5
-[+] Data Sent: 46.814 KB
-[+] Data Received: 22.752 MB
-[+] Memory used: 251.508 MB
-[+] Elapsed time: 00:00:04
+[+] Finished: Sat Apr 26 14:28:40 2025
+[+] Requests Done: 14
+[+] Cached Requests: 48
+[+] Data Sent: 3.815 KB
+[+] Data Received: 17.257 KB
+[+] Memory used: 271.41 MB
+[+] Elapsed time: 00:00:03
 ```
 
 ## X. Work in Progress
