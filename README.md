@@ -749,7 +749,7 @@ Prepare server on Kali:
 
 ```sh
 VERSION=$(curl -sI https://github.com/jpillora/chisel/releases/latest | grep location: | cut -d / -f 8 | tr -d '\r' | tr -d 'v')
-curl -sLO https://github.com/jpillora/chisel/releases/downloadv$VERSION/chisel_${VERSION}_linux_amd64.gz
+curl -sLO https://github.com/jpillora/chisel/releases/download/v$VERSION/chisel_${VERSION}_linux_amd64.gz
 gzip -d chisel_${VERSION}_linux_amd64.gz
 mv chisel_${VERSION}_linux_amd64 chisel
 chmod +x chisel
