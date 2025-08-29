@@ -1,3 +1,9 @@
+> [!Note]
+>
+> |User|Root|
+> |---|---|
+> |✅|✅|
+
 ![](https://github.com/user-attachments/assets/4706fb6b-7532-431b-9409-9f4a6f5fa460)
 
 ## 1. Recon
