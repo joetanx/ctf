@@ -99,7 +99,39 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 95.35 seconds
 ```
 
-to be updated:
+## 2. Exploring the web site at `80`
+
+The web site has user account function:
+
+![](https://github.com/user-attachments/assets/251838ab-a158-4190-9cd8-5bd62e873fcf)
+
+Registering as teacher requires verification, so let's register for a student account:
+
+![](https://github.com/user-attachments/assets/9b2735f1-883b-4490-8514-1e518aee5303)
+
+Logging in with the newly registered account grants access to the courses:
+
+![](https://github.com/user-attachments/assets/d55c64b3-f363-4419-acbc-e87073b5bbe8)
+
+Enroll on a course:
+
+![](https://github.com/user-attachments/assets/8f060852-9d02-4da9-99e0-b0c12c82bcef)
+
+Course outline appears after enrolling, the session links are dummy `#` links, but the quiz submission pages have upload function:
+
+![](https://github.com/user-attachments/assets/de655866-dbed-4b80-a1f2-c9210e4bf00b)
+
+![](https://github.com/user-attachments/assets/f053269e-b03b-444d-b4d9-4b5327c032aa)
+
+The site doesn't accept upload of files types other than those stated:
+
+![](https://github.com/user-attachments/assets/bfd00c9e-5ce0-4297-8de8-38116ad72645)
+
+Attempting to upload php reverse shell that has the extension changed to `.pdf` doesn't work either:
+
+![](https://github.com/user-attachments/assets/7fdf53e1-2b73-4a78-9162-f28df56552ac)
+
+## to be updated
 
 ```sh
 evil-winrm -i 10.10.11.71 -u Sara.B -p Blink182
