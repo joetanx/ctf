@@ -657,3 +657,18 @@ root@eureka:~# cat root.txt
 cat root.txt
 0466424f8eebd210285c9968c792c042
 ```
+
+## 5. Summary
+
+```mermaid
+flowchart TD
+  A(furni.htb webapp) -->|nuclei vulnerability scanner| B(Discover springboot heapdump)
+  B -->|Credentials for oscar190| C(SSH access to target as oscar190)
+  C -->|SSH port mapping from kali to target localhost:8761| D(Access to Eureka)
+  B -->|Connection string to localhost:8761 with EurekaSrvr credentials| D
+  D -->|Exploit USER-MANAGEMENT-SERVICE| E(Credentials for miranda-wise)
+  E -->|SSH connection to target as miranda-wise| E1[user.txt]
+  E -->|Exploring for interesting files| F(Discover log_analyse.sh script and application.log file)
+  F -->|Plant reverse shell code in application.log| G(Reverse shell as root)
+  G --> G1[root.txt]
+```
