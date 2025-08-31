@@ -596,6 +596,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-Expression (Ne
 
 - WinRM `5985` must be enabled on the target
 - User must be a member of `Remote Management Users` on the target
+- evil-winrm provides useful functions such as `upload`/`download` and `services` to check the running services; use `menu` to see the available functions
 
 |   |   |
 |---|---|
