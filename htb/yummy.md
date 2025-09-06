@@ -992,7 +992,7 @@ cat /root/root.txt
 
 ```mermaid
 flowchart TD
-  A(Resersations webapp) -->|Path Traversal| B(App directory backup)
+  A(Reservations webapp) -->|Path Traversal| B(App directory backup)
   B -->|JWT generation script| C(Webapp as admin)
   C -->|SQL Injection| D(Plant reverse shell)
   D -->|Cron job execution| E(Reverse shell as www-data)
