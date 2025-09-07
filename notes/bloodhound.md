@@ -4,71 +4,116 @@ BloodHound generate graphs using `neo4j` graph database to provide visualization
 
 ## 1. Setup BloodHound
 
-### 1.1. Install BloodHound package
+Install BloodHound package:
 
 ```sh
-apt update
-apt -y install bloodhound
+apt update && apt -y install bloodhound
 ```
 
-### 1.2. Initialize neo4j database
+### 1.1. Run BloodHound configuration script
 
-By default: the neo4j database listens on localhost, and the `dbms.default_listen_address=0.0.0.0` line in `/etc/neo4j/neo4j.conf` is commented off
+> [!Tip]
+>
+> The neo4j database listens on localhost by default, with the `dbms.default_listen_address=0.0.0.0` line in `/etc/neo4j/neo4j.conf` commented off
+>
+> Uncomment the configuration line to listen on all IPs (if needed):
+>
+> ```sh
+> sed -i '/default_listen_address/s/#//' /etc/neo4j/neo4j.conf
+> ```
+>
+> Note that `bloodhound-setup` will still try to open `http://localhost:7474/` even when the listening address is changed to `0.0.0.0`, just ignore it
 
-Uncomment the configuration line to listen on all IPs (if needed):
-
-```sh
-sed -i '/default_listen_address/s/#//' /etc/neo4j/neo4j.conf
-```
-
-Start neo4j:
-(the `&` runs `neo4j console` as a background job)
+Run `bloodhound-setup`:
 
 ```console
-root@kali:~# neo4j console &
-[1] 1891
+root@kali:~# bloodhound-setup
 
-Picked up _JAVA_OPTIONS: -Dawt.useSystemAAFontSettings=on -Dswing.aatext=true
-Directories in use:
-home:         /usr/share/neo4j
-config:       /usr/share/neo4j/conf
-logs:         /etc/neo4j/logs
-plugins:      /usr/share/neo4j/plugins
-import:       /usr/share/neo4j/import
-data:         /etc/neo4j/data
-certificates: /usr/share/neo4j/certificates
-licenses:     /usr/share/neo4j/licenses
-run:          /var/lib/neo4j/run
-Starting Neo4j.
-Picked up _JAVA_OPTIONS: -Dawt.useSystemAAFontSettings=on -Dswing.aatext=true
-2024-12-24 00:38:53.673+0000 INFO  Starting...
-2024-12-24 00:38:53.942+0000 INFO  This instance is ServerId{4fb5f8d2} (4fb5f8d2-58eb-4847-9e3a-cf8143cb8bef)
-2024-12-24 00:38:54.717+0000 INFO  ======== Neo4j 4.4.26 ========
-2024-12-24 00:38:55.872+0000 INFO  Initializing system graph model for component 'security-users' with version -1 and status UNINITIALIZED
-2024-12-24 00:38:55.878+0000 INFO  Setting up initial user from defaults: neo4j
-2024-12-24 00:38:55.879+0000 INFO  Creating new user 'neo4j' (passwordChangeRequired=true, suspended=false)
-2024-12-24 00:38:55.885+0000 INFO  Setting version for 'security-users' to 3
-2024-12-24 00:38:55.887+0000 INFO  After initialization of system graph model component 'security-users' have version 3 and status CURRENT
-2024-12-24 00:38:55.889+0000 INFO  Performing postInitialization step for component 'security-users' with version 3 and status CURRENT
-2024-12-24 00:38:56.165+0000 INFO  Bolt enabled on [0:0:0:0:0:0:0:0%0]:7687.
-2024-12-24 00:38:56.716+0000 INFO  Remote interface available at http://localhost:7474/
-2024-12-24 00:38:56.718+0000 INFO  id: 94690E54A6CC3D152DCD3D362CF1E57BDA06E7BF02AC5F0E8C9C239837D4586A
-2024-12-24 00:38:56.718+0000 INFO  name: system
-2024-12-24 00:38:56.718+0000 INFO  creationDate: 2024-12-24T00:38:55.085Z
-2024-12-24 00:38:56.719+0000 INFO  Started.
+ [*] Starting PostgreSQL service
+
+ [*] Creating Database
+
+ Creating database user
+
+ Creating database
+ALTER ROLE
+
+ [*] Starting neo4j
+Neo4j is running at pid 2209
+
+ [i] You need to change the default password for neo4j
+     Default credentials are user:neo4j password:neo4j
+
+ [!] IMPORTANT: Once you have setup the new password, please update /etc/bhapi/bhapi.json with the new password before running bloodhound
+
+ opening http://localhost:7474/
 ```
+
+### 1.2. Setup neo4j password
 
 Login with the default credentials `neo4j`/`neo4j`:
 
-![image](https://github.com/user-attachments/assets/163728d3-5e75-4474-b133-201dda5c50bf)
+![](https://github.com/user-attachments/assets/32f9ac34-ebc4-4ae0-ab7c-2ec183da82f3)
 
 Mandated password change after the first login:
 
-![image](https://github.com/user-attachments/assets/e7477ce2-539c-4541-9fb4-6e2b63f0705d)
+![](https://github.com/user-attachments/assets/8422bafa-99d1-46cf-9b9d-19c8a6420cad)
 
 Done with neo4j database:
 
-![image](https://github.com/user-attachments/assets/15d2c35c-0046-4d9d-8a32-6f919a8a6e4a)
+![](https://github.com/user-attachments/assets/7f63fc15-26c6-4d85-bed5-f5ed7c5947e0)
+
+### 1.3. Run BloodHound
+
+Update the neo4j password in `/etc/bhapi/bhapi.json`:
+
+```sh
+sed -i 's/"secret": "neo4j"/"secret": "password"/' /etc/bhapi/bhapi.json
+```
+
+> [!Tip]
+> 
+> Bloodhound listens on 127.0.0.1 by default, add `bind_addr` and `root_url` into `/etc/bhapi/bhapi.json` to change it:
+>
+> ```sh
+> sed -i '2i\  "root_url": "http://kali:8080/",' /etc/bhapi/bhapi.json
+> sed -i '2i\  "bind_addr": "0.0.0.0:8080",' /etc/bhapi/bhapi.json
+> ```
+>
+> Note that `bloodhound` will still try to open `http://localhost:8080/` even when the listening address is changed to `0.0.0.0`, just ignore it
+
+Run `bloodhound`':
+
+```console
+root@kali:~# bloodhound
+
+ Starting neo4j
+Neo4j is running at pid 2357
+
+ Bloodhound will start
+
+ IMPORTANT: It will take time, please wait...
+⋮
+{"time":"2025-09-07T10:14:20.651824503+08:00","level":"INFO","message":"########################################"}
+{"time":"2025-09-07T10:14:20.651847051+08:00","level":"INFO","message":"#                                      #"}
+{"time":"2025-09-07T10:14:20.651853711+08:00","level":"INFO","message":"# Initial Password Set To:    admin    #"}
+{"time":"2025-09-07T10:14:20.651859191+08:00","level":"INFO","message":"#                                      #"}
+{"time":"2025-09-07T10:14:20.65186257+08:00","level":"INFO","message":"########################################"}
+⋮
+ opening http://127.0.0.1:8080
+```
+
+Login with the default `admin`/`admin`:
+
+![](https://github.com/user-attachments/assets/8acd22ea-84cc-4dbf-bd22-e43b0e4dbac7)
+
+Finish the mandated password change:
+
+![](https://github.com/user-attachments/assets/a3259d42-c49a-4dda-baa6-4b269eb1fe86)
+
+And get access to the UI:
+
+![](https://github.com/user-attachments/assets/2d134d3b-869c-4ccb-8734-38f4bf03adb3)
 
 ## 2. Gathering Active Directory data
 
