@@ -205,13 +205,13 @@ Pre-built searches are available in the 📁 icon under `</> CYPHER`:
 
 ![](https://github.com/user-attachments/assets/22928ad7-a200-45ac-b23a-85965f14e6cb)
 
-## 4. Investigating account access examples
+## 4. Investigating account access examples (Old)
 
 ### 4.1. Example 1: account is a Domain Admin
 
 Search for the account:
 
-![](https://github.com/user-attachments/assets/64d88539-7a4d-40d5-b431-b2ddcf647bc3)
+![](https://github.com/user-attachments/assets/1d941a5c-2c9c-44bc-9927-a71281544d81)
 
 Select the node and select `Reachable High Value Targets`
 
