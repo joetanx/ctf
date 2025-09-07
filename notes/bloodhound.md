@@ -175,53 +175,37 @@ The database stores all bloodbound packages uploaded
 
 To start anew with a fresh workbench, select the data to delete under `Database Management`
 
-![image](https://github.com/user-attachments/assets/07a8c265-d9e6-42ef-953f-b965543e40fd)
-
 ![](https://github.com/user-attachments/assets/66168c0e-51bc-48ac-91f8-9b1b9a73c48d)
 
 ![](https://github.com/user-attachments/assets/7b7abb22-0bf0-4c00-a96d-912a0ffcb1e4)
 
 ## 3. Interesting BloodHound queries
 
-> [!Tip]
->
-> ### Node labels
->
-> Pressing `Ctrl` toggles showing and hiding node labels, this can be useful to see all the node labels
->
-> ![image](https://github.com/user-attachments/assets/8271412f-92d6-40f2-b091-e4a9297c87f4)
-> 
-> ![image](https://github.com/user-attachments/assets/2c9af113-163e-4828-ac17-8438b3b90cac)
->
-> If there are too many nodes to show label, showing node labels can hit the node label threshold
->
-> ![image](https://github.com/user-attachments/assets/398c4970-9f2a-4b17-8070-92188039bb64)
->
-> This can be adjusted in settings:
->
-> ![image](https://github.com/user-attachments/assets/80a873f5-a0dc-4e95-82f5-6e21deb68183)
+Pre-built searches are available in the 📁 icon under `</> CYPHER`:
+
+![](https://github.com/user-attachments/assets/3e6c5cd0-1c16-4f7f-8baa-6f14ace405eb)
 
 ### 3.1. Find all Domain Admins
 
-![image](https://github.com/user-attachments/assets/81ff2072-01b6-4740-8441-bdf8c5ddf638)
+![](https://github.com/user-attachments/assets/e69bebc5-378a-489a-a8fd-e96a137045fa)
 
 ### 3.2. Find Shortest Paths to Domain Admins
 
-![image](https://github.com/user-attachments/assets/5c8db6ae-1df8-4024-adad-243038e3788b)
+![](https://github.com/user-attachments/assets/cc2bf3a8-a2c4-460f-b78b-c3cdf6999109)
 
-### 3.3. Find AS-REP Roastable Users (DontReqPreAuth)
+### 3.3. List all Kerberoastable Accounts
+
+![](https://github.com/user-attachments/assets/593bdee4-50d2-462a-bac4-ed353c32cb60)
+
+### 3.4. Find AS-REP Roastable Users (DontReqPreAuth)
 
 There are no AS-REP roastable users. Hence, no data returned from query.
 
-![image](https://github.com/user-attachments/assets/31c98a3b-c8f4-4ea6-9252-eb2e47d8381b)
+![](https://github.com/user-attachments/assets/69e2a3be-7a6c-4e2c-9f74-f7ef4cd3a495)
 
-### 3.4. Find Principals with DCSync Rights
+### 3.5. Find Principals with DCSync Rights
 
-![image](https://github.com/user-attachments/assets/34e6f9be-2ebb-4807-b191-402c02e9875a)
-
-### 3.5. List all Kerberoastable Accounts
-
-![image](https://github.com/user-attachments/assets/4a2a1f35-140c-4c5d-a08e-89f0231d3132)
+![](https://github.com/user-attachments/assets/e9c6b01f-6829-4924-bf0b-585f055ad227)
 
 ## 4. Investigating account access examples
 
@@ -229,7 +213,7 @@ There are no AS-REP roastable users. Hence, no data returned from query.
 
 Search for the account:
 
-![image](https://github.com/user-attachments/assets/1d941a5c-2c9c-44bc-9927-a71281544d81)
+![](https://github.com/user-attachments/assets/64d88539-7a4d-40d5-b431-b2ddcf647bc3)
 
 Select the node and select `Reachable High Value Targets`
 
@@ -243,7 +227,7 @@ When the account is a Domain Admin, the graph is straightforward since it's just
 
 Search for the account:
 
-![image](https://github.com/user-attachments/assets/ad5cdd66-4e94-4b8d-be13-ada5f249ae66)
+![](https://github.com/user-attachments/assets/ad5cdd66-4e94-4b8d-be13-ada5f249ae66)
 
 Select the node and select `Reachable High Value Targets`
 
