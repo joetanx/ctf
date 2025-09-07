@@ -82,7 +82,7 @@ sed -i 's/"secret": "neo4j"/"secret": "password"/' /etc/bhapi/bhapi.json
 >
 > Note that `bloodhound` will still try to open `http://localhost:8080/` even when the listening address is changed to `0.0.0.0`, just ignore it
 
-Run `bloodhound`':
+Run `bloodhound`:
 
 ```console
 root@kali:~# bloodhound
