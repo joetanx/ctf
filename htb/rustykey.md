@@ -538,9 +538,11 @@ Info: Establishing connection to remote endpoint
 c089bcf4eb71d15e482fc826d35ff99a
 ```
 
-## 4. Lateral movement to `ee.reed`
+## 4. Lateral movement
 
-### 4.1. Getting access to `ee.reed`
+### 4.1. Lateral movement to `ee.reed`
+
+#### 4.1.1. Getting access to `ee.reed`
 
 There's an internal document found on `bb.morgan`'s desktop:
 
@@ -623,7 +625,7 @@ malloc_consolidate(): unaligned fastbin chunk detected
 Aborted
 ```
 
-### 4.2. RunasCs to switch user to `ee.reed`
+#### 4.1.2. RunasCs to switch user to `ee.reed`
 
 We have the credentials of `ee.reed` but `evil-winrm` didn't work, let's try to switch user with [RunasCs](https://github.com/antonioCoco/RunasCs)
 
@@ -678,7 +680,9 @@ whoami
 rustykey\ee.reed
 ```
 
-## 5. Lateral movement to `mm.turner`: Component Object Model (COM) hijack
+### 4.2. Lateral movement to `mm.turner`
+
+#### Component Object Model (COM) hijack
 
 Recall from `internal.pdf` about registry and some compression/decompression related functions
 
@@ -785,7 +789,7 @@ whoami
 rustykey\mm.turner
 ```
 
-## 6. Privilege Escalation
+## 5. Privilege Escalation
 
 `mm.turner` is a member of `DELEGATIONMANAGER`, which has `AddAllowedToAct` on the domain controller
 
@@ -986,4 +990,24 @@ Info: Establishing connection to remote endpoint
 rustykey\administrator
 *Evil-WinRM* PS C:\Users\Administrator\Documents> type ..\Desktop\root.txt
 1476a94ba4b9727ab932c9b2840ece73
+```
+
+## 6. Summary
+
+```mermaid
+flowchart TD
+  A(Provided credential for rr.parker) -->|timeroasting and hashcat| B(Get credential for IT-COMPUTER3)
+  B -->|AddSelf| C(Get access to HELPDESK group)
+  C -->|Reset password| D(Get access as bb.morgan)
+  C -->|Remove from PROTECTED OBJECTS| D
+  D --> D1[user.txt]
+  D -->|Reset password| E(Get access as ee.reed)
+  D -->|Remove from PROTECTED OBJECTS| E
+  D -->|RunasCs| E
+  D -->|Hint from internal.pdf about registry and compression/decompression tool| G(Get access as mm.turner)
+  E -->|COM Hijack via registry permissions| G
+  G -->|AddAllowedToAct permission for RBCD attack| H(Allow IT-COMPUTER3 to delegate as DC)
+  H -->|S4U2self| I(Service ticket as BACKUPADMIN)
+  I -->|Dump all domain hashes| J(Connect with Administrator hash)
+  J --> J1[root.txt]
 ```
