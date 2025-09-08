@@ -1519,3 +1519,4 @@ PsExec.exe \\$TARGET cmd.exe
 |---|---|---|
 |Linux|`find / -name proof.txt`|`hostname`<br>`cat /path/to/flag/proof.txt`<br>`ifconfig`|
 |Windows|`dir /S C:\*proof.txt`|`hostname`<br>`type C:\path\to\flag\proof.txt`<br>`ipconfig`|
+|Windows<br>(PowerShell)|`Get-ChildItem -Path C:\ -Filter *proof.txt -Recurse`|`Get-Content C:\path\to\flag\proof.txt`|
