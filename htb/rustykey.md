@@ -467,7 +467,7 @@ root@kali:~# bloodyAD -k --host dc.rustykey.htb -d rustykey.htb -u 'IT-COMPUTER3
 ```
 
 ### 3.4. Getting access to `bb.morgan`
-
+f
 Using `ForceChangePassword` permission to reset password for `bb.morgan`:
 
 ```console
@@ -580,7 +580,7 @@ Recall that `ee.reed` is a member of `SUPPORT` group:
 
 ![](https://github.com/user-attachments/assets/c1a7443e-8fe0-48c7-8993-3c3d2f6df0fa)
 
-And `HELPDESK` can ForceChangePAssword on `ee.reed`:
+And `HELPDESK` can ForceChangePassword on `ee.reed`:
 
 ![](https://github.com/user-attachments/assets/22612c40-bece-4446-9b45-f6e0a9fd0ab2)
 
