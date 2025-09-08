@@ -761,7 +761,7 @@ Likely used for scenario to upload a file from target:
 |   |   |
 |---|---|
 |Local (static)|`ssh -L 0.0.0.0:$PORT_ON_KALI:$TARGET:$PORT_ON_TARGET $USERNAME@$TARGET`|
-|Local (dynamic)|`ssh -L 0.0.0.0:$PORT_ON_KALI $USERNAME@$TARGET`|
+|Local (dynamic)|`ssh -D 0.0.0.0:$PORT_ON_KALI $USERNAME@$TARGET`|
 |Remote (static)|`ssh -R 0.0.0.0:$PORT_ON_KALI:$TARGET:$PORT_ON_TARGET root@$KALI`|
 |Remote (dynamic)|`ssh -R 0.0.0.0:$PORT_ON_KALI root@$KALI`|
 
