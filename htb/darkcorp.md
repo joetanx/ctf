@@ -62,6 +62,10 @@ _Sign Up_ links to account registration page:
 
 ![](https://github.com/user-attachments/assets/f36f0c12-8848-4a6e-b2bb-c50bee487843)
 
-Register account and sign in:
+Register account and sign in, version is `1.6.7`
 
 ![](https://github.com/user-attachments/assets/192c3faf-5147-419c-8c68-34acc4bb756c)
+
+### 2.1. CVE-2024-42009
+
+[CVE-2024-42009](https://github.com/advisories/GHSA-j43g-prf4-578j): A Cross-Site Scripting vulnerability in Roundcube through 1.5.7 and 1.6.x through 1.6.7 allows a remote attacker to steal and send emails of a victim via a crafted e-mail message that abuses a Desanitization issue in message_body() in program/actions/mail/show.php.
