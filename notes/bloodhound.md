@@ -123,9 +123,11 @@ Bloodhound now has a dark mode:
 
 ### 2.1. Retrieve domain information
 
-There are several methods to retrieve domain information, including [SharpHound](https://github.com/SpecterOps/SharpHound)
+#### 2.1.1. [SharpHound](https://github.com/SpecterOps/SharpHound)
 
-If the domain user and password is available, retrieving with `bloodhound.py` from Kali is straightforward
+> SharpHound Community Edition (CE) is the official data collector for BloodHound CE. It is written in C# and uses native Windows API functions and LDAP namespace functions to collect data from domain controllers and domain-joined Windows systems.
+
+#### 2.1.2. [bloodhound-ce-python](https://www.kali.org/tools/bloodhound-ce-python/)
 
 ```console
 root@kali:~# bloodhound-ce-python -d lab.vx -u joe -p Micro123 -ns 192.168.17.20 -c all --dns-tcp --zip
@@ -149,6 +151,19 @@ INFO: Starting computer enumeration with 10 workers
 INFO: Querying computer: DC.lab.vx
 INFO: Done in 00M 00S
 INFO: Compressing output into 20250907132541_bloodhound.zip
+```
+
+#### 2.1.3. netexec
+
+`netexec ldap` also has [bloodhound](https://www.netexec.wiki/ldap-protocol/bloodhound-ingestor) data collection function:
+
+```console
+root@kali:~# netexec ldap dc.lab.vx -d lab.vx -u joe -p Micro123 --dns-server 192.168.17.20 --dns-tcp --bloodhound --collection All
+LDAP        192.168.17.20   389    DC               [*] Windows 11 / Server 2025 Build 26100 (name:DC) (domain:lab.vx)
+LDAPS       192.168.17.20   636    DC               [+] lab.vx\joe:Micro123 (Pwn3d!)
+LDAPS       192.168.17.20   636    DC               Resolved collection methods: session, rdp, psremote, localadmin, objectprops, group, container, dcom, trusts, acl
+LDAP        192.168.17.20   389    DC               Done in 00M 00S
+LDAPS       192.168.17.20   636    DC               Compressing output into /root/.nxc/logs/DC_192.168.17.20_2025-09-14_122915_bloodhound.zip
 ```
 
 ### 2.2. Load into BloodHound
