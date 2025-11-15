@@ -784,9 +784,9 @@ Prepare client binaries for Windows target to download
 
 ```sh
 VERSION=$(curl -sI https://github.com/jpillora/chisel/releases/latest | grep location: | cut -d / -f 8 | tr -d '\r' | tr -d 'v')
-curl -sLO https://github.com/jpillora/chisel/releases/download/v$VERSION/chisel_${VERSION}_windows_amd64.gz
-gzip -d chisel_${VERSION}_windows_amd64.gz
-mv chisel_${VERSION}_windows_amd64 /var/www/html/chisel.exe
+curl -sLO https://github.com/jpillora/chisel/releases/download/v$VERSION/chisel_${VERSION}_windows_amd64.zip
+unzip chisel_${VERSION}_windows_amd64.zip
+mv chisel.exe /var/www/html/
 ```
 
 Download client binaries on Windows target
