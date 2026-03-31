@@ -981,7 +981,7 @@ Invoke-AllChecks
 Prepare Kali:
 
 ```sh
-curl -sLo /var/www/html/PrivescCheck.ps1 https://github.com/itm4n/PrivescCheck/raw/master/PrivescCheck.ps1
+curl -sLo /var/www/html/PrivescCheck.ps1 https://github.com/itm4n/PrivescCheck/releases/latest/download/PrivescCheck.ps1
 ```
 
 Import on target:
