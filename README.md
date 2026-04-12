@@ -642,7 +642,7 @@ Invoke-Expression (Invoke-WebRequest https://github.com/joetanx/ctf/raw/refs/hea
 
 ### 4.6. Using the [reverse.py](/reverse.py) script in this repo
 
-Python is mostly pre-installed on Linux, install Python on Windows from https://www.python.org/downloads/
+Python is mostly pre-installed on Linux, install Python on Windows from https://apps.microsoft.com/detail/9pnrbtzxmb4z?hl=en-US&gl=SG
 
 #### Download to kali
 
